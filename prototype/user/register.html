@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>注册 · 绿行积分</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="stage">
+  <div class="phone">
+    <div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="dots"><span></span><span></span><span></span></span></div>
+
+      <div class="appbar">
+        <a class="icon-btn" href="login.html">←</a>
+        <h1 style="margin-left:4px">注册账号</h1>
+      </div>
+
+      <div class="content">
+        <form id="reg" onsubmit="submitReg(event)">
+          <div class="field">
+            <label for="u">用户名</label>
+            <input id="u" name="u" placeholder="4–20 位字母、数字或下划线" autocomplete="username">
+            <div class="hint" id="hint-u">注册后不可修改，用于登录</div>
+          </div>
+          <div class="field">
+            <label for="n">昵称</label>
+            <input id="n" placeholder="展示在行程与排行榜中" maxlength="20">
+          </div>
+          <div class="field">
+            <label for="p">密码</label>
+            <input id="p" type="password" placeholder="至少 6 位，建议字母 + 数字" autocomplete="new-password">
+            <div class="hint">系统只保存加盐哈希，不保存明文</div>
+          </div>
+          <div class="field">
+            <label for="p2">确认密码</label>
+            <input id="p2" type="password" placeholder="再次输入密码" autocomplete="new-password">
+          </div>
+
+          <label class="checkbox">
+            <input type="checkbox" id="agree" checked>
+            <span>我已阅读并同意《用户协议》与《隐私说明》</span>
+          </label>
+
+          <button class="btn btn-primary btn-block" style="margin-top:18px" type="submit">注册</button>
+          <div class="tiny" style="text-align:center;margin-top:14px">
+            已有账号？<a href="login.html" style="color:var(--green-600)">直接登录</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/app.js"></script>
+<script>
+  function submitReg(e) {
+    e.preventDefault();
+    const u = document.getElementById('u').value.trim();
+    const p = document.getElementById('p').value;
+    const p2 = document.getElementById('p2').value;
+    const agree = document.getElementById('agree').checked;
+
+    if (!/^[A-Za-z0-9_]{4,20}$/.test(u)) { toast('用户名需 4–20 位字母、数字或下划线'); return; }
+    if (p.length < 6) { toast('密码至少 6 位'); return; }
+    if (p !== p2) { toast('两次输入的密码不一致'); return; }
+    if (!agree) { toast('请先同意用户协议'); return; }
+
+    toast('注册成功，正在跳转登录');
+    setTimeout(() => location.href = 'login.html', 900);
+  }
+</script>
+</body>
+</html>

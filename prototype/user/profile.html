@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>个人资料 · 绿行积分</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="stage">
+  <div class="phone">
+    <div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="dots"><span></span><span></span><span></span></span></div>
+
+      <div class="appbar">
+        <a class="icon-btn" href="me.html">←</a>
+        <h1 style="margin-left:4px">个人资料</h1>
+      </div>
+
+      <div class="content">
+        <form onsubmit="event.preventDefault(); toast('资料已保存'); setTimeout(()=>location.href='me.html', 800);">
+          <div class="field">
+            <label for="nick">昵称</label>
+            <input id="nick" value="生阳" maxlength="20">
+            <div class="hint">2–20 个字符，可重复但不建议与他人完全相同</div>
+          </div>
+          <div class="field">
+            <label for="uname">用户名（不可修改）</label>
+            <input id="uname" value="shengyang" disabled>
+          </div>
+          <div class="field">
+            <label for="old">原密码</label>
+            <input id="old" type="password" placeholder="修改密码时填写">
+          </div>
+          <div class="field">
+            <label for="new">新密码</label>
+            <input id="new" type="password" placeholder="至少 6 位，含字母与数字">
+            <div class="hint">修改成功后当前会话保持，其他设备需重新登录</div>
+          </div>
+          <button class="btn btn-primary btn-block" style="margin-top:20px" type="submit">保存修改</button>
+        </form>
+
+        <div class="card" style="margin-top:16px">
+          <div class="tiny" style="line-height:1.7">
+            账号状态：<span class="badge badge-green">启用中</span><br>
+            注册时间：2026-09-12 · 最近登录：2026-11-10 09:12
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/app.js"></script>
+</body>
+</html>

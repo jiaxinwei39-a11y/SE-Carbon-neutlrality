@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>积分商城 · 绿行积分</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="stage">
+  <div class="phone">
+    <div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="dots"><span></span><span></span><span></span></span></div>
+
+      <div class="appbar">
+        <h1>积分商城</h1>
+        <div class="spacer"></div>
+        <a class="icon-btn" href="orders.html" title="我的订单">🧾</a>
+      </div>
+
+      <div class="content">
+        <div class="balance-strip">
+          <span>可用积分</span>
+          <strong>1,280 分</strong>
+        </div>
+
+        <div class="section-title"><h2>全部礼品</h2><span class="tiny">按积分从低到高</span></div>
+        <div class="product-grid" id="grid"></div>
+      </div>
+
+      <nav class="tabbar" data-active="mall"></nav>
+    </div>
+  </div>
+</div>
+<script src="../assets/app.js"></script>
+<script>
+  const grid = document.getElementById('grid');
+  grid.innerHTML = MOCK.products.slice().sort((a, b) => a.points - b.points).map(p => {
+    const afford = p.stock > 0 && MOCK.user.points >= p.points;
+    return `
+      <a class="product" href="product.html?id=${p.id}">
+        <div class="box"><span class="emoji">${p.icon}</span></div>
+        <div class="name">${p.name}</div>
+        <div class="cost">
+          <strong>${fmt(p.points)}<small>分</small></strong>
+          <span class="stock">${p.stock > 0 ? '库存 ' + p.stock : '已兑完'}</span>
+        </div>
+        <div class="tiny" style="color:${afford ? 'var(--green-600)' : 'var(--ink-400)'}">
+          ${p.stock === 0 ? '暂时缺货' : afford ? '可兑换' : '积分不足'}
+        </div>
+      </a>`;
+  }).join('');
+</script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>绿行积分 · 原型总览</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .tiles.user .tile{max-width:none}
+  .tile .frame{height:326px}
+  .tile iframe{transform:scale(.63);left:0}
+  .tiles.admin{grid-template-columns:repeat(auto-fill,minmax(400px,1fr))}
+  .wide .frame{height:340px}
+  .wide iframe{width:1180px;height:900px;transform:scale(.3);left:0}
+  .sec-title{margin:36px 0 4px;font-size:18px}
+  .sec-sub{margin:0;color:var(--ink-500);font-size:13px}
+</style>
+</head>
+<body style="background:#f2f5f9">
+<div class="gallery">
+  <div class="gallery-head">
+    <h1>绿行积分 · 前端原型</h1>
+    <p>绿色出行碳积分系统（SE-Carbon-neutlrality）· 静态 HTML/CSS 原型，无后端依赖，直接双击打开即可。<br>
+       配色与组件遵循 <code>docs/01-requirements</code> 中的需求基线；移动端 390×844，管理端桌面布局。</p>
+  </div>
+
+  <h2 class="sec-title">用户端（移动）</h2>
+  <p class="sec-sub">对应 UC-01 注册、UC-02 登录、UC-03 维护资料、UC-04/05 行程上报与查询、UC-06 积分明细、UC-07/08 兑换与订单</p>
+  <div class="tiles user">
+    <div class="tile">
+      <div class="frame"><iframe src="user/login.html" loading="lazy"></iframe></div>
+      <div class="cap"><strong>登录</strong><span class="tag">user/login.html</span></div>
+    </div>
+    <div class="tile">
+      <div class="frame"><iframe src="user/home.html" loading="lazy"></iframe></div>
+      <div class="cap"><strong>首页 / 快速上报</strong><span class="tag">user/home.html</span></div>
+    </div>
+    <div class="tile">
+      <div class="frame"><iframe src="user/trips.html" loading="lazy"></iframe></div>
+      <div class="cap"><strong>行程记录</strong><span class="tag">user/trips.html</span></div>
+    </div>
+    <div class="tile">
+      <div class="frame"><iframe src="user/points.html" loading="lazy"></iframe></div>
+      <div class="cap"><strong>积分明细</strong><span class="tag">user/points.html</span></div>
+    </div>
+    <div class="tile">
+      <div class="frame"><iframe src="user/mall.html" loading="lazy"></iframe></div>
+      <div class="cap"><strong>积分商城</strong><span class="tag">user/mall.html</span></div>
+    </div>
+    <div class="tile">
+      <div class="frame"><iframe src="user/product.html" loading="lazy"></iframe></div>
+      <div class="cap"><strong>礼品详情</strong><span class="tag">user/product.html</span></div>
+    </div>
+    <div class="tile">
+      <div class="frame"><iframe src="user/orders.html" loading="lazy"></iframe></div>
+      <div class="cap"><strong>我的订单</strong><span class="tag">user/orders.html</span></div>
+    </div>
+    <div class="tile">
+      <div class="frame"><iframe src="user/me.html" loading="lazy"></iframe></div>
+      <div class="cap"><strong>我的</strong><span class="tag">user/me.html</span></div>
+    </div>
+    <div class="tile">
+      <div class="frame"><iframe src="user/register.html" loading="lazy"></iframe></div>
+      <div class="cap"><strong>注册</strong><span class="tag">user/register.html</span></div>
+    </div>
+    <div class="tile">
+      <div class="frame"><iframe src="user/profile.html" loading="lazy"></iframe></div>
+      <div class="cap"><strong>个人资料</strong><span class="tag">user/profile.html</span></div>
+    </div>
+  </div>
+
+  <h2 class="sec-title">运营管理端（桌面）</h2>
+  <p class="sec-sub">对应 UC-09 规则维护、UC-10 礼品与库存、UC-11 订单履约、UC-12 数据看板</p>
+  <div class="tiles admin">
+    <div class="tile wide">
+      <div class="frame"><iframe src="admin/stats.html" loading="lazy"></iframe></div>
+      <div class="cap"><strong>运营概览</strong><span class="tag">admin/stats.html</span></div>
+    </div>
+    <div class="tile wide">
+      <div class="frame"><iframe src="admin/rules.html" loading="lazy"></iframe></div>
+      <div class="cap"><strong>碳核算规则</strong><span class="tag">admin/rules.html</span></div>
+    </div>
+    <div class="tile wide">
+      <div class="frame"><iframe src="admin/products.html" loading="lazy"></iframe></div>
+      <div class="cap"><strong>礼品管理</strong><span class="tag">admin/products.html</span></div>
+    </div>
+    <div class="tile wide">
+      <div class="frame"><iframe src="admin/orders.html" loading="lazy"></iframe></div>
+      <div class="cap"><strong>订单处理</strong><span class="tag">admin/orders.html</span></div>
+    </div>
+  </div>
+
+  <p class="sec-sub" style="margin-top:34px">
+    说明：全部页面为静态原型，数据来自 <code>assets/app.js</code> 中的 MOCK 常量；交互（切换、弹层、提示）仅为演示，
+    提交/兑换/履约均不落库。真实接口与校验以需求文档中的业务规则（BR-01~BR-08）为准。
+  </p>
+</div>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>碳核算规则 · 绿行积分管理端</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="admin">
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span>绿行积分 · 运营端</div>
+    <nav>
+      <a href="stats.html">📊 运营概览</a>
+      <a class="active" href="rules.html">⚙️ 碳核算规则</a>
+      <a href="products.html">🎁 礼品管理</a>
+      <a href="orders.html">🧾 订单处理</a>
+    </nav>
+    <div class="side-foot"><div class="tiny">管理员 admin</div><a class="tiny" href="../user/login.html">退出</a></div>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-head">
+      <div>
+        <h1>碳核算规则</h1>
+        <p class="tiny">公式：减排量 = 里程 ×(基准因子 − 方式因子)，积分 = ⌊减排量 × 积分比例⌋；规则按版本冻结，历史行程回放使用当时版本</p>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openRule()">＋ 新建规则</button>
+    </header>
+
+    <div class="notice">
+      <strong>变更须知：</strong>新建规则后对生效时间之后的行程生效，不会重算历史行程；同一天同一方式只允许一条生效规则。
+    </div>
+
+    <section class="panel">
+      <div class="panel-head"><h2>规则版本</h2><span class="tiny">共 5 条 · 生效中 4 条</span></div>
+      <table class="table">
+        <thead>
+          <tr><th>版本</th><th>出行方式</th><th>基准因子</th><th>方式因子</th><th>积分比例</th><th>生效区间</th><th>状态</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="mono">R-2026-11-BUS</td><td>公交 🚌</td><td>0.200</td><td>0.050</td><td>10 分/kg</td><td>2026-11-01 起</td><td><span class="badge badge-green">生效中</span></td></tr>
+          <tr><td class="mono">R-2026-11-MET</td><td>地铁 🚇</td><td>0.200</td><td>0.040</td><td>10 分/kg</td><td>2026-11-01 起</td><td><span class="badge badge-green">生效中</span></td></tr>
+          <tr><td class="mono">R-2026-11-BIK</td><td>骑行 🚲</td><td>0.200</td><td>0.000</td><td>10 分/kg</td><td>2026-11-01 起</td><td><span class="badge badge-green">生效中</span></td></tr>
+          <tr><td class="mono">R-2026-11-WAL</td><td>步行 🚶</td><td>0.200</td><td>0.000</td><td>10 分/kg</td><td>2026-11-01 起</td><td><span class="badge badge-green">生效中</span></td></tr>
+          <tr><td class="mono">R-2026-10-BUS</td><td>公交 🚌</td><td>0.200</td><td>0.050</td><td>10 分/kg</td><td>2026-10-01 ~ 2026-11-01</td><td><span class="badge badge-gray">已归档</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>试算器</h2><span class="tiny">用于校验新规则是否符合预期</span></div>
+      <div class="form-grid">
+        <div class="field"><label>出行方式</label>
+          <select class="select"><option>公交</option><option>地铁</option><option>骑行</option><option>步行</option></select>
+        </div>
+        <div class="field"><label>里程（km）</label><input id="calcKm" type="number" value="10" step="0.001" min="0"></div>
+        <div class="field"><label>基准因子</label><input id="calcBase" type="number" value="0.2" step="0.001"></div>
+        <div class="field"><label>方式因子</label><input id="calcFactor" type="number" value="0.05" step="0.001"></div>
+      </div>
+      <div class="calc-result">
+        <div><span class="tiny">减排量</span><strong id="r1">1.50 kg</strong></div>
+        <div><span class="tiny">积分</span><strong id="r2" style="color:var(--green-600)">15 分</strong></div>
+        <div><span class="tiny">计算规则</span><span class="tiny" id="r3">四舍五入到 0.01 kg 后取整</span></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-mask" id="mask" onclick="closeRule()"></div>
+<div class="modal" id="modal">
+  <h3 style="margin:0 0 4px">新建碳核算规则</h3>
+  <p class="tiny" style="margin:0 0 18px">保存后立即对生效时间之后的行程生效，历史行程不受影响</p>
+  <div class="form-grid">
+    <div class="field"><label>出行方式</label><select class="select"><option>公交</option><option>地铁</option><option>骑行</option><option>步行</option></select></div>
+    <div class="field"><label>生效日期</label><input type="date" value="2026-12-01"></div>
+    <div class="field"><label>基准因子 kg/km</label><input value="0.2"></div>
+    <div class="field"><label>方式因子 kg/km</label><input value="0.05"></div>
+    <div class="field"><label>积分比例（分/kg）</label><input value="10"></div>
+    <div class="field"><label>变更原因</label><input placeholder="例如：调整公交方式因子"></div>
+  </div>
+  <div class="row gap10" style="justify-content:flex-end;margin-top:20px">
+    <button class="btn btn-ghost" onclick="closeRule()">取消</button>
+    <button class="btn btn-primary" onclick="closeRule(); toast('规则已保存（演示）')">保存</button>
+  </div>
+</div>
+
+<script src="../assets/app.js"></script>
+<script>
+  function openRule() {
+    document.getElementById('mask').classList.add('on');
+    document.getElementById('modal').classList.add('on');
+  }
+  function closeRule() {
+    document.getElementById('mask').classList.remove('on');
+    document.getElementById('modal').classList.remove('on');
+  }
+  function calc() {
+    const km = +document.getElementById('calcKm').value || 0;
+    const b = +document.getElementById('calcBase').value || 0;
+    const f = +document.getElementById('calcFactor').value || 0;
+    const r = Math.max(0, km * b - km * f);
+    document.getElementById('r1').textContent = r.toFixed(2) + ' kg';
+    document.getElementById('r2').textContent = Math.floor(+(r.toFixed(2)) * 10) + ' 分';
+  }
+  ['calcKm','calcBase','calcFactor'].forEach(id => document.getElementById(id).addEventListener('input', calc));
+  calc();
+</script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>首页 · 绿行积分</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="stage">
+  <div class="phone">
+    <div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="dots"><span></span><span></span><span></span></span></div>
+
+      <div class="appbar">
+        <div>
+          <h1>早上好，生阳</h1>
+          <div class="sub">今天也要低碳出行 🌱</div>
+        </div>
+        <div class="spacer"></div>
+        <a class="icon-btn" href="orders.html" title="我的订单">🔔</a>
+      </div>
+
+      <div class="content">
+        <a class="hero" href="points.html" style="display:block">
+          <div class="label">我的碳积分</div>
+          <div class="amount" id="balance">1,280<small>分</small></div>
+          <div class="foot">
+            <span>本月减排 <strong id="reduction">3.40</strong> kg</span>
+            <span>累计出行 <strong>37</strong> 次</span>
+          </div>
+        </a>
+
+        <div class="section-title"><h2>快捷操作</h2></div>
+        <div class="quick">
+          <a class="q" href="home.html#report"><span class="ico">➕</span>上报行程</a>
+          <a class="q" href="trips.html"><span class="ico">🧾</span>行程记录</a>
+          <a class="q" href="mall.html"><span class="ico">🎁</span>积分商城</a>
+          <a class="q" href="points.html"><span class="ico">📈</span>积分明细</a>
+        </div>
+
+        <div class="section-title" id="report"><h2>快速上报</h2><a href="trips.html">全部记录</a></div>
+
+        <div class="card">
+          <div class="modes" id="modes">
+            <div class="mode on" data-mode="BUS"><span class="emoji">🚌</span>公交</div>
+            <div class="mode" data-mode="SUBWAY"><span class="emoji">🚇</span>地铁</div>
+            <div class="mode" data-mode="BIKE"><span class="emoji">🚲</span>骑行</div>
+            <div class="mode" data-mode="WALK"><span class="emoji">🚶</span>步行</div>
+          </div>
+
+          <div class="row gap10" style="margin-top:14px">
+            <div class="field" style="flex:1;margin:0">
+              <label for="km">里程（公里）</label>
+              <input id="km" type="number" step="0.001" min="0.001" value="10" placeholder="0.000">
+            </div>
+            <div class="field" style="flex:1;margin:0">
+              <label for="mins">用时（分钟）</label>
+              <input id="mins" type="number" min="1" value="35">
+            </div>
+          </div>
+
+          <div class="row between" style="margin-top:14px;background:#f8fafc;border-radius:12px;padding:12px 14px">
+            <div class="col">
+              <span class="muted">预计减排</span>
+              <strong id="estimate" style="font-size:16px">1.50 kgCO₂e</strong>
+            </div>
+            <div class="col" style="text-align:right">
+              <span class="muted">预计获得</span>
+              <strong id="estimatePts" style="font-size:16px;color:var(--green-600)">15 分</strong>
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-block" style="margin-top:14px" onclick="submitTrip()">提交行程</button>
+          <div class="tiny" style="margin-top:10px;text-align:center">
+            规则版本 R-2026-11 · 同一行程重复提交只记录一次
+          </div>
+        </div>
+
+        <div class="section-title"><h2>最近行程</h2><a href="trips.html">查看全部</a></div>
+        <div class="card flush">
+          <div class="list" id="recent" style="padding:0 16px"></div>
+        </div>
+      </div>
+
+      <nav class="tabbar" data-active="home"></nav>
+    </div>
+  </div>
+</div>
+<script src="../assets/app.js"></script>
+<script>
+  document.querySelectorAll('#modes .mode').forEach(el => {
+    el.addEventListener('click', () => {
+      document.querySelectorAll('#modes .mode').forEach(m => m.classList.remove('on'));
+      el.classList.add('on');
+      estimate();
+    });
+  });
+  document.getElementById('km').addEventListener('input', estimate);
+
+  const FACTOR = { BUS: 0.05, SUBWAY: 0.04, BIKE: 0, WALK: 0 };
+  const BASE = 0.2;
+
+  function currentMode() {
+    return document.querySelector('#modes .mode.on').dataset.mode;
+  }
+
+  function estimate() {
+    const km = parseFloat(document.getElementById('km').value) || 0;
+    const r = Math.max(0, km * BASE - km * FACTOR[currentMode()]);
+    document.getElementById('estimate').textContent = r.toFixed(2) + ' kgCO₂e';
+    document.getElementById('estimatePts').textContent = Math.floor(r * 10) + ' 分';
+  }
+
+  function submitTrip() {
+    const km = parseFloat(document.getElementById('km').value) || 0;
+    if (km <= 0) { toast('里程必须大于 0'); return; }
+    toast('行程已提交，积分已入账');
+    setTimeout(estimate, 300);
+  }
+
+  document.getElementById('recent').innerHTML = MOCK.trips.slice(0, 3).map(t => `
+    <div class="list-item">
+      <div class="thumb">${t.icon}</div>
+      <div class="body">
+        <div class="title">${t.modeName}出行 · ${t.distance} km</div>
+        <div class="meta">${t.date} · 减排 ${t.reduction} kg</div>
+      </div>
+      <div class="amount">${t.points > 0 ? '+' + t.points : '0'}</div>
+    </div>`).join('');
+
+  estimate();
+</script>
+</body>
+</html>

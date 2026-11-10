@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>运营概览 · 绿行积分管理端</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="admin">
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span>绿行积分 · 运营端</div>
+    <nav>
+      <a class="active" href="stats.html">📊 运营概览</a>
+      <a href="rules.html">⚙️ 碳核算规则</a>
+      <a href="products.html">🎁 礼品管理</a>
+      <a href="orders.html">🧾 订单处理</a>
+    </nav>
+    <div class="side-foot">
+      <div class="tiny">管理员 admin</div>
+      <a class="tiny" href="../user/login.html">退出</a>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-head">
+      <div>
+        <h1>运营概览</h1>
+        <p class="tiny">数据截至 2026-11-10 09:40 · 每 5 分钟刷新</p>
+      </div>
+      <div class="row gap10">
+        <select class="select"><option>近 7 天</option><option>近 30 天</option></select>
+        <button class="btn btn-ghost btn-sm" onclick="toast('已导出 CSV（演示）')">导出</button>
+      </div>
+    </header>
+
+    <section class="stat-grid">
+      <div class="stat-card">
+        <span class="k">今日行程</span>
+        <strong class="v">142</strong>
+        <span class="delta up">↑ 12.4% 环比</span>
+      </div>
+      <div class="stat-card">
+        <span class="k">今日发放积分</span>
+        <strong class="v">1,860</strong>
+        <span class="delta up">↑ 8.1% 环比</span>
+      </div>
+      <div class="stat-card">
+        <span class="k">今日减排量</span>
+        <strong class="v">213.6 <small>kg</small></strong>
+        <span class="delta up">↑ 9.7% 环比</span>
+      </div>
+      <div class="stat-card">
+        <span class="k">待处理订单</span>
+        <strong class="v" style="color:var(--amber-600)">2</strong>
+        <span class="delta">需人工履约</span>
+      </div>
+    </section>
+
+    <div class="grid-2">
+      <section class="panel">
+        <div class="panel-head"><h2>近 7 天行程量</h2><span class="tiny">单位：次</span></div>
+        <div class="chart" id="chart"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h2>出行方式分布</h2><span class="tiny">按行程数</span></div>
+        <div class="bars">
+          <div class="bar-row"><span>公交</span><div class="track"><i style="width:68%"></i></div><b>412</b></div>
+          <div class="bar-row"><span>地铁</span><div class="track"><i style="width:52%"></i></div><b>308</b></div>
+          <div class="bar-row"><span>骑行</span><div class="track"><i style="width:34%"></i></div><b>196</b></div>
+          <div class="bar-row"><span>步行</span><div class="track"><i style="width:18%"></i></div><b>104</b></div>
+        </div>
+      </section>
+    </div>
+
+    <section class="panel">
+      <div class="panel-head"><h2>最近订单</h2><a class="tiny" href="orders.html">全部订单 →</a></div>
+      <table class="table">
+        <thead><tr><th>订单号</th><th>用户</th><th>礼品</th><th>积分</th><th>状态</th><th>时间</th></tr></thead>
+        <tbody id="recentOrders"></tbody>
+      </table>
+    </section>
+  </main>
+</div>
+<script src="../assets/app.js"></script>
+<script>
+  const days = ['11-04','11-05','11-06','11-07','11-08','11-09','11-10'];
+  const vals = [96, 108, 88, 121, 134, 127, 142];
+  const max = Math.max(...vals);
+  document.getElementById('chart').innerHTML = days.map((d, i) => `
+    <div class="col-item">
+      <div class="col-bar" style="height:${Math.round(vals[i] / max * 100)}%"><span>${vals[i]}</span></div>
+      <div class="col-x">${d}</div>
+    </div>`).join('');
+
+  document.getElementById('recentOrders').innerHTML = MOCK.adminOrders.map(o => `
+    <tr>
+      <td class="mono">${o.id}</td>
+      <td>${o.user}</td>
+      <td>${o.product}</td>
+      <td>${fmt(o.points)}</td>
+      <td>${badge(o.statusName, o.status)}</td>
+      <td class="tiny">${o.time}</td>
+    </tr>`).join('');
+</script>
+</body>
+</html>
