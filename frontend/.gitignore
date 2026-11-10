@@ -1,0 +1,20 @@
+node_modules/
+dist/
+dist-app/
+
+# 本地缓存与运行时产物（Chrome 调试用临时 profile 也是本地产物）
+.npm-cache/
+.electron-cache/
+.app-profile/
+.shot-profile/
+.probe-profile/
+.probe2-profile/
+.probe3-profile/
+*.log
+
+# 截图产物（要展示的图放 docs/）
+shot-*.png
+
+# 本地环境覆盖
+*.local
+.env.local

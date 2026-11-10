@@ -1,0 +1,33 @@
+{
+  "name": "green-commute-points",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "description": "绿色出行积分系统 · 前端（Vue3 + Vite + TS + Electron 桌面壳）",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "build:only": "vite build",
+    "build:single": "vite build --mode single",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit",
+    "app": "npm run build:single && electron .",
+    "app:only": "electron ."
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "pinia": "^3.0.1",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "electron": "^33.2.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7",
+    "vite-plugin-singlefile": "^2.0.3",
+    "vue-tsc": "^2.2.0"
+  }
+}
