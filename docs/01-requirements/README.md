@@ -21,6 +21,7 @@
 - [领域模型](domain-model.md)
 - [非功能需求](non-functional-requirements.md)
 - [迭代规划](iteration-plan.md)
+- [小组成员与最新分工](iteration-plan.md#2-小组分工)
 - [业务规则与验收基线](business-rules.md)
 - [修订依据、历史草案与 AI 使用记录](revision-notes.md)
 - [全部 StarUML 模型（单一工程）](diagrams/lab1-all-models.mdj)
