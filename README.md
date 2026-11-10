@@ -7,6 +7,7 @@
 ## 实验文档
 
 - [实验一需求分析 v0.2](docs/01-requirements/README.md)
+- [小组成员与最新分工](docs/01-requirements/iteration-plan.md#2-小组分工)
 - [业务规则、验收场景与追踪矩阵](docs/01-requirements/business-rules.md)
 - [修订依据与AI使用记录](docs/01-requirements/revision-notes.md)
 - [在线查看 UML 图片](docs/01-requirements/diagrams/README.md#图片预览)
