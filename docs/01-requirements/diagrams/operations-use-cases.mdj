@@ -288,7 +288,7 @@
 											"top": 67,
 											"width": 110,
 											"height": 15,
-											"text": "UC-15 查看运营统计",
+											"text": "UC-14 查看运营统计",
 											"wordWrap": true
 										},
 										{
@@ -1047,7 +1047,7 @@
 					"_parent": {
 						"$ref": "AAAAAAGieG9yqvX31aA1Srt="
 					},
-					"name": "UC-15 查看运营统计",
+					"name": "UC-14 查看运营统计",
 					"ownedElements": []
 				},
 				{

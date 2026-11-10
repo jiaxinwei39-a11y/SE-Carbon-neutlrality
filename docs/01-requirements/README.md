@@ -21,6 +21,7 @@
 - [实验二设计工作区](../02-design/README.md)
 - [用户故事地图](user-story-map.md)
 - [用例分析](use-case-analysis.md)
+- [用户故事与用例编号统一记录](use-case-numbering.md)
 - [领域模型](domain-model.md)
 - [非功能需求](non-functional-requirements.md)
 - [迭代规划](iteration-plan.md)
@@ -110,12 +111,12 @@
 | --- | --- | --- | --- |
 | 用户账户 | 注册、登录、身份识别 | UC-01、UC-02 | Sprint 1 |
 | 出行上报 | 公交、地铁、骑行、步行模拟行程 | UC-04、UC-05 | Sprint 2 |
-| 碳核算 | 按规则计算减排量并保留规则版本 | UC-04、UC-09 | Sprint 2 |
+| 碳核算 | 按规则计算减排量并保留规则版本 | UC-04、UC-16 | Sprint 2 |
 | 积分账本 | 积分发放、余额查询、流水查询 | UC-07、UC-08 | Sprint 2 |
-| 积分商城 | 商品浏览、兑换和订单查询 | UC-10、UC-11、UC-12 | Sprint 3 |
-| 运营管理 | 商品、库存、订单和规则管理 | UC-09、UC-13、UC-14 | Sprint 2-3 |
-| 运营分析 | 出行、减排和兑换统计 | UC-15 | Sprint 3（P1） |
-| 积分清算与对账 | 流水与余额核对、订单冲正和商户兑换汇总 | UC-14、UC-15、UC-17 | Sprint 3 |
+| 积分商城 | 商品浏览、兑换和订单查询 | UC-09、UC-10、UC-11 | Sprint 3 |
+| 运营管理 | 商品、库存、订单和规则管理 | UC-16、UC-12、UC-13 | Sprint 2-3 |
+| 运营分析 | 出行、减排和兑换统计 | UC-14 | Sprint 3（P1） |
+| 积分清算与对账 | 流水与余额核对、订单冲正和商户兑换汇总 | UC-13、UC-14、UC-17 | Sprint 3 |
 
 ## 9. 待确认事项
 
