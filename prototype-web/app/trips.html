@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>行程记录 · 绿行积分</title>
+<link rel="stylesheet" href="../assets/web.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand"><span class="mark">🌿</span> 绿行积分</div>
+    <nav class="nav">
+      <a href="index.html">首页</a>
+      <a class="on" href="trips.html">行程</a>
+      <a href="points.html">积分</a>
+      <a href="mall.html">商城</a>
+      <a href="orders.html">订单</a>
+    </nav>
+    <div class="right">
+      <div class="pill">🌿 <span class="num">1,280</span> 分</div>
+      <div class="avatar">生</div>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="page-head">
+    <div>
+      <h1>行程记录</h1>
+      <p>共 37 条行程 · 本月 18 次 · 数据来源为你在客户端上报并经服务端核算的记录</p>
+    </div>
+    <a class="btn btn-primary" href="index.html">＋ 上报行程</a>
+  </div>
+
+  <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
+    <div class="stat"><div class="k">本月行程</div><div class="v num">18 <small>次</small></div><div class="d up">较上月 +4</div></div>
+    <div class="stat"><div class="k">本月减排</div><div class="v num">12.4 <small>kg</small></div><div class="d up">折合 0.68 棵树</div></div>
+    <div class="stat"><div class="k">本月积分</div><div class="v num">124 <small>分</small></div><div class="d">已全部入账</div></div>
+  </div>
+
+  <div class="card tight" style="padding:18px 20px 0">
+    <div class="filters">
+      <select class="select" style="width:140px"><option>2026 年 11 月</option><option>2026 年 10 月</option><option>2026 年 9 月</option></select>
+      <div class="segs" id="modeSeg">
+        <button class="on" data-value="ALL">全部</button>
+        <button data-value="BUS">公交</button>
+        <button data-value="MET">地铁</button>
+        <button data-value="BIK">骑行</button>
+        <button data-value="WAL">步行</button>
+      </div>
+      <input class="input" placeholder="搜索单号" style="width:180px">
+      <div class="spacer"></div>
+      <span class="hint">按开始时间倒序</span>
+    </div>
+  </div>
+
+  <div class="card tight" style="margin-top:16px">
+    <table class="table">
+      <thead>
+        <tr>
+          <th style="width:110px">日期</th><th style="width:110px">出行方式</th>
+          <th class="r" style="width:100px">里程</th><th class="r" style="width:130px">减排量</th>
+          <th class="r" style="width:100px">积分</th><th>规则版本</th><th style="width:160px">单号</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</main>
+
+<div class="toast"></div>
+<script src="../assets/app.js"></script>
+<script>
+function render(mode) {
+  const rows = MOCK.trips.filter(t => mode === 'ALL' || t.mode === mode);
+  document.getElementById('rows').innerHTML = rows.map(t => `
+    <tr>
+      <td class="num">${t.date}</td>
+      <td>${t.icon} ${t.modeName}</td>
+      <td class="r num">${t.km.toFixed(1)} km</td>
+      <td class="r num">${kg(t.red)} kg</td>
+      <td class="r num" style="color:var(--green-600);font-weight:600">+${t.pts}</td>
+      <td class="mono">${t.rule}</td>
+      <td class="mono">${t.id}</td>
+    </tr>`).join('') || '<tr><td colspan="7" class="empty">没有符合条件的行程</td></tr>';
+}
+bindSeg('#modeSeg', render);
+render('ALL');
+</script>
+</body>
+</html>

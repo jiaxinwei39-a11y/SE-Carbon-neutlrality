@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>绿行积分 · Web 原型总览</title>
+<link rel="stylesheet" href="assets/web.css">
+<style>
+  body{background:#eef2f6}
+  .wrap{max-width:1360px;margin:0 auto;padding:40px 28px 72px}
+  .wrap h1{font-size:26px}
+  .wrap .lead{color:var(--ink-500);font-size:13.5px;margin:8px 0 0;line-height:1.8}
+  .sec{margin-top:34px;font-size:16px;font-weight:600}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(520px,1fr));gap:18px;margin-top:14px}
+  .tile{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:12px;box-shadow:var(--shadow-md)}
+  .frame{height:330px;overflow:hidden;border-radius:var(--r-md);border:1px solid var(--line);position:relative;background:#f8fafc}
+  .frame iframe{width:1440px;height:900px;border:0;transform:scale(.38);transform-origin:top left;position:absolute;top:0;left:0}
+  .cap{display:flex;align-items:baseline;justify-content:space-between;margin-top:10px}
+  .cap strong{font-size:14px}
+  .cap span{font-size:12px;color:var(--ink-400)}
+  .note{margin-top:34px;font-size:12.5px;color:var(--ink-500);line-height:1.9}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>绿行积分 · Web 原型</h1>
+  <p class="lead">
+    绿色出行碳积分系统桌面端原型 · 纯静态（HTML + CSS + 原生 JS），无构建设计基准 1440×900，内容区 1180px。<br>
+    设计规范见 <code>docs/ui/02-design-system.md</code>，交互流程见 <code>docs/ui/03-flows.md</code>，标注见 <code>docs/ui/04-redline.md</code>。
+  </p>
+
+  <h2 class="sec">用户端（桌面）</h2>
+  <div class="tiles">
+    <div class="tile"><div class="frame"><iframe src="login.html"></iframe></div><div class="cap"><strong>登录</strong><span>login.html</span></div></div>
+    <div class="tile"><div class="frame"><iframe src="app/index.html"></iframe></div><div class="cap"><strong>首页 / 上报行程</strong><span>app/index.html</span></div></div>
+    <div class="tile"><div class="frame"><iframe src="app/trips.html"></iframe></div><div class="cap"><strong>行程记录</strong><span>app/trips.html</span></div></div>
+    <div class="tile"><div class="frame"><iframe src="app/points.html"></iframe></div><div class="cap"><strong>积分明细</strong><span>app/points.html</span></div></div>
+    <div class="tile"><div class="frame"><iframe src="app/mall.html"></iframe></div><div class="cap"><strong>积分商城</strong><span>app/mall.html</span></div></div>
+    <div class="tile"><div class="frame"><iframe src="app/product.html"></iframe></div><div class="cap"><strong>礼品详情 / 兑换确认</strong><span>app/product.html</span></div></div>
+    <div class="tile"><div class="frame"><iframe src="app/orders.html"></iframe></div><div class="cap"><strong>我的订单</strong><span>app/orders.html</span></div></div>
+  </div>
+
+  <h2 class="sec">运营管理端</h2>
+  <div class="tiles">
+    <div class="tile"><div class="frame"><iframe src="admin/dashboard.html"></iframe></div><div class="cap"><strong>运营概览</strong><span>admin/dashboard.html</span></div></div>
+    <div class="tile"><div class="frame"><iframe src="admin/rules.html"></iframe></div><div class="cap"><strong>碳核算规则</strong><span>admin/rules.html</span></div></div>
+    <div class="tile"><div class="frame"><iframe src="admin/products.html"></iframe></div><div class="cap"><strong>礼品与库存</strong><span>admin/products.html</span></div></div>
+    <div class="tile"><div class="frame"><iframe src="admin/orders.html"></iframe></div><div class="cap"><strong>订单处理</strong><span>admin/orders.html</span></div></div>
+    <div class="tile"><div class="frame"><iframe src="admin/users.html"></iframe></div><div class="cap"><strong>用户管理</strong><span>admin/users.html</span></div></div>
+  </div>
+
+  <p class="note">
+    说明：所有数据来自 <code>assets/app.js</code> 的 MOCK 常量；提交、兑换、履约均不落库，仅演示交互与状态流转。<br>
+    演示账号：普通用户 <code>shengyang / 123456</code>，运营管理员 <code>admin / 123456</code>。
+  </p>
+</div>
+</body>
+</html>

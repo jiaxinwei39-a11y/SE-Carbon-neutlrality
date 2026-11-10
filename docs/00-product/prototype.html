@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>绿色出行积分系统 产品线框</title>
+<style>
+*{box-sizing:border-box}body{margin:0;color:#202020;background:#f5f5f5;font:16px/1.65 system-ui,"Microsoft YaHei",sans-serif}header{padding:20px 28px;background:#fff;border-bottom:2px solid #222}header h1{font-size:23px;margin:0}header p{margin:5px 0 0;color:#555;font-size:14px}.layout{display:grid;grid-template-columns:235px minmax(0,1fr);max-width:1250px;margin:auto}nav{padding:24px 16px}nav button{display:block;text-align:left;width:100%;margin:0 0 7px;background:#fff}button,a.button{font:inherit;border:1px solid #777;border-radius:3px;padding:9px 13px;cursor:pointer;color:#222;background:#fff;text-decoration:none;display:inline-block}button:hover,button:focus-visible,a.button:focus-visible{outline:2px solid #444;outline-offset:2px}button[aria-current=page],.primary{background:#252525;color:white}main{padding:25px 28px 50px;min-width:0}h2{font-size:25px;margin:0 0 8px}h3{font-size:18px}.muted,.meta{color:#616161;font-size:14px}.card{background:#fff;border:1px solid #aaa;padding:20px;margin:18px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.field{border:1px solid #bbb;background:#fafafa;padding:9px 12px;margin:5px 0 14px;min-height:43px}.big{font-size:35px;font-weight:700}.notice{border-left:4px solid #555;background:#eaeaea;padding:10px 15px;margin:15px 0}.error{border:2px dashed #666;padding:14px;margin:15px 0}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}table{border-collapse:collapse;width:100%;font-size:14px}th,td{border:1px solid #aaa;padding:10px;text-align:left;vertical-align:top}th{background:#eee}.tablewrap{overflow:auto}footer{font-size:13px;margin-top:28px;color:#666}label{display:block}button:disabled{cursor:default;color:#777;background:#eee}.badge{display:inline-block;border:1px solid #888;padding:0 8px;font-size:13px}.state{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px}.state button{font-size:14px;padding:5px 10px}@media(max-width:760px){.layout{grid-template-columns:1fr}nav{display:flex;gap:6px;overflow-x:auto;padding:12px}nav button{width:auto;min-width:160px;margin:0}main{padding:18px}.grid{grid-template-columns:1fr}header{padding:16px}h2{font-size:22px}}
+</style>
+</head>
+<body>
+<header><h1>绿色出行积分系统 · 产品交互线框</h1><p>固定演示数据 · 非运行中的业务系统 · 不连接账户和数据库，不保存输入。各页为独立样例，数字不累积；模拟参数待评审。</p></header>
+<div class="layout"><nav id="nav" aria-label="页面目录"></nav><main id="main" tabindex="-1"></main></div>
+<script>
+const meta=[
+['P01','注册与登录','匿名','US-01；US-02'],['P02','用户首页','用户','US-05；US-07'],['P03','模拟行程上报','用户','US-04'],['P04','行程与核算明细','用户','US-05；US-06'],['P05','积分账户','用户','US-07'],['P06','积分流水','用户','US-08'],['P07','积分商城','用户','US-09'],['P08','商品与兑换确认','用户','US-10'],['P09','我的订单','用户','US-11'],['P10','规则管理','管理员','US-16'],['P11','商品与库存管理','管理员代商户','US-12'],['P12','订单处理','管理员代商户','US-13'],['P13','积分对账','管理员','US-17']];
+const field=(label,value)=>`<label>${label}</label><div class="field">${value}</div>`;
+const go=(id,text)=>`<button data-go="${id}">${text}</button>`;
+const variant=(name,text)=>`<button data-variant="${name}">${text}</button>`;
+const table=(heads,rows)=>`<div class="tablewrap"><table><thead><tr>${heads.map(x=>`<th scope="col">${x}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+let current='P01';
+function content(id,state='normal'){
+ switch(id){
+ case 'P01':return `<div class="grid"><section class="card"><h3>登录</h3>${field('用户名','演示用户A')}${field('密码','••••••（示意，不接收真实密码）')}<div class="actions">${go('P02','查看用户首页')}${go('P12','查看管理员页面')}</div></section><section class="card"><h3>注册</h3>${field('用户名','新用户名')}${field('昵称','绿色出行用户')}${field('密码','密码输入位置（示意）')}<p>注册角色固定为普通用户；管理员通过部署配置建立。</p>${go('P02','查看注册成功后的页面')}</section></div><div class="notice">错误凭据、重复用户名和登录失效的状态由UI/UX补齐；本文件不执行认证。</div>`;
+ case 'P02':return `<div class="grid"><section class="card"><h3>可用积分（独立预设场景）</h3><div class="big">50 分</div>${go('P05','查看积分账户')}</section><section class="card"><h3>开始绿色出行</h3><p>模拟填写公交、地铁、骑行或步行数据。</p>${go('P03','填写行程')}</section></div><section class="card"><h3>最近行程</h3>${table(['方式','里程','减排','积分'],[['公交','10 km','1.500000 kgCO2e','15分']])}<div class="actions">${go('P04','查看核算依据')}${go('P07','进入商城')}</div></section>`;
+ case 'P03':return `<div class="state">${variant('normal','正常表单')}${variant('error','无规则/校验失败样例')}${variant('timeout','超时重试样例')}</div>${state==='error'?'<div class="error" role="status">本次行程结束时间未匹配有效规则。保留输入，未生成成功行程或积分变更。</div>':''}${state==='timeout'?'<div class="error" role="status">结果尚未确认，请保留本次请求后重试或查询记录；重试复用原clientTripId。</div>':''}<section class="card"><p class="muted">表单为固定值示意，实际开发按页面规格校验。</p><div class="grid"><div>${field('出行方式','公交 BUS')}${field('里程（km）','10.000')}${field('起点','演示起点')}</div><div>${field('开始时间（Asia/Shanghai）','有效规则区间内的过去时刻')}${field('结束时间','晚于开始且不晚于服务器当前时间')}${field('终点','演示终点')}</div></div><p>请求号：demo-trip-001；同一次业务意图重试复用此号。</p><div class="actions">${go('P04','查看上报成功样例')}${go('P04','查询原记录样例')}</div></section>`;
+ case 'P04':return `<section class="card"><h3>我的行程</h3>${table(['方式','起终点','里程','状态'],[['公交','演示起点 → 演示终点','10.000 km','POINTED']])}</section><section class="card"><h3>核算快照 DEMO-BUS-01</h3>${table(['项目','快照样例'],[['基准/实际因子','0.200000 / 0.050000 kgCO2e/km'],['基准/实际排放','2.000000000 / 0.500000000 kgCO2e'],['减排量','1.500000000 kgCO2e'],['积分系数','10.000000 分/kgCO2e'],['向下取整后的本次积分','15分'],['计算时间','由成功提交时服务器记录']])}<p class="muted">仅课程模拟。列表显示值可舍入至6位，积分按原精度计算。零积分仍保存成功行程且无零额流水。</p><div class="actions">${go('P05','查看账户样例')}${go('P03','再次上报')}</div></section>`;
+ case 'P05':return `<section class="card"><h3>可用余额（独立账户预设）</h3><div class="big">50 分</div><p>积分不可提现、不可转让。运行系统的余额必须来自有效流水。</p><div class="actions">${go('P06','查看积分流水')}${go('P07','选择兑换商品')}</div></section>`;
+ case 'P06':return `<section class="card"><h3>账户累计至50分的流水样例</h3>${table(['业务','变动','变动后余额','关联记录'],[['公交10km','+15','15','T-001'],['地铁10km','+17','32','T-002'],['骑行9km','+18','50','T-003']])}<p class="muted">流水只读，不提供编辑或删除；这是基于待评审参数的固定示例。</p>${go('P07','去商城')}</section>`;
+ case 'P07':return `<section class="card"><h3>已上架商品</h3><h3>帆布袋</h3><p>演示商户 · 20分/件 · 库存2件</p>${go('P08','查看详情与兑换')}</section><section class="card"><h3>缺货展示</h3><p>演示商品 · 库存0 · 暂无库存</p><button disabled>暂不可兑换</button></section>`;
+ case 'P08':return `<div class="state">${variant('normal','余额库存充足')}${variant('balance','余额不足')}${variant('stock','库存不足')}</div><section class="card"><h3>帆布袋 · 演示商户</h3>${field('单价','20分/件')}${field('数量','1件（实际页面可输入正整数）')}${field('预计消耗','20分')}${field('当前余额 / 库存',state==='balance'?'10分 / 2件':state==='stock'?'50分 / 0件':'50分 / 2件')}<p>确认时以服务端价格、库存和余额为准；超时复用原requestId。</p>${state==='normal'?`<div class="notice">兑换确认：使用20分兑换1件。此按钮仅跳转固定成功样例。</div>${go('P09','查看兑换成功样例')}`:`<div class="error" role="status">${state==='balance'?'积分不足':'库存不足'}。兑换失败，余额、库存、流水和订单均无部分变更。</div>${go('P07','返回商城')}`}</section>`;
+ case 'P09':return `<section class="card"><h3>订单 O-001（兑换后固定样例）</h3>${table(['商品','数量','原价/成本','状态'],[['帆布袋','1','20分/20分','CREATED 待履约']])}<p>兑换后：余额30分、商品库存1；创建时间由服务器记录。普通用户查看本人订单。</p><div class="notice">履约或取消由运营管理员处理。用户端没有处理按钮。</div>${go('P07','继续浏览商城')}</section>`;
+ case 'P10':return `<section class="card"><h3>发布新的规则版本</h3><div class="grid"><div>${field('方式 / 版本','BUS / DEMO-BUS-02')}${field('基准因子 / 方式因子','0.200000 / 0.050000 kgCO2e/km')}${field('每千克积分系数','10.000000')}</div><div>${field('生效区间','[显式配置的非追溯起点, 无穷远)')}${field('原因','课程模拟规则调整（示意）')}</div></div><div class="notice">小组批准后才建立种子规则。已发布因子不可覆盖；切换旧区间与新增版本同事务；同方式区间不重叠。</div><button disabled>发布新版本（仅布局示意）</button></section>`;
+ case 'P11':return `<section class="card"><h3>商品与库存</h3>${table(['名称','商户','积分单价','库存','状态'],[['帆布袋','演示商户','20','2','上架']])}${field('编辑字段','名称、商户、说明、正整数积分价格、非负整数库存、上下架')}${field('变更原因','记录原因与审计信息')}<p>有关联历史的商品只能下架，不物理删除。</p><button disabled>保存变更（仅布局示意）</button></section>`;
+ case 'P12':return `<div class="state">${variant('normal','待履约')}${variant('cancelled','取消结果样例')}${variant('fulfilled','履约结果样例')}</div><section class="card"><h3>订单 O-001</h3>${field('原订单','帆布袋1件；原成本20分')}${field('状态',state==='cancelled'?'CANCELLED 已取消':state==='fulfilled'?'FULFILLED 已履约':'CREATED 待履约')}${state==='normal'?`${field('取消原因（必填）','演示库存安排调整')}<div class="actions">${variant('fulfilled','查看履约成功样例')}${variant('cancelled','查看取消返还样例')}</div>`:state==='cancelled'?'<p>返还原20分与1件库存；余额恢复50、库存恢复2；仅一笔+20冲正。重复取消不再返还；不能履约。</p>':'<p>仅改变履约状态并保存审计；无二次扣分或扣库存。已履约不能取消。</p>'}</section>${go('P13','查看对账样例')}`;
+ case 'P13':return `<div class="state">${variant('normal','正常核对')}${variant('difference','差异样例')}${variant('failure','读取失败样例')}</div><section class="card"><h3>只读对账结果</h3>${state==='failure'?'<div class="error" role="status">核对失败：读取未完成，不能判定是否存在差异。</div>':state==='difference'?table(['对象','核对项','期望','实际'],[['演示用户A','余额=流水合计','50','49']]):'<p>固定样例：账户、流水、行程与订单在同一一致性快照下无差异。</p>'}<p class="muted">实际核对时间由服务器返回。差异样例仅用于隔离测试库；不提供自动修复。</p></section>`;
+ }
+}
+function show(id,state='normal',focus=false){
+ const m=meta.find(x=>x[0]===id);if(!m)return;current=id;
+ document.querySelectorAll('nav button').forEach(b=>b.setAttribute('aria-current',b.dataset.go===id?'page':'false'));
+ document.getElementById('main').innerHTML=`<span class="badge">${m[2]} · 固定样例</span><h2>${m[0]} ${m[1]}</h2><p class="meta">${m[3]}</p>${content(id,state)}<footer>本页供交互评审；详细校验、权限和数据规则以页面规格及实验一需求为准。P1页面另排；这不是实际部署或测试证据。</footer>`;
+ if(focus)document.getElementById('main').focus();
+}
+document.getElementById('nav').innerHTML=meta.map(m=>go(m[0],m[0]+' '+m[1])).join('');
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.go)show(b.dataset.go,'normal',true);if(b.dataset.variant)show(current,b.dataset.variant,true)});
+show('P01');
+</script>
+</body>
+</html>

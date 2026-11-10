@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>咖啡兑换券 · 绿行积分</title>
+<link rel="stylesheet" href="../assets/web.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand"><span class="mark">🌿</span> 绿行积分</div>
+    <nav class="nav">
+      <a href="index.html">首页</a><a href="trips.html">行程</a>
+      <a href="points.html">积分</a><a class="on" href="mall.html">商城</a><a href="orders.html">订单</a>
+    </nav>
+    <div class="right">
+      <div class="pill">🌿 <span class="num">1,280</span> 分</div>
+      <div class="avatar">生</div>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="filters" style="margin-bottom:16px"><a href="mall.html" style="color:var(--ink-500);font-size:13px">← 返回商城</a></div>
+
+  <div class="grid-main">
+    <section class="card" style="padding:22px">
+      <div style="height:300px;border-radius:var(--r-lg);background:linear-gradient(150deg,#ecfdf5,#d1fae5);display:flex;align-items:center;justify-content:center;font-size:110px">☕</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:22px">
+        <span class="tag tag-green">出行权益</span>
+        <span class="tag tag-gray">可转让</span>
+        <span class="tag tag-amber">每日限兑 2 次</span>
+      </div>
+      <h2 style="font-size:20px;margin-top:12px">咖啡兑换券</h2>
+      <p style="color:var(--ink-500);font-size:14px;margin:8px 0 0;line-height:1.8">
+        合作门店中杯美式一杯，兑换后 30 天内有效。凭订单号到店出示即可核销，不与其他优惠叠加使用。
+      </p>
+
+      <div class="card-head" style="margin:26px 0 10px"><h2>兑换须知</h2></div>
+      <ul style="margin:0;padding-left:18px;color:var(--ink-700);font-size:13.5px;line-height:2">
+        <li>兑换成功后积分立即扣减，兑换券在「我的订单」中查看</li>
+        <li>库存不足或积分不足时无法兑换，页面会给出明确原因</li>
+        <li>订单取消后积分原路冲正，库存同步归还</li>
+        <li>同一请求重复提交只生成一笔订单（幂等保护）</li>
+      </ul>
+    </section>
+
+    <aside class="stack">
+      <section class="card">
+        <div class="card-head"><h2>兑换信息</h2></div>
+        <div class="confirm-row"><span>所需积分</span><b class="num" style="color:var(--green-600);font-size:18px">300 分</b></div>
+        <div class="confirm-row"><span>当前库存</span><b class="num">42</b></div>
+        <div class="confirm-row"><span>我的积分</span><b class="num">1,280</b></div>
+        <div class="confirm-row" style="border-bottom:0"><span>兑换后余额</span><b class="num" style="color:var(--green-600)">980 分</b></div>
+        <button class="btn btn-primary btn-block btn-lg" style="margin-top:18px" onclick="openModal('confirm')">立即兑换</button>
+        <div class="hint" style="text-align:center;margin-top:10px">兑换后 30 天内有效，逾期不退</div>
+      </section>
+
+      <section class="card" style="background:#fbfcfe">
+        <div style="font-size:12.5px;color:var(--ink-500);line-height:1.9">
+          <b style="color:var(--ink-700)">为什么不能重复点击？</b><br>
+          提交时前端生成幂等键并禁用按钮，服务端按「用户 + 幂等键」去重，避免弱网下重复扣分。
+        </div>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<div class="mask" id="mask" onclick="closeModal('confirm')"></div>
+<div class="modal" id="confirm">
+  <h3>确认兑换</h3>
+  <p class="m-sub">请确认本次兑换信息，兑换后积分将立即扣减</p>
+  <div class="confirm-row"><span>礼品</span><b>咖啡兑换券</b></div>
+  <div class="confirm-row"><span>数量</span><b>1 份</b></div>
+  <div class="confirm-row"><span>消耗积分</span><b class="num">−300 分</b></div>
+  <div class="confirm-row" style="border-bottom:0"><span>兑换后余额</span><b class="num" style="color:var(--green-600)">980 分</b></div>
+  <div class="modal-foot">
+    <button class="btn btn-secondary" onclick="closeModal('confirm')">再想想</button>
+    <button class="btn btn-primary" id="ok" onclick="doRedeem()">确认兑换</button>
+  </div>
+</div>
+
+<div class="toast"></div>
+<script src="../assets/app.js"></script>
+<script>
+function doRedeem() {
+  const b = document.getElementById('ok');
+  b.disabled = true; b.textContent = '提交中…';
+  setTimeout(() => {
+    closeModal('confirm');
+    toast('兑换成功，已生成订单 O202611100001');
+    b.disabled = false; b.textContent = '确认兑换';
+  }, 700);
+}
+</script>
+</body>
+</html>

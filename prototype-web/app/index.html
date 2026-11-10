@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>首页 · 绿行积分</title>
+<link rel="stylesheet" href="../assets/web.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand"><span class="mark">🌿</span> 绿行积分</div>
+    <nav class="nav">
+      <a class="on" href="index.html">首页</a>
+      <a href="trips.html">行程</a>
+      <a href="points.html">积分</a>
+      <a href="mall.html">商城</a>
+      <a href="orders.html">订单</a>
+    </nav>
+    <div class="right">
+      <div class="pill">🌿 <span class="num" id="navPoints">1,280</span> 分</div>
+      <div class="avatar">生</div>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <section class="hero">
+    <div class="main">
+      <div class="label">我的碳积分</div>
+      <div class="big num" id="points">1,280<small>分</small></div>
+      <div class="sub">本月减碳 3.40 kg · 累计出行 37 次</div>
+    </div>
+    <div class="stats">
+      <div><div class="k">累计获得</div><div class="v num">3,450<small>分</small></div></div>
+      <div><div class="k">累计兑换</div><div class="v num">2,170<small>分</small></div></div>
+      <div><div class="k">累计减排</div><div class="v num">48.6<small>kg</small></div></div>
+    </div>
+  </section>
+
+  <div class="grid-main" style="margin-top:20px">
+    <!-- 左：上报 + 最近行程 -->
+    <div class="stack">
+      <section class="card">
+        <div class="card-head">
+          <h2>上报一段行程</h2>
+          <span class="hint">预估基于当前生效规则，最终以服务端核算为准</span>
+        </div>
+
+        <div class="modes" id="modes">
+          <div class="mode on" data-mode="BUS" data-base="0.200" data-factor="0.050"><span class="ico">🚌</span>公交</div>
+          <div class="mode" data-mode="MET" data-base="0.200" data-factor="0.040"><span class="ico">🚇</span>地铁</div>
+          <div class="mode" data-mode="BIK" data-base="0.200" data-factor="0.000"><span class="ico">🚲</span>骑行</div>
+          <div class="mode" data-mode="WAL" data-base="0.200" data-factor="0.000"><span class="ico">🚶</span>步行</div>
+        </div>
+
+        <div class="row2" style="margin-top:16px">
+          <div class="field" style="margin:0">
+            <label for="km">里程（km）</label>
+            <input class="input num" id="km" type="number" value="10.0" min="0.1" max="200" step="0.1">
+          </div>
+          <div class="field" style="margin:0">
+            <label for="dur">用时（分钟）</label>
+            <input class="input num" id="dur" type="number" value="35" min="1" max="1440">
+          </div>
+        </div>
+
+        <div class="result">
+          <div>预估减排 <strong class="num" id="red">1.50</strong> kgCO₂e</div>
+          <div style="width:1px;height:28px;background:#a7f3d0"></div>
+          <div>预计获得 <strong class="num" id="est">15</strong> 分</div>
+          <div class="spacer"></div>
+          <button class="btn btn-primary" id="submit" onclick="submitTrip()">提交行程</button>
+        </div>
+        <div class="hint" id="formErr" style="color:var(--rose-600)"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>最近行程</h2>
+          <a class="more" href="trips.html">全部记录 →</a>
+        </div>
+        <div class="list" id="recent"></div>
+      </section>
+    </div>
+
+    <!-- 右：概览 -->
+    <aside class="stack">
+      <section class="card">
+        <div class="card-head"><h2>本周概览</h2><span class="hint">11-04 ~ 11-10</span></div>
+        <div class="calc" style="grid-template-columns:1fr 1fr">
+          <div><div class="k">出行次数</div><div class="v num">18</div></div>
+          <div><div class="k">累计减排</div><div class="v num">12.4<small style="font-size:12px;color:var(--ink-400)"> kg</small></div></div>
+        </div>
+        <div class="bars" style="margin-top:18px">
+          <div class="bar"><span>公交</span><span class="track"><i style="width:82%"></i></span><b>8 次</b></div>
+          <div class="bar"><span>地铁</span><span class="track"><i style="width:56%"></i></span><b>5 次</b></div>
+          <div class="bar"><span>骑行</span><span class="track"><i style="width:33%"></i></span><b>3 次</b></div>
+          <div class="bar"><span>步行</span><span class="track"><i style="width:22%"></i></span><b>2 次</b></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>当前生效规则</h2><span class="tag tag-green">R-2026-11</span></div>
+        <table class="table" style="margin:-4px -8px">
+          <tbody>
+            <tr><td style="padding:10px 8px">公交</td><td class="r num" style="padding:10px 8px">0.200 − 0.050</td></tr>
+            <tr><td style="padding:10px 8px">地铁</td><td class="r num" style="padding:10px 8px">0.200 − 0.040</td></tr>
+            <tr><td style="padding:10px 8px">骑行</td><td class="r num" style="padding:10px 8px">0.200 − 0.000</td></tr>
+            <tr><td style="padding:10px 8px">步行</td><td class="r num" style="padding:10px 8px">0.200 − 0.000</td></tr>
+          </tbody>
+        </table>
+        <div class="hint" style="margin-top:8px">积分 = floor(减排量 × 10 分/kg)</div>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<div class="toast"></div>
+<script src="../assets/app.js"></script>
+<script>
+let mode = { base: 0.2, factor: 0.05 };
+
+document.querySelectorAll('#modes .mode').forEach(m => m.addEventListener('click', () => {
+  document.querySelectorAll('#modes .mode').forEach(x => x.classList.remove('on'));
+  m.classList.add('on');
+  mode = { base: parseFloat(m.dataset.base), factor: parseFloat(m.dataset.factor) };
+  calc();
+}));
+
+function calc() {
+  const km = parseFloat(document.getElementById('km').value) || 0;
+  const red = Math.max(0, km * (mode.base - mode.factor));
+  document.getElementById('red').textContent = red.toFixed(2);
+  document.getElementById('est').textContent = Math.floor(red * 10);
+}
+document.getElementById('km').addEventListener('input', calc);
+
+function submitTrip() {
+  const km = parseFloat(document.getElementById('km').value) || 0;
+  const dur = parseInt(document.getElementById('dur').value) || 0;
+  const err = document.getElementById('formErr');
+  const btn = document.getElementById('submit');
+  err.textContent = '';
+  if (km <= 0 || km > 200) { err.textContent = '里程需在 0.1–200 km 之间'; return; }
+  if (dur <= 0) { err.textContent = '用时需大于 0 分钟'; return; }
+
+  btn.disabled = true; btn.textContent = '提交中…';
+  setTimeout(() => {
+    btn.disabled = false; btn.textContent = '提交行程';
+    const red = Math.max(0, km * (mode.base - mode.factor));
+    const pts = Math.floor(red * 10);
+    toast(`上报成功：减排 ${red.toFixed(2)} kg，+${pts} 分`);
+    const p = document.getElementById('points');
+    const cur = parseInt(p.textContent.replace(/[^0-9]/g, '')) + pts;
+    p.innerHTML = cur.toLocaleString('zh-CN') + '<small>分</small>';
+    document.getElementById('navPoints').textContent = cur.toLocaleString('zh-CN');
+  }, 600);
+}
+
+// 最近行程
+document.getElementById('recent').innerHTML = MOCK.trips.slice(0, 4).map(t => `
+  <div class="li">
+    <div class="thumb">${t.icon}</div>
+    <div class="body">
+      <div class="t">${t.modeName} · ${t.km.toFixed(1)} km</div>
+      <div class="m">${t.date} · 减排 ${kg(t.red)} kgCO₂e · 单号 ${t.id}</div>
+    </div>
+    <div class="amt num">+${t.pts}</div>
+  </div>`).join('');
+
+calc();
+</script>
+</body>
+</html>
