@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>用户管理 · 绿行积分管理端</title>
+<link rel="stylesheet" href="../assets/web.css">
+</head>
+<body>
+<div class="admin">
+  <aside class="sidebar">
+    <div class="brand"><span class="mark">🌿</span> 绿行积分 · 运营端</div>
+    <nav>
+      <a href="dashboard.html">📊 运营概览</a>
+      <a href="rules.html">⚙️ 碳核算规则</a>
+      <a href="products.html">🎁 礼品与库存</a>
+      <a href="orders.html">📦 订单处理</a>
+      <a class="on" href="users.html">👥 用户管理</a>
+    </nav>
+    <div class="foot"><div class="avatar" style="width:28px;height:28px;font-size:11px">管</div> 管理员 admin</div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-top">
+      <div>
+        <div class="crumb">管理端 / <b>用户管理</b></div>
+        <h1>用户管理</h1>
+        <p>停用后用户无法登录，历史行程与积分记录保留；重新启用不恢复已过期的兑换券</p>
+      </div>
+      <input class="input" placeholder="搜索用户名 / 昵称" style="width:240px;height:36px">
+    </div>
+
+    <section class="card tight">
+      <table class="table">
+        <thead><tr><th style="width:80px">头像</th><th>用户名</th><th>昵称</th><th>角色</th><th class="r">积分余额</th><th class="r">行程数</th><th style="width:110px">状态</th><th style="width:140px">操作</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </section>
+  </main>
+</div>
+
+<div class="toast"></div>
+<script src="../assets/app.js"></script>
+<script>
+const users = [
+  { name: 'shengyang', nick: '张生阳', role: '普通用户', pts: 1280, trips: 37, on: true },
+  { name: 'weijiaxin', nick: '魏嘉鑫', role: '普通用户', pts: 860, trips: 22, on: true },
+  { name: 'guojw', nick: '郭浚文', role: '普通用户', pts: 420, trips: 11, on: true },
+  { name: 'lijinping', nick: '李金平', role: '普通用户', pts: 150, trips: 5, on: false },
+  { name: 'admin', nick: '运营管理员', role: '管理员', pts: 0, trips: 0, on: true }
+];
+document.getElementById('rows').innerHTML = users.map(u => `
+  <tr>
+    <td><div class="avatar" style="width:30px;height:30px;font-size:12px">${u.nick[0]}</div></td>
+    <td class="mono">${u.name}</td>
+    <td class="t-strong">${u.nick}</td>
+    <td>${u.role === '管理员' ? '<span class="tag tag-green">管理员</span>' : '普通用户'}</td>
+    <td class="r num">${fmt(u.pts)}</td>
+    <td class="r num">${u.trips}</td>
+    <td>${u.on ? '<span class="tag tag-green">正常</span>' : '<span class="tag tag-rose">已停用</span>'}</td>
+    <td><button class="btn btn-ghost btn-sm" onclick="toast('原型演示：${u.on ? '停用' : '启用'} ${u.nick}')">${u.on ? '停用' : '启用'}</button></td>
+  </tr>`).join('');
+</script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>碳核算规则 · 绿行积分管理端</title>
+<link rel="stylesheet" href="../assets/web.css">
+</head>
+<body>
+<div class="admin">
+  <aside class="sidebar">
+    <div class="brand"><span class="mark">🌿</span> 绿行积分 · 运营端</div>
+    <nav>
+      <a href="dashboard.html">📊 运营概览</a>
+      <a class="on" href="rules.html">⚙️ 碳核算规则</a>
+      <a href="products.html">🎁 礼品与库存</a>
+      <a href="orders.html">📦 订单处理</a>
+      <a href="users.html">👥 用户管理</a>
+    </nav>
+    <div class="foot"><div class="avatar" style="width:28px;height:28px;font-size:11px">管</div> 管理员 admin</div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-top">
+      <div>
+        <div class="crumb">管理端 / <b>碳核算规则</b></div>
+        <h1>碳核算规则</h1>
+        <p>减排量 = 里程 ×（基准因子 − 方式因子）；积分 = floor(减排量 × 积分比例)。规则按版本冻结，历史行程复用当时版本。</p>
+      </div>
+      <button class="btn btn-primary" onclick="openModal('rule')">＋ 新建规则</button>
+    </div>
+
+    <div class="notice">
+      <b>变更须知：</b>新建规则只对生效时间之后的行程生效，不会重算历史行程；同一出行方式同一日只允许一条生效规则。
+    </div>
+
+    <section class="card tight">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 6px">
+        <h2 style="font-size:15px">规则版本</h2>
+        <span class="hint">共 5 条 · 生效中 4 条</span>
+      </div>
+      <table class="table">
+        <thead><tr><th>版本</th><th>出行方式</th><th class="r">基准因子</th><th class="r">方式因子</th><th class="r">积分比例</th><th>生效区间</th><th style="width:100px">状态</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </section>
+
+    <div class="grid-2" style="margin-top:18px">
+      <section class="card">
+        <div class="card-head"><h2>试算器</h2><span class="hint">用于校验新规则是否符合预期</span></div>
+        <div class="row2">
+          <div class="field"><label>出行方式</label><select class="select" id="tMode"><option value="0.200,0.050">公交</option><option value="0.200,0.040">地铁</option><option value="0.200,0.000">骑行</option><option value="0.200,0.000">步行</option></select></div>
+          <div class="field"><label>里程（km）</label><input class="input num" id="tKm" type="number" value="10"></div>
+        </div>
+        <div class="calc">
+          <div><div class="k">减排量</div><div class="v num" id="tRed">1.50 kg</div></div>
+          <div><div class="k">积分</div><div class="v num" id="tPts" style="color:var(--green-600)">15 分</div></div>
+          <div><div class="k">计算口径</div><div style="font-size:12px;color:var(--ink-500);margin-top:6px;line-height:1.6">四舍五入到 0.01 kg<br>积分向下取整</div></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>因子说明</h2></div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;color:var(--ink-700);line-height:2">
+          <li><b>基准因子</b>：燃油小汽车每公里排放，取 0.200 kgCO₂e/km</li>
+          <li><b>方式因子</b>：该出行方式自身排放，公交 0.05、地铁 0.04、骑行/步行 0</li>
+          <li><b>积分比例</b>：每 kg 减排折算积分，当前统一 10 分/kg</li>
+          <li>因子变更须在需求文档中留痕，并与核算口径一起评审</li>
+        </ul>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="mask" id="mask" onclick="closeModal('rule')"></div>
+<div class="modal" id="rule" style="width:640px">
+  <h3>新建规则版本</h3>
+  <p class="m-sub">提交后立即生效于生效时间之后的行程，旧版本自动归档</p>
+  <div class="row2">
+    <div class="field"><label>出行方式</label><select class="select"><option>公交</option><option>地铁</option><option>骑行</option><option>步行</option></select></div>
+    <div class="field"><label>生效时间</label><input class="input" type="datetime-local" value="2026-11-11T00:00"></div>
+  </div>
+  <div class="row2">
+    <div class="field"><label>基准因子</label><input class="input num" value="0.200"></div>
+    <div class="field"><label>方式因子</label><input class="input num" value="0.050"></div>
+  </div>
+  <div class="row2">
+    <div class="field"><label>积分比例（分/kg）</label><input class="input num" value="10"></div>
+    <div class="field"><label>版本号</label><input class="input mono" value="R-2026-11-BUS-v2" disabled></div>
+  </div>
+  <div class="field"><label>变更原因 <span style="color:var(--rose-600)">*</span></label><input class="input" placeholder="例：根据 2026 年排放因子更新公告调整"></div>
+  <div class="modal-foot">
+    <button class="btn btn-secondary" onclick="closeModal('rule')">取消</button>
+    <button class="btn btn-primary" onclick="saveRule()">保存并生效</button>
+  </div>
+</div>
+
+<div class="toast"></div>
+<script src="../assets/app.js"></script>
+<script>
+document.getElementById('rows').innerHTML = MOCK.rules.map(r => `
+  <tr>
+    <td class="mono">${r.v}</td><td>${r.mode}</td>
+    <td class="r num">${r.base.toFixed(3)}</td><td class="r num">${r.factor.toFixed(3)}</td>
+    <td class="r num">${r.ratio} 分/kg</td>
+    <td class="num" style="color:var(--ink-500)">${r.from}${r.to ? ' ~ ' + r.to : ' 起'}</td>
+    <td>${r.state === '生效中' ? '<span class="tag tag-green">生效中</span>' : '<span class="tag tag-gray">已归档</span>'}</td>
+  </tr>`).join('');
+
+function calcTrial() {
+  const [base, factor] = document.getElementById('tMode').value.split(',').map(Number);
+  const km = parseFloat(document.getElementById('tKm').value) || 0;
+  const red = Math.max(0, km * (base - factor));
+  document.getElementById('tRed').textContent = red.toFixed(2) + ' kg';
+  document.getElementById('tPts').textContent = Math.floor(red * 10) + ' 分';
+}
+document.getElementById('tMode').addEventListener('change', calcTrial);
+document.getElementById('tKm').addEventListener('input', calcTrial);
+calcTrial();
+
+function saveRule() { closeModal('rule'); toast('新规则已保存，将于 2026-11-11 00:00 生效'); }
+</script>
+</body>
+</html>

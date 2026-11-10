@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>运营概览 · 绿行积分管理端</title>
+<link rel="stylesheet" href="../assets/web.css">
+</head>
+<body>
+<div class="admin">
+  <aside class="sidebar">
+    <div class="brand"><span class="mark">🌿</span> 绿行积分 · 运营端</div>
+    <nav>
+      <a class="on" href="dashboard.html">📊 运营概览</a>
+      <a href="rules.html">⚙️ 碳核算规则</a>
+      <a href="products.html">🎁 礼品与库存</a>
+      <a href="orders.html">📦 订单处理</a>
+      <a href="users.html">👥 用户管理</a>
+    </nav>
+    <div class="foot"><div class="avatar" style="width:28px;height:28px;font-size:11px">管</div> 管理员 admin</div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-top">
+      <div>
+        <div class="crumb">管理端 / <b>运营概览</b></div>
+        <h1>运营概览</h1>
+        <p>数据截至 2026-11-10 09:40 · 每 5 分钟刷新 · 时区 Asia/Shanghai</p>
+      </div>
+      <div style="display:flex;gap:10px">
+        <select class="select" style="width:120px;height:36px"><option>近 7 天</option><option>近 30 天</option></select>
+        <a class="btn btn-secondary" href="../app/index.html">返回用户端</a>
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat"><div class="k">今日行程</div><div class="v num">142</div><div class="d up">↑ 12.4% 环比</div></div>
+      <div class="stat"><div class="k">今日发放积分</div><div class="v num">1,860</div><div class="d up">↑ 8.1% 环比</div></div>
+      <div class="stat"><div class="k">今日减排量</div><div class="v num">213.6 <small>kg</small></div><div class="d up">↑ 9.7% 环比</div></div>
+      <div class="stat"><div class="k">待处理订单</div><div class="v num" style="color:var(--amber-600)">2</div><div class="d">需人工履约</div></div>
+    </div>
+
+    <div class="grid-2">
+      <section class="card">
+        <div class="card-head"><h2>近 7 天行程量</h2><span class="hint">单位：次</span></div>
+        <div class="chart" id="chart"></div>
+      </section>
+      <section class="card">
+        <div class="card-head"><h2>出行方式分布</h2><span class="hint">按行程数</span></div>
+        <div class="bars" style="padding-top:14px">
+          <div class="bar"><span>公交</span><span class="track"><i style="width:92%"></i></span><b>412</b></div>
+          <div class="bar"><span>地铁</span><span class="track"><i style="width:68%"></i></span><b>308</b></div>
+          <div class="bar"><span>骑行</span><span class="track"><i style="width:43%"></i></span><b>196</b></div>
+          <div class="bar"><span>步行</span><span class="track"><i style="width:23%"></i></span><b>104</b></div>
+        </div>
+        <div style="margin-top:26px;padding-top:16px;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div><div class="hint">活跃用户</div><div class="num" style="font-size:19px;font-weight:700">86</div></div>
+          <div><div class="hint">人均减排</div><div class="num" style="font-size:19px;font-weight:700">2.48 kg</div></div>
+          <div><div class="hint">兑换转化</div><div class="num" style="font-size:19px;font-weight:700">31%</div></div>
+        </div>
+      </section>
+    </div>
+
+    <section class="card tight">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 6px">
+        <h2 style="font-size:15px">最近订单</h2>
+        <a class="more" href="orders.html" style="font-size:13px;color:var(--green-600)">全部订单 →</a>
+      </div>
+      <table class="table">
+        <thead><tr><th>订单号</th><th>用户</th><th>礼品</th><th class="r">积分</th><th>状态</th><th>时间</th></tr></thead>
+        <tbody id="recentOrders"></tbody>
+      </table>
+    </section>
+  </main>
+</div>
+
+<div class="toast"></div>
+<script src="../assets/app.js"></script>
+<script>
+const days = [['11-04',96],['11-05',108],['11-06',88],['11-07',121],['11-08',134],['11-09',127],['11-10',142]];
+const max = Math.max(...days.map(d => d[1]));
+document.getElementById('chart').innerHTML = days.map(([d, v]) => `
+  <div class="col"><i style="height:${(v / max * 100).toFixed(0)}%"><span>${v}</span></i><b>${d}</b></div>`).join('');
+
+document.getElementById('recentOrders').innerHTML = MOCK.orders.map(o => `
+  <tr>
+    <td class="mono">${o.id}</td><td class="t-strong">${o.user}</td>
+    <td>${o.icon} ${o.goods}</td><td class="r num">${o.pts}</td>
+    <td>${stateTag(o.status)}</td><td class="num" style="color:var(--ink-500)">${o.time}</td>
+  </tr>`).join('');
+</script>
+</body>
+</html>

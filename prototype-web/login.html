@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>登录 · 绿行积分</title>
+<link rel="stylesheet" href="assets/web.css">
+</head>
+<body>
+<div class="auth">
+  <div class="auth-left">
+    <div class="brand" style="color:#fff">
+      <span class="mark">🌿</span> 绿行积分
+    </div>
+    <h1>每一次绿色出行<br>都算「树」</h1>
+    <p>记录公交、地铁、骑行与步行，自动核算碳减排量并兑换成积分。积分可换礼品、可公益捐赠，账目逐笔可查。</p>
+    <div class="auth-feats">
+      <div><strong>17</strong>个核心用例</div>
+      <div><strong>8</strong>条业务规则</div>
+      <div><strong>0</strong>重复计分</div>
+    </div>
+  </div>
+
+  <div class="auth-right">
+    <div class="auth-card">
+      <h2>欢迎回来</h2>
+      <p class="lead">使用你的绿行积分账号登录</p>
+
+      <div class="field">
+        <label for="u">用户名</label>
+        <input class="input" id="u" value="shengyang" autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="p">密码</label>
+        <input class="input" id="p" type="password" value="123456" autocomplete="current-password">
+        <div class="hint">密码只用于登录，系统仅保存加盐哈希</div>
+      </div>
+
+      <div class="auth-row">
+        <span style="color:var(--ink-500)">停用账号无法登录</span>
+        <a href="register.html">注册新账号</a>
+      </div>
+
+      <button class="btn btn-primary btn-block btn-lg" onclick="doLogin()">登录</button>
+
+      <div class="demo">
+        <strong>演示账号</strong><br>
+        普通用户 shengyang / 123456<br>
+        运营管理员 admin / 123456
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast"></div>
+<script src="assets/app.js"></script>
+<script>
+function doLogin() {
+  const u = document.getElementById('u').value.trim();
+  const btn = document.querySelector('.btn-primary');
+  btn.disabled = true; btn.textContent = '登录中…';
+  setTimeout(() => {
+    if (!u) { toast('请输入用户名'); btn.disabled = false; btn.textContent = '登录'; return; }
+    location.href = u === 'admin' ? 'admin/dashboard.html' : 'app/index.html';
+  }, 500);
+}
+</script>
+</body>
+</html>
