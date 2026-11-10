@@ -1,0 +1,64 @@
+/* =========================================================
+   设计 token —— 与 docs/ui/02-design-system.md 一一对应
+   改视觉先改这里，不要散落在组件里写死颜色
+   ========================================================= */
+:root {
+  /* 品牌色：绿色是语义，不是装饰 */
+  --green-50: #ecfdf5;
+  --green-100: #d1fae5;
+  --green-500: #10b981;
+  --green-600: #059669;
+  --green-700: #047857;
+
+  /* 语义色 */
+  --amber-50: #fffbeb;
+  --amber-600: #b45309;
+  --rose-50: #fff1f2;
+  --rose-500: #f43f5e;
+  --rose-600: #be123c;
+  --rose-700: #9f1239;
+  --warn-bg: #fffbeb;
+  --warn-fg: #b45309;
+
+  /* 中性色 */
+  --ink-900: #0f172a;
+  --ink-700: #334155;
+  --ink-500: #64748b;
+  --ink-400: #94a3b8;
+  --line: #e8eef5;
+  --bg: #f5f7fa;
+  --surface: #ffffff;
+  --disabled: #cbd5e1;
+
+  /* 圆角 */
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+
+  /* 阴影：描边为主，阴影为辅，避免脏 */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 16px 48px rgba(15, 23, 42, 0.16);
+  --focus-ring: 0 0 0 3px rgba(16, 185, 129, 0.14);
+
+  /* 字体 */
+  --font: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono: ui-monospace, Consolas, 'Courier New', monospace;
+
+  /* 间距基数 4px */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+
+  /* 布局 */
+  --content-w: 1180px;
+  --gutter: 24px;
+  --sidebar-w: 232px;
+  --topbar-h: 64px;
+}
