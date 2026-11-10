@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>积分明细 · 绿行积分</title>
+<link rel="stylesheet" href="../assets/web.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand"><span class="mark">🌿</span> 绿行积分</div>
+    <nav class="nav">
+      <a href="index.html">首页</a><a href="trips.html">行程</a>
+      <a class="on" href="points.html">积分</a><a href="mall.html">商城</a><a href="orders.html">订单</a>
+    </nav>
+    <div class="right">
+      <div class="pill">🌿 <span class="num">1,280</span> 分</div>
+      <div class="avatar">生</div>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="page-head">
+    <div>
+      <h1>积分明细</h1>
+      <p>余额 = 全部流水之和，逐笔可核对；如与预期不符，请携带单号联系运营管理员</p>
+    </div>
+    <a class="btn btn-secondary" href="mall.html">去兑换 →</a>
+  </div>
+
+  <section class="hero" style="padding:22px 26px">
+    <div class="main">
+      <div class="label">当前可用积分</div>
+      <div class="big num">1,280<small>分</small></div>
+    </div>
+    <div class="stats">
+      <div><div class="k">累计获得</div><div class="v num">3,450</div></div>
+      <div><div class="k">累计兑换</div><div class="v num">2,170</div></div>
+      <div><div class="k">待入账</div><div class="v num">0</div></div>
+    </div>
+  </section>
+
+  <div class="card tight" style="margin-top:20px;padding:18px 20px 0">
+    <div class="filters">
+      <div class="segs" id="kindSeg">
+        <button class="on" data-value="ALL">全部</button>
+        <button data-value="in">获得</button>
+        <button data-value="out">兑换</button>
+        <button data-value="back">冲正</button>
+      </div>
+      <input class="input" type="date" value="2026-11-01" style="width:150px">
+      <span style="color:var(--ink-400)">—</span>
+      <input class="input" type="date" value="2026-11-30" style="width:150px">
+      <div class="spacer"></div>
+      <span class="hint">共 5 条</span>
+    </div>
+  </div>
+
+  <div class="card tight" style="margin-top:16px">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>类型</th><th>说明</th><th style="width:150px">时间</th>
+          <th class="r" style="width:110px">变动</th><th class="r" style="width:130px">变动后余额</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <p class="hint" style="margin:16px 2px">
+    冲正条目说明：订单取消或核算异常时，系统按原路返还积分，并在流水里留下可追溯记录（BR-06）。
+  </p>
+</main>
+
+<div class="toast"></div>
+<script src="../assets/app.js"></script>
+<script>
+function render(kind) {
+  const rows = MOCK.ledger.filter(l => kind === 'ALL' || l.kind === kind);
+  document.getElementById('rows').innerHTML = rows.map(l => `
+    <tr>
+      <td style="font-size:16px">${l.icon}</td>
+      <td class="t-strong">${l.type}</td>
+      <td class="num" style="color:var(--ink-500)">${l.time}</td>
+      <td class="r num" style="font-weight:600;color:${l.delta > 0 ? 'var(--green-600)' : 'var(--ink-700)'}">${l.delta > 0 ? '+' : ''}${l.delta}</td>
+      <td class="r num">${fmt(l.balance)}</td>
+    </tr>`).join('') || '<tr><td colspan="5" class="empty"><span class="ico">📭</span>该时间范围内没有流水</td></tr>';
+}
+bindSeg('#kindSeg', render);
+render('ALL');
+</script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>礼品与库存 · 绿行积分管理端</title>
+<link rel="stylesheet" href="../assets/web.css">
+</head>
+<body>
+<div class="admin">
+  <aside class="sidebar">
+    <div class="brand"><span class="mark">🌿</span> 绿行积分 · 运营端</div>
+    <nav>
+      <a href="dashboard.html">📊 运营概览</a>
+      <a href="rules.html">⚙️ 碳核算规则</a>
+      <a class="on" href="products.html">🎁 礼品与库存</a>
+      <a href="orders.html">📦 订单处理</a>
+      <a href="users.html">👥 用户管理</a>
+    </nav>
+    <div class="foot"><div class="avatar" style="width:28px;height:28px;font-size:11px">管</div> 管理员 admin</div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-top">
+      <div>
+        <div class="crumb">管理端 / <b>礼品与库存</b></div>
+        <h1>礼品与库存</h1>
+        <p>下架后用户端不可见；库存为 0 的礼品仍保留展示，但显示「暂时缺货」</p>
+      </div>
+      <button class="btn btn-primary" onclick="toast('原型演示：打开新建礼品表单')">＋ 新建礼品</button>
+    </div>
+
+    <div class="notice">库存告警：<b>共享单车月卡</b> 已兑完，<b>环保帆布袋</b> 仅剩 8 份，建议补货或下架。</div>
+
+    <div class="filters">
+      <div class="segs" id="seg">
+        <button class="on" data-value="ALL">全部</button>
+        <button data-value="ON">已上架</button>
+        <button data-value="OFF">已下架</button>
+        <button data-value="LOW">库存告警</button>
+      </div>
+      <div class="spacer"></div>
+      <span class="hint">共 8 件礼品</span>
+    </div>
+
+    <section class="card tight">
+      <table class="table">
+        <thead><tr><th style="width:70px">图标</th><th>礼品名称</th><th class="r" style="width:110px">所需积分</th><th class="r" style="width:100px">库存</th><th class="r" style="width:110px">已兑换</th><th style="width:110px">状态</th><th style="width:160px">操作</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </section>
+  </main>
+</div>
+
+<div class="toast"></div>
+<script src="../assets/app.js"></script>
+<script>
+const soldOut = { G06: 120 };
+function render(f) {
+  let rows = MOCK.goods.map(g => ({ ...g, sold: soldOut[g.id] || Math.floor(300 / g.cost) * 3, on: g.state !== 'off' }));
+  if (f === 'ON') rows = rows.filter(r => r.on);
+  if (f === 'OFF') rows = rows.filter(r => !r.on);
+  if (f === 'LOW') rows = rows.filter(r => r.stock <= 10);
+  document.getElementById('rows').innerHTML = rows.map(g => `
+    <tr>
+      <td style="font-size:20px">${g.icon}</td>
+      <td class="t-strong">${g.name}</td>
+      <td class="r num">${fmt(g.cost)}</td>
+      <td class="r num" style="color:${g.stock === 0 ? 'var(--rose-600)' : g.stock <= 10 ? 'var(--amber-600)' : 'var(--ink-700)'};font-weight:600">${g.stock}</td>
+      <td class="r num">${g.sold}</td>
+      <td>${g.on ? '<span class="tag tag-green">已上架</span>' : '<span class="tag tag-gray">已下架</span>'}</td>
+      <td>
+        <button class="btn btn-secondary btn-sm" onclick="toast('原型演示：编辑「${g.name}」')">编辑</button>
+        <button class="btn btn-ghost btn-sm" onclick="toast('原型演示：${g.on ? '下架' : '上架'}「${g.name}」')">${g.on ? '下架' : '上架'}</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="7" class="empty"><span class="ico">📦</span>没有符合条件的礼品</td></tr>';
+}
+bindSeg('#seg', render);
+render('ALL');
+</script>
+</body>
+</html>
