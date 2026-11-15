@@ -46,3 +46,17 @@
 
 - 接口清单与字段：`frontend/docs/api-contract.md`（22 个接口）、`frontend/docs/openapi.yaml`（可导入 Apifox/Swagger）。
 - 自动化回归：`frontend/e2e.mjs` 共 36 条断言，含履约、下架、改库存 11 条；`npm run e2e <端口>` 可复跑。
+
+## 六、2026-11-15 组长确认的三条口径
+
+| 事项 | 结论 | 影响 |
+| --- | --- | --- |
+| 商品写接口形状 | **采用单个 `PATCH /admin/products/{productId}`**，不拆 `/status`、`/stock` 两个动作接口 | 前端无需改动；新增商品等 v1.1 再加 `POST /admin/products` |
+| `TripStatus` 取值 | **保留 `PENDING` / `POINTED` / `FAILED` 三态** | 前端已有三态渲染；`FAILED` 是"为什么没加分"的唯一解释位 |
+| 商品 `icon` 字段 | 类型定为 `varchar(255)` 字符串，**值先用 emoji** | 将来换 CDN 图片 URL 不用改表、不用改前端；禁止用 enum 或 `char(2)` |
+
+补充说明：
+
+- `PENDING` 若后端为同步核算，接口可以不返回该状态，但枚举保留，避免以后改异步时动契约。
+- `POST /trips` 的 `tripId` 由服务端生成，`clientTripId` 只作幂等键；列表接口每条必须带 `tripId`（列表跳详情的唯一依赖）。
+

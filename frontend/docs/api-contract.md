@@ -440,6 +440,11 @@ GET /admin/reconciliation
 
 ### 3.16 商品维护（改价 / 改库存 / 上下架）
 
+> **口径确认（2026-11-15，组长高泽）**：商品维护只提供下面这一个 PATCH 接口，
+> **不拆** `POST /{id}/status`、`POST /{id}/stock`。理由是同一资源的字段部分更新，
+> 拆成多个动作接口会让"改价 + 改库存"无法放进同一个事务。
+> 新增商品（`POST /admin/products`）与改名称/图文排在 v1.1。
+
 ```
 PATCH /admin/products/{productId}
 Authorization: Bearer <admin token>
