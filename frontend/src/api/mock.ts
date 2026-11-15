@@ -643,13 +643,13 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
     const body = (req.body ?? {}) as { points?: number; stock?: number; status?: 'ON' | 'OFF' }
     if (body.points !== undefined) {
       if (!Number.isInteger(body.points) || body.points < 1) {
-        throw new ApiError('积分单价必须是大于 0 的整数', 40010, 400)
+        throw new ApiError('积分单价必须是大于 0 的整数', 40041, 400)
       }
       p.points = body.points
     }
     if (body.stock !== undefined) {
       if (!Number.isInteger(body.stock) || body.stock < 0) {
-        throw new ApiError('库存必须是不小于 0 的整数', 40011, 400)
+        throw new ApiError('库存必须是不小于 0 的整数', 40042, 400)
       }
       p.stock = body.stock
     }
