@@ -36,7 +36,17 @@ onBeforeUnmount(() => {
 <template>
   <Teleport to="body">
     <div class="mask" :class="{ on: modelValue }" @click="close"></div>
-    <aside class="drawer" :class="{ on: modelValue }" role="dialog" aria-modal="true" :aria-label="title">
+    <!-- 关闭时用 inert 把整块移出可交互/可聚焦范围：
+         只改 class 的话，隐藏的按钮仍然能被 Tab 聚焦、被脚本点到 -->
+    <aside
+      class="drawer"
+      :class="{ on: modelValue }"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="title"
+      :aria-hidden="!modelValue || undefined"
+      :inert="!modelValue || undefined"
+    >
       <header class="drawer-head">
         <h3>{{ title }}</h3>
         <button type="button" class="close" aria-label="关闭" @click="close">×</button>

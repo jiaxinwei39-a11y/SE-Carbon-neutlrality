@@ -216,6 +216,63 @@ await ev(`location.hash = '#/app/points'`)
 await wait(1300)
 check('过期后不能再进业务页', (await ev('location.hash')).startsWith('#/login'), await ev('location.hash'))
 
+console.log('\n=== 9. 管理端写操作（履约 / 商品维护） ===')
+await login('admin')
+check('管理员登录进入概览', (await ev('location.hash')) === '#/admin/dashboard', await ev('location.hash'))
+
+// 9.1 订单履约：待发放 → 已完成
+await ev(`location.hash = '#/admin/orders'`)
+await wait(1800)
+await ev(PAGE_HELPERS)
+const adminRows = await ev('__t.rows()')
+check('管理端有「待履约」订单', adminRows.some((r) => r.includes('待发放')), adminRows[0] || '')
+await ev(`(() => {
+  const tr = [...document.querySelectorAll('tbody tr')].find((t) => t.innerText.includes('待发放'));
+  tr?.click();
+})()`)
+await wait(1200)
+await ev(PAGE_HELPERS)
+check('抽屉里出现「确认发放」', (await ev(`[...document.querySelectorAll('.drawer.on button')].some(b => b.textContent.trim() === '确认发放')`)) === true)
+await ev(`__t.click('确认发放', '.drawer.on')`)
+await wait(600)
+await ev(PAGE_HELPERS)
+check('发放前有二次确认', (await ev(`!!document.querySelector('.modal.on')`)) === true)
+await ev(`__t.click('确认发放', '.modal.on')`)
+await wait(2400)
+await ev(PAGE_HELPERS)
+const fulfillToast = await ev('__t.toast()')
+check('发放成功有提示', /已发放/.test(fulfillToast), fulfillToast)
+const rowsAfterFulfill = await ev('__t.rows()')
+check('发放后不再是待发放', rowsAfterFulfill.filter((r) => r.includes('待发放')).length < adminRows.filter((r) => r.includes('待发放')).length)
+
+// 9.2 商品维护：下架 + 改库存
+await ev(`location.hash = '#/admin/products'`)
+await wait(1800)
+await ev(PAGE_HELPERS)
+check(
+  '商品表出现编辑/下架按钮',
+  (await ev(`[...document.querySelectorAll('tbody button')].filter((b) => b.textContent.trim() === '编辑').length`)) > 0,
+)
+await ev(`(() => {
+  const tr = document.querySelector('tbody tr');
+  [...tr.querySelectorAll('button')].find((b) => b.textContent.trim() === '下架')?.click();
+})()`)
+await wait(2200)
+await ev(PAGE_HELPERS)
+check('下架后该行显示已下架', (await ev('__t.rows()')).some((r) => r.includes('已下架')))
+check('下架成功有提示', /已下架/.test(await ev('__t.toast()')), await ev('__t.toast()'))
+
+await ev(`__t.click('编辑')`)
+await wait(700)
+await ev(PAGE_HELPERS)
+check('编辑弹窗打开', (await ev(`!!document.querySelector('.modal.on')`)) === true)
+await ev(`__t.fill('#stock', '99')`)
+await wait(300)
+await ev(`__t.click('保存')`)
+await wait(2400)
+await ev(PAGE_HELPERS)
+check('改库存后表格显示 99', (await ev('__t.rows()')).some((r) => / 99 /.test(' ' + r + ' ')))
+
 console.log('\n=== 运行时报错 ===')
 check('全程无未捕获异常', runtimeErrors.length === 0, runtimeErrors.slice(0, 3).join(' | '))
 

@@ -277,6 +277,15 @@ function ok<T>(data: T): ApiResult<T> {
 
 const str = (v: unknown) => (v === undefined || v === null ? '' : String(v))
 
+/**
+ * 管理端写接口的统一鉴权。
+ * 前端路由守卫只是"体验层"，真正拦人的必须在这里（真后端对应 @PreAuthorize("hasRole('ADMIN')")）。
+ * 否则任何知道接口地址的人都能自己发请求改数据。
+ */
+function requireAdmin(): void {
+  if (state.user?.role !== 'ADMIN') throw new ApiError('无权限执行该操作', 40301, 403)
+}
+
 function match(url: string, pattern: string): RegExpMatchArray | null {
   const re = new RegExp('^' + pattern.replace(/:(\w+)/g, '([^/]+)') + '$')
   return url.match(re)
@@ -462,7 +471,8 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
   const prodM = match(url, '/mall/products/:id')
   if (prodM && method === 'GET') {
     const p = state.products.find((x) => x.productId === prodM[1])
-    if (!p) throw new ApiError('商品不存在或已下架', 40402, 404)
+    // 下架商品对用户不可见（管理员在 /admin/products 里仍能看到）
+    if (!p || p.status !== 'ON') throw new ApiError('商品不存在或已下架', 40402, 404)
     return ok(p) as unknown as T
   }
 
@@ -472,7 +482,7 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
     if (!memberKey) throw new ApiError('缺少幂等键，请刷新页面重试', 40002, 400)
     const body = req.body as { productId: string; quantity: number }
     const product = state.products.find((p) => p.productId === body.productId)
-    if (!product) throw new ApiError('商品不存在或已下架', 40402, 404)
+    if (!product || product.status !== 'ON') throw new ApiError('商品不存在或已下架', 40402, 404)
     if (product.stock < body.quantity) throw new ApiError('库存不足，请减少兑换数量', 40901, 409)
     const totalPoints = product.points * body.quantity
     if (state.account.balance < totalPoints) {
@@ -610,6 +620,47 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
           ]
         : []
     return ok({ checkedAt: new Date().toISOString(), items }) as unknown as T
+  }
+
+  /* ---------- 管理端写操作（履约 / 商品维护） ---------- */
+  const fulfillM = match(url, '/admin/orders/:id/fulfill')
+  if (fulfillM && method === 'POST') {
+    requireAdmin()
+    const o = orders.find((x) => x.orderId === fulfillM[1])
+    if (!o) throw new ApiError('订单不存在', 40403, 404)
+    // 状态机门禁：只有「待发放」能履约；重复点不会重复发货
+    if (o.status !== 'CREATED') throw new ApiError('当前订单状态不允许发放，请刷新后重试', 40903, 409)
+    o.status = 'FULFILLED'
+    // 注意：兑换时库存与积分已经扣过，履约只改状态，绝不能再扣一次
+    return ok({ ...o }) as unknown as T
+  }
+
+  const adminProductM = match(url, '/admin/products/:id')
+  if (adminProductM && method === 'PATCH') {
+    requireAdmin()
+    const p = state.products.find((x) => x.productId === adminProductM[1])
+    if (!p) throw new ApiError('商品不存在', 40402, 404)
+    const body = (req.body ?? {}) as { points?: number; stock?: number; status?: 'ON' | 'OFF' }
+    if (body.points !== undefined) {
+      if (!Number.isInteger(body.points) || body.points < 1) {
+        throw new ApiError('积分单价必须是大于 0 的整数', 40010, 400)
+      }
+      p.points = body.points
+    }
+    if (body.stock !== undefined) {
+      if (!Number.isInteger(body.stock) || body.stock < 0) {
+        throw new ApiError('库存必须是不小于 0 的整数', 40011, 400)
+      }
+      p.stock = body.stock
+    }
+    if (body.status !== undefined) {
+      if (body.status !== 'ON' && body.status !== 'OFF') {
+        throw new ApiError('商品状态只能是 ON 或 OFF', 40010, 400)
+      }
+      // 下架后商城列表/详情都查不到（见 /mall/products 的 status 过滤）
+      p.status = body.status
+    }
+    return ok({ ...p }) as unknown as T
   }
 
   throw new ApiError(`mock 未实现的接口：${method} ${url}`, 40400, 404)

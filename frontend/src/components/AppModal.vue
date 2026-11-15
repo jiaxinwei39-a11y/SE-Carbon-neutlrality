@@ -51,6 +51,8 @@ onBeforeUnmount(() => {
       role="dialog"
       aria-modal="true"
       :aria-label="title"
+      :aria-hidden="!modelValue || undefined"
+      :inert="!modelValue || undefined"
     >
       <h3 v-if="title">{{ title }}</h3>
       <p v-if="subtitle" class="m-sub">{{ subtitle }}</p>
