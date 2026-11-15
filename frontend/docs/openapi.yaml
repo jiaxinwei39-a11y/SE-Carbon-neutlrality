@@ -350,15 +350,20 @@ paths:
                       data: { $ref: "#/components/schemas/Order" }
         "404": { $ref: "#/components/responses/NotFound" }
 
-  /orders/{orderId}/cancel:
+  /admin/orders/{orderId}/cancel:
     post:
-      tags: [orders]
-      summary: 取消订单（原额返还积分、原数量返还库存）
+      tags: [admin]
+      summary: 取消订单（仅管理员；原额返还积分、原数量返还库存）
+      description: |
+        用户端不提供取消能力（评审 #23），取消由运营在管理端发起，原因必填。
+        幂等（BR-06）：对已取消的订单再次调用，返回原订单对象，不再返还积分/库存；
+        只有已发放（FULFILLED）的订单取消才返回 409 40903。
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: orderId
           in: path
           required: true
-          schema: { type: string }
+          schema: { type: string, example: O202611020003 }
       requestBody:
         required: true
         content:
@@ -367,10 +372,10 @@ paths:
               type: object
               required: [reason]
               properties:
-                reason: { type: string, maxLength: 100, example: "不想要了" }
+                reason: { type: string, maxLength: 100, example: "库存不足无法发放" }
       responses:
         "200":
-          description: 成功，返回更新后的订单
+          description: 成功，返回更新后的订单（重复取消时返回原订单）
           content:
             application/json:
               schema:
@@ -380,6 +385,7 @@ paths:
                     properties:
                       data: { $ref: "#/components/schemas/Order" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "409": { $ref: "#/components/responses/Conflict" }
 
   /admin/dashboard:

@@ -43,6 +43,28 @@ export const DATA_SOURCE = (import.meta.env.VITE_DATA_SOURCE as string) || 'mock
 /** 演示版用 mock；接后端时把 .env 里的 VITE_DATA_SOURCE 改成 api */
 export const isMock = DATA_SOURCE !== 'api'
 
+/**
+ * 统一处理"登录失效"，并且要挡掉一类真实存在过的误伤：
+ *
+ * 旧会话发出的请求，可能在新会话登录成功之后才迟到返回 401。
+ * 这时如果无条件 clearToken()，就会把**刚登录的新会话踢掉**，用户表现为
+ * "刚登录又被弹回登录页"。
+ *
+ * 判据只有一个：发出请求时用的 token 是否仍然是当前 token。
+ *  - 是   → 本次登录确实失效 → 清 token + 通知跳转
+ *  - 不是 → 迟到的旧会话响应 → 直接忽略
+ *  - 当前为空 → 已经是未登录态，重复事件没有意义
+ */
+function handleUnauthorized(tokenAtSend: string | null): void {
+  const current = getToken()
+  if (!current) return
+  if (current !== tokenAtSend) return
+  clearToken()
+  // 交给 main.ts 里的监听器跳登录（不要在拦截器里直接 router.push，
+  // 否则拦截器和路由互相 import，容易循环依赖）
+  window.dispatchEvent(new CustomEvent('app:unauthorized'))
+}
+
 const http = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   timeout: 15000,
@@ -62,10 +84,12 @@ http.interceptors.response.use(
   (err: AxiosError) => {
     const status = err.response?.status ?? 0
     if (status === 401) {
-      clearToken()
-      // 交给 main.ts 里的监听器跳登录（不要在拦截器里直接 router.push，
-      // 否则拦截器和路由互相 import，容易循环依赖）
-      window.dispatchEvent(new CustomEvent('app:unauthorized'))
+      // 用"这次请求实际带出去的 token"做会话判据，而不是当前 token
+      const sent =
+        String(err.config?.headers?.Authorization ?? '')
+          .replace(/^Bearer\s+/i, '')
+          .trim() || null
+      handleUnauthorized(sent)
     }
     if (status === 0) {
       throw new ApiError('网络连接失败，请检查网络后重试', -1, 0)
@@ -90,19 +114,30 @@ export interface RequestOptions<B = unknown> {
  */
 export async function request<T, B = unknown>(options: RequestOptions<B>): Promise<T> {
   const method = (options.method || 'GET').toUpperCase()
+  // 发出请求那一刻的会话身份，用来判断迟到的 401 是不是旧会话的
+  const tokenAtSend = getToken()
 
   if (isMock) {
     // mock 内部返回的是「未拆壳」的 { code, message, data }，和真后端一致；
     // 这里必须和下面 axios 分支一样拆壳，否则页面拿到的会是整个包裹对象。
-    const wrapped = (await mockRequest<T>({
-      url: options.url,
-      method,
-      query: options.query,
-      body: options.body,
-      headers: options.headers,
-    })) as unknown as ApiResult<T>
-    if (wrapped.code !== 0) throw new ApiError(wrapped.message || '服务返回异常', wrapped.code)
-    return wrapped.data
+    try {
+      const wrapped = (await mockRequest<T>({
+        url: options.url,
+        method,
+        query: options.query,
+        body: options.body,
+        headers: options.headers,
+      })) as unknown as ApiResult<T>
+      if (wrapped.code !== 0) {
+        if (wrapped.code === 401 || wrapped.code === 40100) handleUnauthorized(tokenAtSend)
+        throw new ApiError(wrapped.message || '服务返回异常', wrapped.code)
+      }
+      return wrapped.data
+    } catch (e) {
+      // mock 也会像真后端一样抛 401（比如演示用的 slow401）
+      if (isApiError(e) && (e.httpStatus === 401 || e.code === 40100)) handleUnauthorized(tokenAtSend)
+      throw e
+    }
   }
 
   const res = await http.request<ApiResult<T>>({
@@ -118,10 +153,7 @@ export async function request<T, B = unknown>(options: RequestOptions<B>): Promi
   if (!payload || payload.code !== 0) {
     const msg = payload?.message || '服务返回异常'
     // 有的后端把"登录过期"放在业务码里（HTTP 仍是 200），两种都要清登录态并跳登录
-    if (payload?.code === 401) {
-      clearToken()
-      window.dispatchEvent(new CustomEvent('app:unauthorized'))
-    }
+    if (payload?.code === 401 || payload?.code === 40100) handleUnauthorized(tokenAtSend)
     throw new ApiError(msg, payload?.code ?? -1, res.status)
   }
   return payload.data

@@ -45,6 +45,19 @@ export function fulfillOrder(orderId: string): Promise<Order> {
   return request<Order>({ url: `/admin/orders/${orderId}/fulfill`, method: 'POST' })
 }
 
+/**
+ * 取消订单（管理员专用）。
+ * #23 之后用户端不再提供取消入口，取消由运营在管理端发起，原因必填（J051）。
+ * 重复取消按 BR-06 幂等：返回原结果，不再二次返还积分/库存。
+ */
+export function cancelOrder(orderId: string, reason: string): Promise<Order> {
+  return request<Order, { reason: string }>({
+    url: `/admin/orders/${orderId}/cancel`,
+    method: 'POST',
+    body: { reason },
+  })
+}
+
 export interface UpdateProductPayload {
   /** 积分单价，必须是大于 0 的整数 */
   points?: number

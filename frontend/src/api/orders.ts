@@ -15,14 +15,5 @@ export function getOrder(orderId: string): Promise<Order> {
   return request<Order>({ url: `/orders/${orderId}` })
 }
 
-/**
- * 取消订单：原因必填（J051），后端返还原额原数量（J052）。
- * 前端提交前做一次本地预检，但最终以服务端返回的订单为准。
- */
-export function cancelOrder(orderId: string, reason: string): Promise<Order> {
-  return request<Order, { reason: string }>({
-    url: `/orders/${orderId}/cancel`,
-    method: 'POST',
-    body: { reason },
-  })
-}
+// 注意：取消订单不在这里。
+// #23 之后用户端不提供取消能力，取消由管理员在管理端发起，见 admin.ts 的 cancelOrder。

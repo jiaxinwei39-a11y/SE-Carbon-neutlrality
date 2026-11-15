@@ -64,6 +64,8 @@ await shot('#/app', 'shot-home.png')
 await shot('#/app/trips', 'shot-trips.png')
 await shot('#/app/points', 'shot-points.png')
 await shot('#/app/mall', 'shot-mall.png')
+// 用户端订单：只读（无取消入口，#23）
+await shot('#/app/orders', 'shot-orders.png')
 
 await login('admin')
 await shot('#/admin/dashboard', 'shot-admin-dashboard.png')

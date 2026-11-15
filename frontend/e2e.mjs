@@ -162,32 +162,48 @@ await ev(PAGE_HELPERS)
 const toastAfterRedeem = await ev('__t.toast()')
 check('兑换成功有提示', /兑换|成功/.test(toastAfterRedeem), toastAfterRedeem)
 
-console.log('\n=== 6. 订单与取消 ===')
+console.log('\n=== 6. 用户端订单（只读，不能取消） ===')
 await ev(`location.hash = '#/app/orders'`)
 await wait(1800)
 await ev(PAGE_HELPERS)
 const rowsBefore = await ev('__t.rows()')
 const pendingRow = rowsBefore.findIndex((r) => r.includes('待发放'))
 check('订单列表有「待发放」订单', pendingRow >= 0, `第 ${pendingRow + 1} 行`)
+
+const listCancelCount = await ev(
+  `[...document.querySelectorAll('tbody button')].filter((b) => b.textContent.trim() === '取消').length`,
+)
+check('用户端列表没有「取消」按钮', listCancelCount === 0, `找到 ${listCancelCount} 个`)
+
 await ev(`(() => {
-  const tr = [...document.querySelectorAll('tbody tr')].find(t => t.innerText.includes('待发放'));
-  [...(tr?.querySelectorAll('button') || [])].filter(b => b.textContent.trim() === '取消').forEach(b => b.click());
+  const tr = [...document.querySelectorAll('tbody tr')].find((t) => t.innerText.includes('待发放'));
+  [...(tr?.querySelectorAll('button') || [])].find((b) => b.textContent.trim() === '详情')?.click();
 })()`)
-await wait(800)
-await ev(PAGE_HELPERS)
-check('取消弹窗打开', (await ev(`!!document.querySelector('.modal.on')`)) === true)
-await ev(`__t.fill('.modal textarea', '回归测试：主动取消')`)
-await wait(300)
-await ev(`__t.click('确认取消')`)
-await wait(2400)
-await ev(PAGE_HELPERS)
-const rowsAfter = await ev('__t.rows()')
-check('订单状态变为已取消', rowsAfter.some((r) => r.includes('已取消')), rowsAfter.find((r) => r.includes('已取消')) || '')
+await wait(1200)
+const drawerCancel = await ev(
+  `[...document.querySelectorAll('.drawer.on button')].some((b) => b.textContent.trim() === '取消订单')`,
+)
+check('用户端详情也没有「取消订单」按钮', drawerCancel === false)
+
+// 绕过界面直接打管理员取消接口：用户必须被拒
+const userOrderId = await ev(`(document.querySelector('.drawer.on')?.innerText.match(/O\\d{12}/) || [''])[0]`)
+
 await ev(`location.hash = '#/app/points'`)
 await wait(1500)
 await ev(PAGE_HELPERS)
-const pointsAfterCancel = await ev('__t.points()')
-check('取消后积分原额返还', pointsAfterCancel === balanceAfter, `兑换前 ${balanceAfter} → 取消后 ${pointsAfterCancel}`)
+const pointsBeforeAttempt = await ev('__t.points()')
+const userCancelRes = await ev(
+  `__carbonDebug.cancelOrder('${userOrderId}', '用户越权取消').then((o) => 'OK:' + o.status).catch((e) => 'ERR:' + (e.code || e.message))`,
+)
+check('用户直调管理员取消接口被拒（403）', /^ERR:(40301|403)/.test(String(userCancelRes)), String(userCancelRes))
+await wait(300)
+await ev(PAGE_HELPERS)
+const pointsAfterUserCancel = await ev('__t.points()')
+check(
+  '用户取消失败后积分未变',
+  pointsAfterUserCancel === pointsBeforeAttempt,
+  `发起前 ${pointsBeforeAttempt} → 之后 ${pointsAfterUserCancel}`,
+)
 
 console.log('\n=== 7. 退出与重新登录 ===')
 await ev(`document.querySelector('.avatar')?.click()`)
@@ -215,6 +231,24 @@ check('登录过期清空 token', (await ev(`(sessionStorage.getItem('carbon_tok
 await ev(`location.hash = '#/app/points'`)
 await wait(1300)
 check('过期后不能再进业务页', (await ev('location.hash')).startsWith('#/login'), await ev('location.hash'))
+
+console.log('\n=== 8.5 迟到的 401 不能踢掉新会话 ===')
+await login('13800138000')
+await ev(`location.hash = '#/app/points'`)
+await wait(1300)
+check('发起迟到请求前停在积分页', (await ev('location.hash')) === '#/app/points', await ev('location.hash'))
+// 先发一个"慢请求"，它带着旧 token 出发
+// 注意：Runtime.evaluate 的 awaitPromise=true 会等 Promise 结算，
+// 这里用逗号表达式返回一个字符串，避免脚本自己被这个慢请求阻塞住。
+await ev(`(window.__late401 = __carbonDebug.slow401(1500).catch((e) => 'ERR:' + (e.code || e.message)), 'fired')`)
+await wait(200)
+// 模拟期间用户重新登录，拿到了新 token
+await ev(`__carbonDebug.setToken('mock-token-renewed')`)
+await wait(2200)
+const lateHash = await ev('location.hash')
+check('旧请求的迟到 401 没有把新会话踢回登录页', lateHash.startsWith('#/app/'), lateHash)
+check('新会话的 token 没被清掉', (await ev(`sessionStorage.getItem('carbon_token')`)) === 'mock-token-renewed')
+await ev(`__carbonDebug.setToken('')`)
 
 console.log('\n=== 9. 管理端写操作（履约 / 商品维护） ===')
 await login('admin')
@@ -273,6 +307,69 @@ await wait(2400)
 await ev(PAGE_HELPERS)
 check('改库存后表格显示 99', (await ev('__t.rows()')).some((r) => / 99 /.test(' ' + r + ' ')))
 
+// 9.3 商品 PATCH 原子性：一个字段非法，整条请求不生效
+const patchBefore = await ev(
+  `__carbonDebug.patchProduct('G02', {}).then((p) => p.points + '/' + p.stock).catch((e) => 'ERR:' + e.message)`,
+)
+const patchBad = await ev(
+  `__carbonDebug.patchProduct('G02', { points: 601, stock: -1 }).then((p) => 'OK:' + p.points).catch((e) => 'ERR:' + (e.code || e.message))`,
+)
+check('非法商品 PATCH 被拒（40042）', /^ERR:40042/.test(String(patchBad)), String(patchBad))
+const patchAfter = await ev(
+  `__carbonDebug.patchProduct('G02', {}).then((p) => p.points + '/' + p.stock).catch((e) => 'ERR:' + e.message)`,
+)
+check('失败的商品 PATCH 没有改动任何字段', patchBefore === patchAfter, `${patchBefore} → ${patchAfter}`)
+
+console.log('\n=== 10. 管理员取消：只返还一次（BR-06 幂等） ===')
+// 注意：mock 数据在内存里，reload 会重置，所以余额前后对比必须在同一个会话里读接口，
+// 不能靠"退出再登录后看页面"来比。
+await login('admin')
+const balanceBeforeCancel = await ev(
+  `__carbonDebug.call({ url: '/points/account' }).then((a) => a.balance).catch((e) => 'ERR:' + e.message)`,
+)
+await ev(`location.hash = '#/admin/orders'`)
+await wait(1800)
+await ev(PAGE_HELPERS)
+const adminOrderId = await ev(`(() => {
+  const tr = [...document.querySelectorAll('tbody tr')].find((t) => t.innerText.includes('待发放'));
+  return (tr?.innerText.match(/O\\d{12}/) || [''])[0];
+})()`)
+check('管理端能找到待发放订单', /^O\d{12}$/.test(String(adminOrderId)), String(adminOrderId))
+
+const cancelExpr = `__carbonDebug
+  .cancelOrder('${adminOrderId}', '回归测试：运营取消')
+  .then((o) => JSON.stringify({ s: o.status, p: o.totalPoints }))
+  .catch((e) => 'ERR:' + (e.code || e.message))`
+const firstCancel = await ev(cancelExpr)
+let firstParsed = null
+try {
+  firstParsed = JSON.parse(String(firstCancel))
+} catch {
+  /* 失败时留空，下面断言会红 */
+}
+check('管理员取消成功', firstParsed?.s === 'CANCELLED', String(firstCancel))
+
+const secondCancel = await ev(cancelExpr)
+check(
+  '重复取消返回原结果、不报 409',
+  String(secondCancel) === String(firstCancel),
+  `第一次 ${firstCancel} / 第二次 ${secondCancel}`,
+)
+
+await ev(`location.hash = '#/admin/orders'`)
+await wait(1800)
+await ev(PAGE_HELPERS)
+check('管理端列表里该订单已取消', (await ev('__t.rows()')).some((r) => r.includes('已取消')))
+
+// 直接读接口，不要 reload（mock 数据在内存里，reload 会重置）
+const balanceAfterCancel = await ev(
+  `__carbonDebug.call({ url: '/points/account' }).then((a) => a.balance).catch((e) => 'ERR:' + e.message)`,
+)
+check(
+  '积分只返还一次（原额 + 订单积分）',
+  balanceAfterCancel === balanceBeforeCancel + (firstParsed?.p ?? 0),
+  `${balanceBeforeCancel} + ${firstParsed?.p ?? 0} = ${balanceAfterCancel}`,
+)
 console.log('\n=== 运行时报错 ===')
 check('全程无未捕获异常', runtimeErrors.length === 0, runtimeErrors.slice(0, 3).join(' | '))
 

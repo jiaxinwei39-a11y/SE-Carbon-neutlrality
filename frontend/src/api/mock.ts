@@ -328,6 +328,14 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
     return ok(null) as unknown as T
   }
 
+  /* ---------- 演示调试钩子（只在 mock 模式存在，供 e2e 验证边界行为） ---------- */
+  if (url === '/_debug/slow401' && method === 'GET') {
+    // 故意先等一段时间再返回 401，用来复现"旧会话的迟到 401"
+    const ms = Number((req.query ?? {}).ms ?? 1200)
+    await sleep(Number.isFinite(ms) && ms >= 0 ? ms : 1200)
+    throw new ApiError('登录已过期，请重新登录', 40100, 401)
+  }
+
   /* ---------- 行程 ---------- */
   if (url === '/trips' && method === 'GET') {
     const q = req.query ?? {}
@@ -530,15 +538,24 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
     if (!o) throw new ApiError('订单不存在', 40403, 404)
     return ok(o) as unknown as T
   }
-  const cancelM = match(url, '/orders/:id/cancel')
-  if (cancelM && method === 'POST') {
-    const o = orders.find((x) => x.orderId === cancelM[1])
+  /* ---------- 管理端 ---------- */
+  // 取消订单只在管理端：#23 明确用户端不提供取消入口。
+  // 幂等按 BR-06：同一订单重复取消，返回原结果，不报 409、也不再返还第二次。
+  const adminCancelM = match(url, '/admin/orders/:id/cancel')
+  if (adminCancelM && method === 'POST') {
+    requireAdmin()
+    const o = orders.find((x) => x.orderId === adminCancelM[1])
     if (!o) throw new ApiError('订单不存在', 40403, 404)
-    const body = req.body as { reason?: string }
+    const body = req.body as { reason?: string } | undefined
     if (!body?.reason || !body.reason.trim()) throw new ApiError('请填写取消原因', 40040, 400)
+
+    // 已经取消了：直接回放原结果（幂等，绝不二次返还）
+    if (o.status === 'CANCELLED') return ok({ ...o }) as unknown as T
+    // 已发放的不能取消：这是状态冲突，不是重复提交
     if (o.status !== 'CREATED') throw new ApiError('当前订单状态不允许取消，请刷新后重试', 40903, 409)
+
     o.status = 'CANCELLED'
-    o.cancelReason = body.reason
+    o.cancelReason = body.reason.trim()
     // 返还原额、原数量（J052）
     state.account.balance += o.totalPoints
     state.account.totalSpent -= o.totalPoints
@@ -556,10 +573,9 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
       },
       ...flows,
     ]
-    return ok(o) as unknown as T
+    return ok({ ...o }) as unknown as T
   }
 
-  /* ---------- 管理端 ---------- */
   if (url === '/admin/dashboard' && method === 'GET') {
     return ok({
       userCount: state.users.filter((u) => u.role === 'USER').length,
@@ -641,25 +657,36 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
     const p = state.products.find((x) => x.productId === adminProductM[1])
     if (!p) throw new ApiError('商品不存在', 40402, 404)
     const body = (req.body ?? {}) as { points?: number; stock?: number; status?: 'ON' | 'OFF' }
+
+    // 先全量校验，再一次性写入。
+    // 早期版本"边校验边赋值"：{ points: 601, stock: -1 } 虽然返回 400，
+    // 但单价已经被改成 601 —— 失败请求不允许改动任何字段。
+    const next: { points?: number; stock?: number; status?: 'ON' | 'OFF' } = {}
     if (body.points !== undefined) {
       if (!Number.isInteger(body.points) || body.points < 1) {
         throw new ApiError('积分单价必须是大于 0 的整数', 40041, 400)
       }
-      p.points = body.points
+      next.points = body.points
     }
     if (body.stock !== undefined) {
       if (!Number.isInteger(body.stock) || body.stock < 0) {
         throw new ApiError('库存必须是不小于 0 的整数', 40042, 400)
       }
-      p.stock = body.stock
+      next.stock = body.stock
     }
     if (body.status !== undefined) {
       if (body.status !== 'ON' && body.status !== 'OFF') {
         throw new ApiError('商品状态只能是 ON 或 OFF', 40010, 400)
       }
-      // 下架后商城列表/详情都查不到（见 /mall/products 的 status 过滤）
-      p.status = body.status
+      next.status = body.status
     }
+
+    // 校验全部通过后才落盘，保证原子性
+    if (next.points !== undefined) p.points = next.points
+    if (next.stock !== undefined) p.stock = next.stock
+    // 下架后商城列表/详情都查不到（见 /mall/products 的 status 过滤）
+    if (next.status !== undefined) p.status = next.status
+
     return ok({ ...p }) as unknown as T
   }
 

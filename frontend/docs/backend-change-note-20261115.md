@@ -92,16 +92,20 @@ Authorization: Bearer <admin token>
 
 ---
 
-## 三、v1 明确不做（请勿提前实现，避免返工）
+## 三、v1 暂未做（属 P0 未完成，等范围变更确认后再定，别当已结案）
 
-| 接口 | 归属 |
+> 这些**不是 P1 已结案项**：它们在完成标准里是 P0，只是本轮没做完。
+> 若组会确认缩减，请先出产品范围变更确认，再统一改文档与验收标准。
+
+| 接口 | 当前状态 |
 | --- | --- |
-| `POST /admin/products`（新增商品） | v1.1，P1 |
-| `PUT /admin/products/{id}`（改名称/描述/图文） | v1.1，P1 |
-| `POST /admin/products/{id}/status` | **不做**，并入 1.1 的 PATCH |
-| `POST /admin/products/{id}/stock` | **不做**，并入 1.1 的 PATCH |
-| `POST /admin/rules`（新增规则版本） | v1.1，P1（需版本化 + 生效时间 + 行程快照 + 留痕） |
-| `POST /admin/users/{id}/status` | v1.1，P1 |
+| `POST /admin/products`（新增商品） | P0 未完成 |
+| `PUT /admin/products/{id}`（改名称/描述/图文） | P0 未完成 |
+| `POST /admin/products/{id}/status` | **不做**，已并入 `PATCH /admin/products/{id}` |
+| `POST /admin/products/{id}/stock` | **不做**，已并入 `PATCH /admin/products/{id}` |
+| `POST /admin/rules`（新增规则版本） | P0 未完成（需版本化 + 生效时间 + 行程快照 + 留痕） |
+| `POST /admin/users/{id}/status` | P0 未完成 |
+| `POST /auth/register`（注册） | P0 未完成 |
 
 ---
 
@@ -113,11 +117,27 @@ Authorization: Bearer <admin token>
 | 分页 | 入参 `?page=1&size=20`，出参 `{ items, total, page, size }` |
 | 时间 | ISO-8601 字符串 |
 | 金额/减排量 | 后端算，`decimal(16,9)`，**不截断**；前端只负责格式化展示 |
-| 幂等 | 写接口读 `Idempotency-Key` 请求头（行程、兑换） |
+| 幂等 | 写接口读 `Idempotency-Key` 请求头（行程、兑换）；规则见 4.1 |
 | 认证 | 401 用 HTTP 401（前端据此清登录态并回登录页，不能只给 200 + code） |
-| 权限 | 403 / `40301` |
+| 权限 | 403 / `40301`（**取消订单也只允许管理员**） |
 | 冲突 | 409 / `40901`（库存不足）、`40903`（状态不允许） |
 | CORS | 需放行 `Authorization`、`Idempotency-Key` 头 |
+
+### 4.1 写接口的幂等要求（评审 #5）
+
+1. 按「**用户 + 业务键**」隔离，不能跨用户命中别人的结果。
+2. **同键同输入 → 重放原结果**（200 + 上次结果），不产生第二笔积分/扣减。
+3. **同键不同输入 → 409**（建议 `40904 幂等键已被不同内容使用`），不要静默覆盖。
+4. 不能只靠 Redis/内存：必须用**数据库唯一约束**兜底（如 `points_ledger(user_id, biz_type, biz_id)` 唯一索引），否则缓存过期后会二次入账。
+5. 幂等窗口 24 小时。
+
+### 4.2 取消订单（评审 #23，接口已移到管理端）
+
+- 路径：`POST /api/admin/orders/{orderId}/cancel`，body `{ "reason": "..." }`，**仅管理员**；用户 token 调它必须 403。
+- `CREATED` → `CANCELLED`：原额返还积分、原数量回补库存、写一条 `REVERSE` 流水。
+- **已取消的订单再次调用：返回原订单 200，不得 409，也不得二次返还**（BR-06 幂等）。
+- 只有 `FULFILLED` 的订单取消才返 409 `40903`。
+- 商品 `PATCH` 要先校验全部字段再落盘：`{ "points": 601, "stock": -1 }` 必须整体失败（400/`40042`），**且一个字段都不能被改动**。
 
 ---
 
@@ -129,7 +149,7 @@ VITE_DATA_SOURCE=api
 VITE_API_BASE_URL=http://localhost:8080/api
 ```
 
-切完我会重跑 `npm run e2e`（36 条断言），后端只要按本文实现，断言应全绿。
+切完我会重跑 `npm run e2e`（47 条断言），后端只要按本文实现，断言应全绿。
 
 ---
 
@@ -137,6 +157,6 @@ VITE_API_BASE_URL=http://localhost:8080/api
 
 | 文件 | 用途 |
 | --- | --- |
-| `frontend/docs/api-contract.md` | 22 个接口全量说明（字段、校验、错误码、联调清单） |
+| `frontend/docs/api-contract.md` | 全量接口说明（字段、校验、错误码、幂等总则、联调清单） |
 | `frontend/docs/openapi.yaml` | 21 个 path，可直接导入 Apifox / Swagger |
-| `frontend/docs/scope-decisions.md` | 范围与 P0 口径（含本次三条确认） |
+| `frontend/docs/scope-decisions.md` | 范围与 P0 口径（含三条确认，以及"P0 不得私自降级"的说明） |
