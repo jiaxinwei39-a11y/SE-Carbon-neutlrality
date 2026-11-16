@@ -5,18 +5,15 @@ import AppCard from '@/components/AppCard.vue'
 import AppEmpty from '@/components/AppEmpty.vue'
 import AppPagination from '@/components/AppPagination.vue'
 import AppTag from '@/components/AppTag.vue'
-import AppModal from '@/components/AppModal.vue'
 import AppButton from '@/components/AppButton.vue'
 import AppDrawer from '@/components/AppDrawer.vue'
-import { cancelOrder, getOrder, listOrders } from '@/api/orders'
+import { getOrder, listOrders } from '@/api/orders'
 import { errorMessage } from '@/api/http'
-import { useToast } from '@/composables/useToast'
 import { fmtDateTime, fmtPoints } from '@/utils/format'
 import { ORDER_STATUS_META, PAGE_SIZE } from '@/utils/constants'
 import type { Order, OrderStatus } from '@/types'
 
 const route = useRoute()
-const { toast } = useToast()
 
 const orders = ref<Order[]>([])
 const total = ref(0)
@@ -27,11 +24,6 @@ const err = ref('')
 
 const current = ref<Order | null>(null)
 const drawerOpen = ref(false)
-const cancelTarget = ref<Order | null>(null)
-const cancelOpen = ref(false)
-const reason = ref('')
-const cancelErr = ref('')
-const cancelling = ref(false)
 
 async function load() {
   loading.value = true
@@ -61,33 +53,6 @@ async function openDetail(o: Order) {
     current.value = await getOrder(o.orderId)
   } catch {
     /* 详情失败就显示列表数据，不打断用户 */
-  }
-}
-
-function openCancel(o: Order) {
-  cancelTarget.value = o
-  reason.value = ''
-  cancelErr.value = ''
-  cancelOpen.value = true
-}
-
-async function submitCancel() {
-  if (!cancelTarget.value || cancelling.value) return
-  if (!reason.value.trim()) {
-    cancelErr.value = '取消原因必填，便于后端核对'
-    return
-  }
-  cancelling.value = true
-  cancelErr.value = ''
-  try {
-    const updated = await cancelOrder(cancelTarget.value.orderId, reason.value.trim())
-    cancelOpen.value = false
-    toast(`已取消，返还 ${updated.totalPoints} 积分`)
-    await load()
-  } catch (e) {
-    cancelErr.value = errorMessage(e, '取消失败，请重试')
-  } finally {
-    cancelling.value = false
   }
 }
 
@@ -169,10 +134,7 @@ onMounted(async () => {
                 </td>
                 <td class="r">
                   <button class="btn btn-ghost btn-sm" type="button" @click="openDetail(o)">详情</button>
-                  <!-- 取消只在有权限且状态允许时出现，用户端列表不放履约按钮（P09） -->
-                  <button v-if="o.status === 'CREATED'" class="btn btn-ghost btn-sm" type="button" @click="openCancel(o)">
-                    取消
-                  </button>
+                  <!-- 用户端不提供取消/履约入口：#23 之后取消改由管理端发起 -->
                 </td>
               </tr>
             </tbody>
@@ -201,30 +163,12 @@ onMounted(async () => {
           </div>
         </div>
         <p class="hint" style="margin-top: 16px">
-          取消订单会按原额返还积分、按原数量返还库存，均以服务端结果为准。
+          如需取消订单，请联系运营在管理端处理；取消会按原额返还积分、按原数量返还库存。
         </p>
       </template>
-    </AppDrawer>
-
-    <!-- 取消弹窗：原因必填（J051） -->
-    <AppModal v-model="cancelOpen" title="取消订单" subtitle="取消后积分将原额返还，库存同步回滚" :closeable="!cancelling">
-      <div class="field">
-        <label for="reason">取消原因<span class="req">*</span></label>
-        <textarea
-          id="reason"
-          v-model="reason"
-          class="textarea"
-          :class="{ err: !!cancelErr }"
-          rows="3"
-          placeholder="例如：暂不需要了 / 库存不足无法发放"
-        ></textarea>
-        <p v-if="cancelErr" class="err-msg">{{ cancelErr }}</p>
-        <p v-else class="hint">原因会记录在订单里，运营可在管理端看到</p>
-      </div>
       <template #footer>
-        <AppButton variant="secondary" :disabled="cancelling" @click="cancelOpen = false">再想想</AppButton>
-        <AppButton variant="danger" :loading="cancelling" @click="submitCancel">确认取消</AppButton>
+        <AppButton variant="secondary" @click="drawerOpen = false">关闭</AppButton>
       </template>
-    </AppModal>
+    </AppDrawer>
   </div>
 </template>

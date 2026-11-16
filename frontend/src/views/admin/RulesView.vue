@@ -38,10 +38,12 @@ onMounted(load)
         <h1>核算规则</h1>
         <p>规则按版本管理，历史行程必须能对上当时使用的版本</p>
       </div>
+      <span class="tag tag-gray">只读 · 规则维护排期 v1.1</span>
     </div>
 
     <div class="notice">
-      演示版为只读。真实系统里修改规则需要走审核流程，且不允许改历史版本的数值 —— 否则账就算不平。
+      本页 v1 只读：修改因子会改变历史行程的核算口径，需要「版本 + 生效时间 + 审核留痕」一整套流程，
+      v1.1 通过独立流程维护，绝不直接改历史版本数值 —— 否则账就算不平。
     </div>
 
     <div v-if="loading" class="card"><div v-for="i in 5" :key="i" class="skel skel-row"></div></div>

@@ -3,11 +3,14 @@ import { onMounted, ref } from 'vue'
 import AppCard from '@/components/AppCard.vue'
 import AppTag from '@/components/AppTag.vue'
 import AppDrawer from '@/components/AppDrawer.vue'
-import { listAdminOrders } from '@/api/admin'
+import AppModal from '@/components/AppModal.vue'
+import AppButton from '@/components/AppButton.vue'
+import { cancelOrder, fulfillOrder, listAdminOrders } from '@/api/admin'
 import { getOrder } from '@/api/orders'
 import { errorMessage } from '@/api/http'
 import { fmtDateTime, fmtPoints } from '@/utils/format'
 import { ORDER_STATUS_META } from '@/utils/constants'
+import { useToast } from '@/composables/useToast'
 import type { Order } from '@/types'
 
 const list = ref<Order[]>([])
@@ -26,6 +29,13 @@ const open = ref(false)
 const detail = ref<Order | null>(null)
 const detailLoading = ref(false)
 const detailErr = ref('')
+
+/* 履约（发放）：抽屉里点「确认发放」→ 关抽屉 → 弹二次确认 → 调接口 */
+const { toast } = useToast()
+const confirmOpen = ref(false)
+const submitting = ref(false)
+const actionErr = ref('')
+const pending = ref<Order | null>(null)
 
 async function load() {
   loading.value = true
@@ -59,6 +69,75 @@ function switchTab(key: typeof filter.value) {
   load()
 }
 
+/** 打开确认框：先收抽屉，避免两层遮罩叠在一起 */
+function openFulfill(o: Order) {
+  pending.value = o
+  actionErr.value = ''
+  open.value = false
+  confirmOpen.value = true
+}
+
+async function submitFulfill() {
+  if (!pending.value) return
+  submitting.value = true
+  actionErr.value = ''
+  try {
+    const updated = await fulfillOrder(pending.value.orderId)
+    confirmOpen.value = false
+    toast('已发放，状态更新为「已完成」')
+    await load()
+    // 重新拉开抽屉，让操作人有"结果就在眼前"的确认感
+    detail.value = updated
+    detailErr.value = ''
+    detailLoading.value = false
+    open.value = true
+  } catch (e) {
+    // 409 = 状态已经变了（别人先发了货），提示刷新而不是盲目重试
+    actionErr.value = errorMessage(e, '发放失败，请刷新后重试')
+  } finally {
+    submitting.value = false
+  }
+}
+
+/* 取消订单：用户端不再提供入口（#23），取消由运营在这里发起，原因必填（J051） */
+const cancelOpen = ref(false)
+const cancelTarget = ref<Order | null>(null)
+const cancelReason = ref('')
+const cancelErr = ref('')
+const cancelling = ref(false)
+
+function openCancel(o: Order) {
+  cancelTarget.value = o
+  cancelReason.value = ''
+  cancelErr.value = ''
+  open.value = false
+  cancelOpen.value = true
+}
+
+async function submitCancel() {
+  if (!cancelTarget.value || cancelling.value) return
+  if (!cancelReason.value.trim()) {
+    cancelErr.value = '取消原因必填，会记录在订单里'
+    return
+  }
+  cancelling.value = true
+  cancelErr.value = ''
+  try {
+    const updated = await cancelOrder(cancelTarget.value.orderId, cancelReason.value.trim())
+    cancelOpen.value = false
+    toast(`已取消，返还 ${updated.totalPoints} 积分`)
+    await load()
+    detail.value = updated
+    detailErr.value = ''
+    open.value = true
+  } catch (e) {
+    // 已发放的订单取消会 409：提示刷新，不要盲目重试
+    cancelErr.value = errorMessage(e, '取消失败，请刷新后重试')
+  } finally {
+    cancelling.value = false
+  }
+}
+
 onMounted(load)
 </script>
 
@@ -68,7 +147,7 @@ onMounted(load)
       <div>
         <p class="crumb">管理端 / <b>订单管理</b></p>
         <h1>订单管理</h1>
-        <p>履约（发货/核销）需要后端状态机支撑，演示版只展示与查询</p>
+        <p>履约只改状态：兑换时积分与库存已扣，发放不会二次扣减</p>
       </div>
       <button class="btn btn-secondary btn-sm" type="button" @click="load">刷新</button>
     </div>
@@ -146,6 +225,69 @@ onMounted(load)
           单价与名称存的是下单那一刻的快照，商户后续改价不影响已生成订单。
         </p>
       </template>
+      <template #footer>
+        <AppButton variant="secondary" @click="open = false">关闭</AppButton>
+        <!-- 待发放既能履约也能取消：取消要填原因，且只返还一次 -->
+        <AppButton v-if="detail?.status === 'CREATED'" variant="danger" @click="openCancel(detail)">
+          取消订单
+        </AppButton>
+        <!-- 只有待发放能履约：已完成的重复点会 409，已取消的更不该发 -->
+        <AppButton v-if="detail?.status === 'CREATED'" variant="primary" @click="openFulfill(detail)">
+          确认发放
+        </AppButton>
+      </template>
     </AppDrawer>
+
+    <AppModal
+      v-model="cancelOpen"
+      title="取消订单"
+      subtitle="取消后按原额返还积分、按原数量返还库存，只返还一次"
+      :closeable="!cancelling"
+    >
+      <div v-if="cancelTarget" class="factor-grid" style="grid-template-columns: 1fr">
+        <div class="factor-row"><span>订单号</span><b class="mono">{{ cancelTarget.orderId }}</b></div>
+        <div class="factor-row"><span>商品</span><b>{{ cancelTarget.productIcon }} {{ cancelTarget.productName }}</b></div>
+        <div class="factor-row"><span>返还积分</span><b class="num">{{ fmtPoints(cancelTarget.totalPoints) }} 分</b></div>
+      </div>
+      <div class="field" style="margin-top: 12px">
+        <label for="admin-cancel-reason">取消原因<span class="req">*</span></label>
+        <textarea
+          id="admin-cancel-reason"
+          v-model="cancelReason"
+          class="textarea"
+          :class="{ err: !!cancelErr }"
+          rows="3"
+          placeholder="例如：库存不足无法发放 / 用户申请取消"
+        ></textarea>
+        <p v-if="cancelErr" class="err-msg">{{ cancelErr }}</p>
+        <p v-else class="hint">原因会写进订单，用户端详情可见</p>
+      </div>
+      <template #footer>
+        <AppButton variant="secondary" :disabled="cancelling" @click="cancelOpen = false">再想想</AppButton>
+        <AppButton variant="danger" :loading="cancelling" @click="submitCancel">确认取消</AppButton>
+      </template>
+    </AppModal>
+
+    <AppModal
+      v-model="confirmOpen"
+      title="确认发放"
+      subtitle="发放后订单变为「已完成」，不可回退"
+      :closeable="!submitting"
+    >
+      <div v-if="pending" class="factor-grid" style="grid-template-columns: 1fr">
+        <div class="factor-row"><span>订单号</span><b class="mono">{{ pending.orderId }}</b></div>
+        <div class="factor-row"><span>商品</span><b>{{ pending.productIcon }} {{ pending.productName }}</b></div>
+        <div class="factor-row"><span>数量</span><b class="num">{{ pending.quantity }}</b></div>
+        <div class="factor-row"><span>消耗积分</span><b class="num">{{ fmtPoints(pending.totalPoints) }} 分</b></div>
+      </div>
+      <p v-if="actionErr" class="err-msg" style="margin-top: 12px">{{ actionErr }}</p>
+      <p v-else class="hint" style="margin-top: 12px">
+        发放不会扣积分、也不会再扣库存，只做状态流转；重复提交后端会拒绝（409）。
+      </p>
+      <template #footer>
+        <AppButton variant="secondary" :disabled="submitting" @click="confirmOpen = false">再想想</AppButton>
+        <AppButton variant="primary" :loading="submitting" @click="submitFulfill">确认发放</AppButton>
+      </template>
+    </AppModal>
   </div>
 </template>

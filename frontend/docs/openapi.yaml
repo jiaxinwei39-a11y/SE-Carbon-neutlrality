@@ -1,0 +1,820 @@
+openapi: 3.0.3
+info:
+  title: 绿色出行碳积分系统 API
+  version: 1.0.0
+  description: |
+    前端（Vue3 + TS）与后端（Spring Boot 3 + MySQL 8）的接口契约。
+    成功响应 HTTP 200 + {code:0,message:"ok",data:...}；失败为 4xx/5xx + 同结构。
+    详细说明见 docs/api-contract.md。
+servers:
+  - url: http://localhost:8080/api
+    description: 本地开发
+tags:
+  - name: auth
+    description: 认证
+  - name: trips
+    description: 行程与碳核算
+  - name: points
+    description: 积分
+  - name: mall
+    description: 积分商城
+  - name: orders
+    description: 订单
+  - name: admin
+    description: 管理端
+
+paths:
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: 登录
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [account, password]
+              properties:
+                account: { type: string, example: "13800138000" }
+                password: { type: string, example: "123456" }
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResult"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          token: { type: string }
+                          user: { $ref: "#/components/schemas/User" }
+
+  /auth/me:
+    get:
+      tags: [auth]
+      summary: 获取当前登录用户
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResult"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/User" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: 退出登录
+      responses:
+        "200": { $ref: "#/components/responses/OkNull" }
+
+  /trips:
+    get:
+      tags: [trips]
+      summary: 行程列表（分页）
+      parameters:
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/Size" }
+        - name: mode
+          in: query
+          schema: { type: string, enum: [ALL, BUS, SUBWAY, BIKE, WALK], default: ALL }
+        - name: keyword
+          in: query
+          description: 模糊匹配起点/终点/行程号
+          schema: { type: string }
+        - name: from
+          in: query
+          description: 开始日期 yyyy-MM-dd
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          description: 结束日期 yyyy-MM-dd
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResult"
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: "#/components/schemas/Page"
+                          - type: object
+                            properties:
+                              items:
+                                type: array
+                                items: { $ref: "#/components/schemas/Trip" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [trips]
+      summary: 上报行程（服务端核算减排量与积分）
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: 客户端生成的幂等键，重试必须复用
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateTripPayload" }
+      responses:
+        "200":
+          description: 成功，返回 TripDetail
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResult"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/TripDetail" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /trips/{tripId}:
+    get:
+      tags: [trips]
+      summary: 行程详情（含核算因子快照）
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema: { type: string, example: "T202611130021" }
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResult"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/TripDetail" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /points/account:
+    get:
+      tags: [points]
+      summary: 积分账户
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResult"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/PointsAccount" }
+
+  /points/flows:
+    get:
+      tags: [points]
+      summary: 积分流水（分页）
+      parameters:
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/Size" }
+        - name: type
+          in: query
+          schema: { type: string, enum: [ALL, EARN, SPEND, REVERSE], default: ALL }
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResult"
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: "#/components/schemas/Page"
+                          - type: object
+                            properties:
+                              items:
+                                type: array
+                                items: { $ref: "#/components/schemas/PointsFlow" }
+
+  /mall/products:
+    get:
+      tags: [mall]
+      summary: 商品列表（仅上架，分页）
+      parameters:
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/Size" }
+        - name: keyword
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResult"
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: "#/components/schemas/Page"
+                          - type: object
+                            properties:
+                              items:
+                                type: array
+                                items: { $ref: "#/components/schemas/Product" }
+
+  /mall/products/{productId}:
+    get:
+      tags: [mall]
+      summary: 商品详情
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: { type: string, example: "G01" }
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResult"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/Product" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /mall/orders:
+    post:
+      tags: [mall]
+      summary: 兑换下单
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [productId, quantity]
+              properties:
+                productId: { type: string, example: "G01" }
+                quantity: { type: integer, minimum: 1, example: 1 }
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResult"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/Order" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /orders:
+    get:
+      tags: [orders]
+      summary: 我的订单（分页）
+      parameters:
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/Size" }
+        - name: status
+          in: query
+          schema: { type: string, enum: [ALL, CREATED, FULFILLED, CANCELLED], default: ALL }
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResult"
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: "#/components/schemas/Page"
+                          - type: object
+                            properties:
+                              items:
+                                type: array
+                                items: { $ref: "#/components/schemas/Order" }
+
+  /orders/{orderId}:
+    get:
+      tags: [orders]
+      summary: 订单详情
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResult"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/Order" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /admin/orders/{orderId}/cancel:
+    post:
+      tags: [admin]
+      summary: 取消订单（仅管理员；原额返还积分、原数量返还库存）
+      description: |
+        用户端不提供取消能力（评审 #23），取消由运营在管理端发起，原因必填。
+        幂等（BR-06）：对已取消的订单再次调用，返回原订单对象，不再返还积分/库存；
+        只有已发放（FULFILLED）的订单取消才返回 409 40903。
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema: { type: string, example: O202611020003 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, maxLength: 100, example: "库存不足无法发放" }
+      responses:
+        "200":
+          description: 成功，返回更新后的订单（重复取消时返回原订单）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResult"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/Order" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /admin/dashboard:
+    get:
+      tags: [admin]
+      summary: 数据概览
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResult"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          userCount: { type: integer }
+                          tripCount: { type: integer }
+                          totalReductionKg: { type: number }
+                          totalPointsIssued: { type: integer }
+                          modeDistribution:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                mode: { $ref: "#/components/schemas/TripMode" }
+                                count: { type: integer }
+                          dailyTrend:
+                            type: array
+                            description: 最近 7 天
+                            items:
+                              type: object
+                              properties:
+                                date: { type: string, example: "11-04" }
+                                count: { type: integer }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /admin/rules:
+    get:
+      tags: [admin]
+      summary: 核算规则列表（含历史版本）
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResult"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/CarbonRule" }
+
+  /admin/products:
+    get:
+      tags: [admin]
+      summary: 商品管理列表（含下架）
+      parameters:
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/Size" }
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResult"
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: "#/components/schemas/Page"
+                          - type: object
+                            properties:
+                              items:
+                                type: array
+                                items: { $ref: "#/components/schemas/Product" }
+
+  /admin/products/{productId}:
+    patch:
+      tags: [admin]
+      summary: 商品维护（改积分单价 / 改库存 / 上下架）
+      description: 只发要改的字段。改价不追溯已生成订单（订单里存 unitPoints 快照）。
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: { type: string, example: G01 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                points: { type: integer, minimum: 1, description: 积分单价，正整数 }
+                stock: { type: integer, minimum: 0, description: 库存，0 表示兑完 }
+                status: { type: string, enum: [ON, OFF], description: ON 上架 / OFF 下架 }
+      responses:
+        "200":
+          description: 更新后的商品
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResult"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/Product" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /admin/orders:
+    get:
+      tags: [admin]
+      summary: 订单管理列表（全量）
+      parameters:
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/Size" }
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResult"
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: "#/components/schemas/Page"
+                          - type: object
+                            properties:
+                              items:
+                                type: array
+                                items: { $ref: "#/components/schemas/Order" }
+
+  /admin/orders/{orderId}/fulfill:
+    post:
+      tags: [admin]
+      summary: 订单履约（发放）
+      description: |
+        只做状态流转 CREATED → FULFILLED。兑换时积分与库存已扣，发放不得再扣一次。
+        重复调用（已 FULFILLED / 已 CANCELLED）必须返 409 40903。
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema: { type: string, example: O202611080001 }
+      responses:
+        "200":
+          description: 成功，返回更新后的订单
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResult"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/Order" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /admin/users:
+    get:
+      tags: [admin]
+      summary: 用户管理列表
+      parameters:
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/Size" }
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResult"
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: "#/components/schemas/Page"
+                          - type: object
+                            properties:
+                              items:
+                                type: array
+                                items: { $ref: "#/components/schemas/User" }
+
+  /admin/reconciliation:
+    get:
+      tags: [admin]
+      summary: 积分对账（只读）
+      description: items 为空表示无差异；服务端出错必须返回 5xx，不能返回空数组。
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResult"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          checkedAt: { type: string, format: date-time }
+                          items:
+                            type: array
+                            items: { $ref: "#/components/schemas/ReconcileItem" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      description: 页码，从 1 开始
+      schema: { type: integer, minimum: 1, default: 1 }
+    Size:
+      name: size
+      in: query
+      description: 每页条数
+      schema: { type: integer, minimum: 1, default: 10 }
+
+  responses:
+    OkNull:
+      description: 成功，无数据
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/ApiResult"
+              - type: object
+                properties:
+                  data: { nullable: true, example: null }
+    BadRequest:
+      description: 参数错误（40001/40002/40010/40011/40030/40040）
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiResult" }
+    Unauthorized:
+      description: 未登录或登录过期（40100/40101）
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiResult" }
+    Forbidden:
+      description: 无权限（403）
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiResult" }
+    NotFound:
+      description: 记录不存在（40401/40402/40403）
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiResult" }
+    Conflict:
+      description: 状态冲突（40901 库存不足 / 40903 状态不允许）
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiResult" }
+    ServerError:
+      description: 服务端错误（50001 等）
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiResult" }
+
+  schemas:
+    ApiResult:
+      type: object
+      properties:
+        code: { type: integer, description: "0 成功，非 0 为业务错误码" }
+        message: { type: string, description: 可直接展示给用户的中文提示 }
+        data: { nullable: true }
+
+    Page:
+      type: object
+      properties:
+        total: { type: integer }
+        page: { type: integer }
+        size: { type: integer }
+        items: { type: array, items: { type: object } }
+
+    TripMode:
+      type: string
+      enum: [BUS, SUBWAY, BIKE, WALK]
+
+    TripStatus:
+      type: string
+      enum: [PENDING, POINTED, FAILED]
+
+    OrderStatus:
+      type: string
+      enum: [CREATED, FULFILLED, CANCELLED]
+
+    PointsFlowType:
+      type: string
+      enum: [EARN, SPEND, REVERSE]
+
+    User:
+      type: object
+      properties:
+        id: { type: string }
+        nickname: { type: string }
+        phone: { type: string }
+        role: { type: string, enum: [USER, ADMIN] }
+        avatarText: { type: string, description: 头像文字，取昵称首字 }
+        points: { type: integer }
+
+    Trip:
+      type: object
+      properties:
+        tripId: { type: string, example: "T202611130021" }
+        mode: { $ref: "#/components/schemas/TripMode" }
+        distanceKm: { type: number, example: 10 }
+        reductionKg: { type: number, description: 不截断精度，前端格式化展示, example: 1.500000123 }
+        awardedPoints: { type: integer, example: 15 }
+        status: { $ref: "#/components/schemas/TripStatus" }
+        startTime: { type: string, format: date-time }
+        endTime: { type: string, format: date-time }
+        startPlace: { type: string }
+        endPlace: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    TripDetail:
+      allOf:
+        - $ref: "#/components/schemas/Trip"
+        - type: object
+          properties:
+            baseFactor: { type: number, example: 0.2 }
+            modeFactor: { type: number, example: 0.05 }
+            pointsRatio: { type: number, example: 10 }
+            calculatedAt: { type: string, format: date-time }
+            ruleVersion: { type: string, example: "R-2026-11" }
+
+    CreateTripPayload:
+      type: object
+      required: [clientTripId, mode, distanceKm, startTime, endTime, startPlace, endPlace]
+      properties:
+        clientTripId: { type: string, description: 前端生成的幂等键，只用于去重 }
+        mode: { $ref: "#/components/schemas/TripMode" }
+        distanceKm: { type: number, description: "0 < x <= 200，最多 3 位小数", example: 10 }
+        startTime: { type: string, format: date-time }
+        endTime: { type: string, format: date-time }
+        startPlace: { type: string, example: "软件园东门" }
+        endPlace: { type: string, example: "地铁二号线站" }
+
+    PointsAccount:
+      type: object
+      properties:
+        balance: { type: integer, description: 必须等于 totalEarned - totalSpent }
+        totalEarned: { type: integer }
+        totalSpent: { type: integer }
+        tripCount: { type: integer }
+        totalReductionKg: { type: number }
+
+    PointsFlow:
+      type: object
+      properties:
+        id: { type: string }
+        type: { $ref: "#/components/schemas/PointsFlowType" }
+        title: { type: string, example: "行程核算入账 · BUS 10 公里" }
+        amount: { type: integer, description: 带符号，获得为正、消费为负、冲正为正 }
+        balanceAfter: { type: integer }
+        createdAt: { type: string, format: date-time }
+        refId: { type: string, description: 关联的 tripId 或 orderId }
+
+    Product:
+      type: object
+      properties:
+        productId: { type: string }
+        name: { type: string }
+        icon: { type: string, description: emoji }
+        points: { type: integer }
+        stock: { type: integer }
+        status: { type: string, enum: [ON, OFF] }
+        desc: { type: string }
+
+    Order:
+      type: object
+      properties:
+        orderId: { type: string }
+        productId: { type: string }
+        productName: { type: string }
+        productIcon: { type: string }
+        quantity: { type: integer }
+        unitPoints: { type: integer, description: 下单时的单价格快照 }
+        totalPoints: { type: integer }
+        status: { $ref: "#/components/schemas/OrderStatus" }
+        createdAt: { type: string, format: date-time }
+        cancelReason: { type: string }
+
+    CarbonRule:
+      type: object
+      properties:
+        ruleId: { type: string, example: "R-2026-11-BUS" }
+        version: { type: string, example: "R-2026-11" }
+        mode: { $ref: "#/components/schemas/TripMode" }
+        baseFactor: { type: number, example: 0.2 }
+        modeFactor: { type: number, example: 0.05 }
+        pointsRatio: { type: number, example: 10 }
+        effectiveFrom: { type: string, format: date, example: "2026-11-01" }
+        status: { type: string, enum: [ACTIVE, ARCHIVED] }
+
+    ReconcileItem:
+      type: object
+      properties:
+        id: { type: string }
+        objectType: { type: string, enum: [TRIP, ORDER] }
+        objectId: { type: string }
+        checkName: { type: string, example: "积分应发未发（分）" }
+        expected: { type: number }
+        actual: { type: number }
+
+security:
+  - bearerAuth: []

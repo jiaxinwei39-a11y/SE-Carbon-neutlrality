@@ -1,19 +1,24 @@
 node_modules/
 dist/
+dist-api/
 dist-app/
 
-# 本地缓存与运行时产物（Chrome 调试用临时 profile 也是本地产物）
+# 本地缓存与运行时产物（Chrome 调试用的临时 profile 也属本地产物）
 .npm-cache/
 .electron-cache/
 .app-profile/
 .shot-profile/
-.probe-profile/
-.probe2-profile/
-.probe3-profile/
+.probe*/
 *.log
+screen*.png
+c-out.txt
+c-err.txt
+t.png
 
-# 截图产物（要展示的图放 docs/）
+# 截图与一次性调试脚本（要展示的图放 docs/screenshots/）
 shot-*.png
+probe-orders.mjs
+shot-drawer.mjs
 
 # 本地环境覆盖
 *.local
