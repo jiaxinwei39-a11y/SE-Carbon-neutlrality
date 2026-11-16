@@ -13,24 +13,33 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * 行程上报：校验 → 匹配规则 → 核算 → 落库 → 发分 → 返回。
  *
- * 这里是 #10 的核心，答辩必问的四个点：
- *  1. 为什么整笔在一个事务里：行程、流水、余额任何一步失败都必须整体回滚，
- *     否则会出现"有流水没余额"或"有行程没发分"的账实不符。
- *  2. 幂等怎么做：先按 (user_id, client_trip_id) 查，命中就比对输入，
- *     相同返回原结果、不同拒绝；唯一索引是并发下的最后一道防线。
- *  3. 金额怎么算：全程 BigDecimal，最后统一向下取整（RoundingMode.FLOOR），
- *     不用 double，避免 0.1+0.2 这类精度问题。
- *  4. 零积分为什么也存行程、但不写流水。
+ * 事务方案（针对评审意见 P1 的修订）：
+ *  1. 正常路径在 tx（默认 REQUIRED）里执行，任何异常整体回滚。
+ *  2. 冲突路径**不在原事务里回查**。捕获 DuplicateKeyException 时第一个事务已经
+ *     被 TransactionTemplate 回滚并结束，随后用 retryTx（REQUIRES_NEW）开一个
+ *     **全新事务**，并配合 SELECT ... FOR UPDATE 做当前读。
+ *     原因：MySQL 默认 REPEATABLE READ，事务内第一次普通 SELECT 就固定了快照；
+ *     在同一个事务里回查只能看到旧快照，看不到并发对手刚提交的行，重放会失败。
+ *  3. 两个测试钩子默认关闭：
+ *       gts.test.insert-delay-ms  在"前置查重"与"插入"之间休眠，用来制造并发屏障
+ *       gts.test.fail-after-trip  行程写入后故意抛异常，用来验证整笔回滚（TC-13）
  */
 @Service
 public class TripService {
+
+    private static final Logger log = LoggerFactory.getLogger(TripService.class);
 
     private static final Set<String> MODES = Set.of("BUS", "SUBWAY", "BIKE", "WALK");
     private static final BigDecimal MAX_KM = new BigDecimal("200");
@@ -38,14 +47,45 @@ public class TripService {
 
     private final TripRepository trips;
     private final PointsRepository points;
+    private final TransactionTemplate tx;
+    private final TransactionTemplate retryTx;
 
-    public TripService(TripRepository trips, PointsRepository points) {
+    /** 测试用：插入前延迟（毫秒），默认 0 → 生产行为不受影响 */
+    private final long insertDelayMs;
+    /** 测试用：行程写入后强制失败，验证回滚，默认 false */
+    private final boolean failAfterTrip;
+
+    public TripService(TripRepository trips,
+                       PointsRepository points,
+                       PlatformTransactionManager transactionManager,
+                       @Value("${gts.test.insert-delay-ms:0}") long insertDelayMs,
+                       @Value("${gts.test.fail-after-trip:false}") boolean failAfterTrip) {
         this.trips = trips;
         this.points = points;
+        this.insertDelayMs = insertDelayMs;
+        this.failAfterTrip = failAfterTrip;
+
+        this.tx = new TransactionTemplate(transactionManager);
+        this.retryTx = new TransactionTemplate(transactionManager);
+        this.retryTx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        this.retryTx.setReadOnly(false);
     }
 
-    @Transactional
     public TripDto.TripDetailVo create(LoginUser user, String idempotencyKey, TripDto.CreateTripRequest req) {
+        try {
+            return tx.execute(status -> createInTx(user, idempotencyKey, req));
+        } catch (DuplicateKeyException e) {
+            // 第一个事务已由 TransactionTemplate 回滚结束；这里开新事务做当前读回查
+            log.warn("行程并发重复提交，转到新事务回查：user={}, clientTripId={}",
+                    user.userId(), req.clientTripId());
+            return retryTx.execute(status -> replayInNewTx(user, req));
+        }
+    }
+
+    /* ------------------------------------------------------------------ */
+
+    private TripDto.TripDetailVo createInTx(LoginUser user, String idempotencyKey,
+                                            TripDto.CreateTripRequest req) {
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
             throw new Api.BizException(Api.Codes.IDEMPOTENCY_KEY_MISSING, 400, "缺少幂等键，请刷新页面重试");
         }
@@ -86,11 +126,13 @@ public class TripService {
             return replayOrConflict(existing.get(), mode, distance, start, end, startPlace, endPlace);
         }
 
+        // 测试屏障：让并发请求都完成"前置查重"之后再插入，从而必然撞唯一键
+        sleepForTestBarrier();
+
         TripRepository.RuleRow rule = trips.findRule(mode, end).orElseThrow(() ->
                 new Api.BizException(Api.Codes.NO_CARBON_RULE, 409,
                         "该出行方式在当前时间没有生效的核算规则，请联系运营管理员"));
 
-        // 核算：全部 BigDecimal，最后统一向下取整
         BigDecimal baseline = distance.multiply(rule.baseFactor());
         BigDecimal actual = distance.multiply(rule.modeFactor());
         BigDecimal reduction = baseline.subtract(actual).max(BigDecimal.ZERO);
@@ -99,17 +141,14 @@ public class TripService {
                 .longValueExact();
 
         String tripId = newTripId(now);
-        try {
-            trips.insert(user.id(), tripId, clientTripId, mode, distance, startPlace, endPlace,
-                    start, end, rule, reduction, awarded, now);
-        } catch (DuplicateKeyException e) {
-            // 并发下两次请求同时插入：唯一索引拦下一个，回查已存在的那条
-            TripRepository.TripRow row = trips.findByClientTripId(user.id(), clientTripId)
-                    .orElseThrow(() -> e);
-            return replayOrConflict(row, mode, distance, start, end, startPlace, endPlace);
+        trips.insert(user.id(), tripId, clientTripId, mode, distance, startPlace, endPlace,
+                start, end, rule, reduction, awarded, now);
+
+        if (failAfterTrip) {
+            // 测试注入：插入行程后故意失败，验证事务是否把行程一并回滚
+            throw new IllegalStateException("测试注入：行程写入后故意失败（TC-13）");
         }
 
-        // 入账与序号分配在同一事务内：last_seq 的自增持有账户行锁
         long accountSeq = points.applyTrip(user.id(), awarded, reduction);
         if (awarded > 0) {
             long balanceAfter = points.balance(user.id());
@@ -120,6 +159,32 @@ public class TripService {
 
         TripRepository.TripRow saved = trips.findByTripId(user.id(), tripId).orElseThrow();
         return toDetailVo(saved);
+    }
+
+    /**
+     * 新事务内的冲突回查：用 SELECT ... FOR UPDATE 做当前读，能看到对手已提交的行。
+     * 同一 clientTripId 且输入一致 → 返回原结果；输入不一致 → 40904。
+     */
+    private TripDto.TripDetailVo replayInNewTx(LoginUser user, TripDto.CreateTripRequest req) {
+        String mode = req.mode() == null ? "" : req.mode().trim().toUpperCase();
+        LocalDateTime start = TimeUtil.parseIso(req.startTime());
+        LocalDateTime end = TimeUtil.parseIso(req.endTime());
+        TripRepository.TripRow row = trips.findByClientTripIdForUpdate(user.id(), req.clientTripId().trim())
+                .orElseThrow(() -> new Api.BizException(Api.Codes.SERVER_ERROR, 500,
+                        "并发冲突后未找到已存在的行程，请重试"));
+        return replayOrConflict(row, mode, req.distanceKm(), start, end,
+                req.startPlace().trim(), req.endPlace().trim());
+    }
+
+    private void sleepForTestBarrier() {
+        if (insertDelayMs <= 0) {
+            return;
+        }
+        try {
+            Thread.sleep(insertDelayMs);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     public Api.Page<TripDto.TripVo> list(LoginUser user, String mode, String keyword,

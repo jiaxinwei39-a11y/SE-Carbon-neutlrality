@@ -111,6 +111,19 @@ public class TripRepository {
         return rows.stream().findFirst();
     }
 
+    /**
+     * 冲突回查专用：加锁读（当前读）。
+     *
+     * 普通 SELECT 在 REPEATABLE READ 下读的是事务开始时的快照，
+     * 看不到并发对手刚提交的行；FOR UPDATE 读的是最新已提交数据。
+     */
+    public Optional<TripRow> findByClientTripIdForUpdate(long userId, String clientTripId) {
+        List<TripRow> rows = jdbc.query(
+                "SELECT " + COLS + " FROM t_trip WHERE user_id = ? AND client_trip_id = ? FOR UPDATE",
+                ROW, userId, clientTripId);
+        return rows.stream().findFirst();
+    }
+
     public Optional<TripRow> findByTripId(long userId, String tripId) {
         List<TripRow> rows = jdbc.query(
                 "SELECT " + COLS + " FROM t_trip WHERE user_id = ? AND trip_id = ?",

@@ -7,6 +7,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.ChronoUnit;
 
 /**
  * 时间约定（这是联调最容易踩坑的一处）。
@@ -47,8 +48,16 @@ public final class TimeUtil {
     /**
      * 客户端传入的 ISO 时间 → 数据库用的本地时间。
      * 接受带 Z 的 UTC、带偏移量的写法、以及不带时区的裸时间（按 Asia/Shanghai 理解）。
+     *
+     * 统一截断到毫秒：数据库列是 DATETIME(3)，只存毫秒。
+     * 如果这里保留微秒，首次入库会被数据库截断，
+     * 重放时用于幂等比较的值与库里存的值不相等，会被误判成"同键不同内容"。
      */
     public static LocalDateTime parseIso(String text) {
+        return parseIsoRaw(text).truncatedTo(ChronoUnit.MILLIS);
+    }
+
+    private static LocalDateTime parseIsoRaw(String text) {
         if (text == null || text.isBlank()) {
             throw new Api.BizException(Api.Codes.PARAM_INVALID, 400, "时间不能为空");
         }

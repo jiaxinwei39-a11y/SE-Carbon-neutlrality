@@ -1,10 +1,13 @@
-# 后端工程（#10 已完成：账户 / 行程 / 积分）
+# 后端工程（#10：账户 / 行程 / 积分）
 
-城市绿色出行碳减排积分系统后端。本工程实现了 **#10 的全部 P0 内容**：
+城市绿色出行碳减排积分系统后端。范围是 **#10 [BE-01][P0] 账户、行程核算与积分后端**：
 注册、登录、会话校验、行程上报（含核算快照与幂等）、积分发放、账户与流水查询、本人数据隔离。
 
 > 负责：郭浚文（neutral-jiang）
-> 状态：接口已在本机跑通并完成 27 项自测（见 [TEST-REPORT.md](TEST-REPORT.md)）
+> 状态：**除商城/订单/对账（属 #12）外，#10 的验收项均已实现并实测**；
+> TC-01～08、13、17、18、20 全部有执行记录，其中 TC-13 用故障注入验证了整笔回滚（见 TEST-REPORT 第 2 节）。
+> **合并依赖**：本分支依赖 #28（#9）的 V2 结构（`t_point_account.last_seq`、`t_point_ledger.account_seq` 为 NOT NULL），
+> **合并顺序必须先 #28 后 #29**，否则启动后写流水会因缺列失败。
 > 数据库脚本在 [../deliverables/db/](../deliverables/db/)，接口契约在 [../deliverables/docs/02-design/api-contract.md](../deliverables/docs/02-design/api-contract.md)
 
 ## 1. 技术栈与选型理由
@@ -106,6 +109,50 @@ SQL 是 `effective_from <= end AND (effective_to IS NULL OR effective_to > end)`
 **⑥ 时间统一"库里存本地、出口转 UTC"**
 数据库 `DATETIME` 存 Asia/Shanghai 本地时间；JSON 输出一律 `2026-11-08T00:05:00.000Z`（UTC，固定 3 位毫秒）。
 **格式必须固定**：前端筛选是字符串比较，`...T00:05:00Z` 和 `...T00:05:00.000Z` 混用会导致筛选漏数据。
+
+## 5.1 并发冲突与时间精度（评审修订）
+
+这两处是评审指出的真实缺陷，改法如下。
+
+**① 重复键之后不能在同一事务里回查**
+
+MySQL 默认隔离级别是 `REPEATABLE READ`：事务内第一次普通 `SELECT` 就固定了快照。
+两个请求同时进来时，双方的前置查重都看不到对方；后插入的那个会拿到唯一键冲突，
+但它在**同一个事务里**再查一次，读到的仍是旧快照 —— 看不到对手刚提交的行，于是重放失败。
+
+现在的做法（`TripService.create`）：
+
+```
+tx.execute(...)                     // 第一个事务，异常时由 TransactionTemplate 整体回滚
+  └─ 失败 → catch (DuplicateKeyException)
+       └─ retryTx.execute(...)      // REQUIRES_NEW，全新事务 + 新快照
+            └─ SELECT ... FOR UPDATE  // 当前读，能看到对手已提交的行
+```
+
+关键点：**第一个事务在进入 catch 之前已经被回滚并结束**，回查发生在第二个事务里。
+回查用 `FOR UPDATE` 做当前读，而不是普通 `SELECT`。
+
+实测（隔离级别 `REPEATABLE-READ`，用 `gts.test.insert-delay-ms=400` 让两个请求都先完成前置查重）：
+
+| 场景 | 结果 |
+|---|---|
+| 两个并发相同请求 | 都是 `code=0`，**同一个 `tripId`**，库里只有 1 条行程、1 条流水 |
+| 两个并发、同键不同里程 | 一个 `code=0`，一个 `40904`，库里只有 1 条行程 |
+
+**② 时间必须截断到毫秒**
+
+数据库列是 `DATETIME(3)`，只存毫秒。如果 `parseIso` 保留微秒，首次入库会被截断，
+而幂等比较用的是未截断的值，重放时两者不等 → 误判成"同键不同内容"返回 40904。
+现在 `TimeUtil.parseIso` 统一 `truncatedTo(ChronoUnit.MILLIS)`。
+
+实测：请求时间带 `.123456Z`，入库为 `.123`，重放同一请求返回原 `tripId`（`code=0`）。
+
+**测试钩子（默认关闭，不影响生产行为）**
+
+| 配置 | 作用 |
+|---|---|
+| `gts.test.insert-delay-ms` | 在前置查重与插入之间休眠，制造"两个请求都通过查重"的并发屏障 |
+| `gts.test.fail-after-trip` | 行程写入后强制抛异常，用于 TC-13 故障注入 |
 
 ## 6. 安全相关
 
