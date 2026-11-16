@@ -162,6 +162,46 @@ await ev(PAGE_HELPERS)
 const toastAfterRedeem = await ev('__t.toast()')
 check('兑换成功有提示', /兑换|成功/.test(toastAfterRedeem), toastAfterRedeem)
 
+// 5.1 幂等：同一 requestId 重复提交，只能扣一次分、只能有一单
+// （实测暴露过的问题：mock 收了 Idempotency-Key 却从不查重 → 超时重试就重复扣分）
+// 选一件「积分够、还有库存」的最便宜商品，避免上一步 UI 兑换后余额不足导致假失败
+const dupTarget = await ev(`(async () => {
+  const [page, acc] = await Promise.all([
+    __carbonDebug.call({url:'/mall/products', query:{page:1, size:50}}),
+    __carbonDebug.call({url:'/points/account'})
+  ]);
+  const ok = page.items.filter(p => p.status === 'ON' && p.stock > 0 && p.points <= acc.balance)
+                      .sort((a, b) => a.points - b.points);
+  return ok.length ? { productId: ok[0].productId, points: ok[0].points } : null;
+})()`)
+check('找到可兑换的便宜商品用于幂等测试', !!dupTarget, dupTarget ? dupTarget.productId + ' / ' + dupTarget.points + ' 分' : '无')
+const priceOne = dupTarget.points
+const dupProductId = dupTarget.productId
+const balanceBeforeDup = await ev(`__carbonDebug.call({url:'/points/account'}).then(a => a.balance)`)
+const dupKey = 'RD-E2E-DUP-' + Date.now()
+const dupBody = JSON.stringify({ productId: dupProductId, quantity: 1 })
+const firstId = await ev(
+  `__carbonDebug.call({url:'/mall/orders', method:'POST', body:${dupBody}, headers:{'Idempotency-Key':'${dupKey}'}})
+    .then(o => o.orderId).catch(e => 'ERR:' + e.code)`
+)
+const secondId = await ev(
+  `__carbonDebug.call({url:'/mall/orders', method:'POST', body:${dupBody}, headers:{'Idempotency-Key':'${dupKey}'}})
+    .then(o => o.orderId).catch(e => 'ERR:' + e.code)`
+)
+check('同键重复提交返回同一订单（不新建）', firstId === secondId && /^O/.test(firstId), `${firstId} / ${secondId}`)
+const balanceAfterDup = await ev(`__carbonDebug.call({url:'/points/account'}).then(a => a.balance)`)
+check(
+  '同键重复提交只扣一次积分',
+  balanceBeforeDup - balanceAfterDup === priceOne,
+  `${balanceBeforeDup} → ${balanceAfterDup}（应只扣 ${priceOne}）`
+)
+const mismatchBody = JSON.stringify({ productId: dupProductId, quantity: 2 })
+const mismatch = await ev(
+  `__carbonDebug.call({url:'/mall/orders', method:'POST', body:${mismatchBody}, headers:{'Idempotency-Key':'${dupKey}'}})
+    .then(() => 'NO_ERROR').catch(e => 'ERR:' + e.code)`
+)
+check('同键换内容被拒（40904）', mismatch === 'ERR:40904', mismatch)
+
 console.log('\n=== 6. 用户端订单（只读，不能取消） ===')
 await ev(`location.hash = '#/app/orders'`)
 await wait(1800)

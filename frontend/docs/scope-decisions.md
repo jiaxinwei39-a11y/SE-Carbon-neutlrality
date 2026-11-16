@@ -53,7 +53,7 @@
 ## 五、接口与回归
 
 - 接口清单与字段：`frontend/docs/api-contract.md`（22 个接口）、`frontend/docs/openapi.yaml`（可导入 Apifox/Swagger）。
-- 自动化回归：`frontend/e2e.mjs` 共 **54 条**断言（含履约、上下架、改库存、管理员取消幂等、PATCH 原子性，以及真实重新登录下 http/biz 两条 401 路径的迟到响应）；`npm run e2e <端口>` 可复跑。
+- 自动化回归：`frontend/e2e.mjs` 共 **58 条**断言（含履约、上下架、改库存、管理员取消幂等、PATCH 原子性、**兑换幂等（同键只扣一次、同键换内容 409）**，以及真实重新登录下 http/biz 两条 401 路径的迟到响应）；`npm run e2e <端口>` 可复跑。
 
 ## 六、2026-11-15 组长确认的三条口径
 

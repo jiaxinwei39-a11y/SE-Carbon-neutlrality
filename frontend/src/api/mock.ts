@@ -46,6 +46,8 @@ let flows: PointsFlow[] = []
 let orders: Order[] = []
 /** 幂等表：clientTripId → tripId。真后端是一张 unique 索引的表，这里用 Map 模拟 */
 const tripIdByClientId = new Map<string, string>()
+/** 幂等表：兑换 requestId（Idempotency-Key）→ orderId。防止连点/重试重复扣分 */
+const orderIdByRequestKey = new Map<string, string>()
 
 function seed(): void {
   const plan: Array<[TripMode, number, number, string, string, number]> = [
@@ -391,11 +393,20 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
       startPlace: string
       endPlace: string
     }
-    // 幂等：同一个 clientTripId 重复提交，返回第一次落库的那条，不重复加分
+    // 幂等：同一个 clientTripId 重复提交，返回第一次落库的那条，不重复加分；
+    // 同键但内容不同 → 409（评审要求：不能静默把新内容当重放）
     const dupTripId = tripIdByClientId.get(body.clientTripId)
     if (dupTripId) {
       const dup = trips.find((t) => t.tripId === dupTripId)
-      if (dup) return ok(dup) as unknown as T
+      if (dup) {
+        const sameInput =
+          dup.mode === body.mode &&
+          Number(dup.distanceKm) === Number(body.distanceKm) &&
+          dup.startTime === body.startTime &&
+          dup.endTime === body.endTime
+        if (!sameInput) throw new ApiError('幂等键已被不同内容使用', 40904, 409)
+        return ok(dup) as unknown as T
+      }
     }
 
     const distanceKm = Number(body.distanceKm)
@@ -494,6 +505,19 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
     const memberKey = req.headers?.['Idempotency-Key']
     if (!memberKey) throw new ApiError('缺少幂等键，请刷新页面重试', 40002, 400)
     const body = req.body as { productId: string; quantity: number }
+
+    // 幂等：同一个 requestId 重复提交（连点、超时重试）必须返回第一次的订单，
+    // 绝不能再扣一次积分 / 再减一次库存。同键但内容不同 → 409（评审要求）。
+    const dupOrderId = orderIdByRequestKey.get(memberKey)
+    if (dupOrderId) {
+      const dup = orders.find((o) => o.orderId === dupOrderId)
+      if (dup) {
+        const sameInput = dup.productId === body.productId && dup.quantity === Number(body.quantity)
+        if (!sameInput) throw new ApiError('幂等键已被不同内容使用', 40904, 409)
+        return ok(dup) as unknown as T
+      }
+    }
+
     const product = state.products.find((p) => p.productId === body.productId)
     if (!product || product.status !== 'ON') throw new ApiError('商品不存在或已下架', 40402, 404)
     if (product.stock < body.quantity) throw new ApiError('库存不足，请减少兑换数量', 40901, 409)
@@ -513,6 +537,7 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
       createdAt: new Date().toISOString(),
     }
     orders = [order, ...orders]
+    orderIdByRequestKey.set(memberKey, order.orderId)
     product.stock -= body.quantity
     state.account.balance -= totalPoints
     state.account.totalSpent += totalPoints
