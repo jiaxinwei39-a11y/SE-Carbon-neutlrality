@@ -43,10 +43,17 @@ if (isMock) {
   ;(window as unknown as Record<string, unknown>).__carbonDebug = {
     /** 通用请求口，给 e2e 读后端状态用（比如管理员会话下读积分账户） */
     call: (options: Record<string, unknown>) => request(options as never),
-    /** 直接替换当前 token，用来模拟"中途重新登录拿到新 token" */
+    /** 直接替换当前 token（只用于构造边界场景，不算"重新登录"） */
     setToken: (t: string) => setToken(t),
-    /** 发起一个故意慢 N 毫秒的请求，返回时一定是 401 */
-    slow401: (ms = 1200) => request({ url: '/_debug/slow401', query: { ms } }),
+    /**
+     * 走真实登录流程重新登录（POST /auth/login + store 更新 + 换 token）。
+     * 评审要求"迟到的 401 不能踢掉重新登录后的新会话"必须用真实登录验证，
+     * 不能靠 setToken 伪造新 token。
+     */
+    loginVia: (account: string, password: string) => useUserStore(pinia).login(account, password),
+    /** 发起一个故意慢 N 毫秒的请求，返回时一定是 401；mode=biz 时是 HTTP 200 + 业务码 40100 */
+    slow401: (ms = 1200, mode: 'http' | 'biz' = 'http') =>
+      request({ url: '/_debug/slow401', query: { ms, mode } }),
     /** 直接打商品 PATCH，用来验证"校验失败不改任何字段" */
     patchProduct: (productId: string, body: Record<string, unknown>) =>
       request({ url: `/admin/products/${productId}`, method: 'PATCH', body }),

@@ -232,23 +232,35 @@ await ev(`location.hash = '#/app/points'`)
 await wait(1300)
 check('过期后不能再进业务页', (await ev('location.hash')).startsWith('#/login'), await ev('location.hash'))
 
-console.log('\n=== 8.5 迟到的 401 不能踢掉新会话 ===')
-await login('13800138000')
-await ev(`location.hash = '#/app/points'`)
-await wait(1300)
-check('发起迟到请求前停在积分页', (await ev('location.hash')) === '#/app/points', await ev('location.hash'))
-// 先发一个"慢请求"，它带着旧 token 出发
-// 注意：Runtime.evaluate 的 awaitPromise=true 会等 Promise 结算，
-// 这里用逗号表达式返回一个字符串，避免脚本自己被这个慢请求阻塞住。
-await ev(`(window.__late401 = __carbonDebug.slow401(1500).catch((e) => 'ERR:' + (e.code || e.message)), 'fired')`)
-await wait(200)
-// 模拟期间用户重新登录，拿到了新 token
-await ev(`__carbonDebug.setToken('mock-token-renewed')`)
-await wait(2200)
-const lateHash = await ev('location.hash')
-check('旧请求的迟到 401 没有把新会话踢回登录页', lateHash.startsWith('#/app/'), lateHash)
-check('新会话的 token 没被清掉', (await ev(`sessionStorage.getItem('carbon_token')`)) === 'mock-token-renewed')
-await ev(`__carbonDebug.setToken('')`)
+console.log('\n=== 8.5 迟到的 401 不能踢掉新会话（两条真实路径 + 真实重新登录） ===')
+// 评审要求：不能只靠 setToken 伪造新 token，必须走真实登录接口重新登录；
+// 且 HTTP 401 与「HTTP 200 + 业务码 40100」两条路径都要各自验一遍。
+for (const mode of ['http', 'biz']) {
+  await login('13800138000')
+  await ev(`location.hash = '#/app/points'`)
+  await wait(1300)
+  await ev(PAGE_HELPERS)
+  check(`[${mode}] 发起迟到请求前停在积分页`, (await ev('location.hash')) === '#/app/points', await ev('location.hash'))
+
+  // 慢请求带着「旧 token」出发。用逗号表达式返回字符串，避免 awaitPromise 把脚本卡住。
+  await ev(`(window.__late401 = __carbonDebug.slow401(1500, '${mode}').catch((e) => 'ERR:' + (e.code || e.message)), 'fired')`)
+  await wait(250)
+
+  // 期间用户真的重新登录了一次（POST /auth/login → store 更新 → 换 token）
+  const reloginOk = await ev(`__carbonDebug.loginVia('13800138000', '123456').then(() => 'ok').catch((e) => 'ERR:' + (e.message))`)
+  check(`[${mode}] 重新登录成功`, reloginOk === 'ok', reloginOk)
+  const tokenAfterRelogin = await ev(`sessionStorage.getItem('carbon_token')`)
+
+  await wait(2200)
+  const lateHash = await ev('location.hash')
+  check(`[${mode}] 旧请求的迟到 401 没有把新会话踢回登录页`, lateHash.startsWith('#/app/'), lateHash)
+  check(
+    `[${mode}] 重新登录后的 token 没被旧请求清掉`,
+    (await ev(`sessionStorage.getItem('carbon_token')`)) === tokenAfterRelogin,
+    'token 变化'
+  )
+  check(`[${mode}] 迟到 401 没有弹"登录已过期"`, (await ev('__t.toast()')).indexOf('登录已过期') < 0, await ev('__t.toast()'))
+}
 
 console.log('\n=== 9. 管理端写操作（履约 / 商品维护） ===')
 await login('admin')

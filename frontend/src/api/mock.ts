@@ -315,7 +315,10 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
     const isAdmin = body.account.toLowerCase() === 'admin'
     const user = isAdmin ? { ...MOCK_ADMIN } : { ...MOCK_USER }
     state.user = user
-    return ok({ token: `mock-token-${user.id}`, user }) as unknown as T
+    // 每次登录都签发一个「新」token（真实 JWT 也是这样：iat/jti 变了，字符串就变了）。
+    // 这一点很重要：前端靠"发请求时的 token ≠ 当前 token"来识别"旧会话的迟到响应"，
+    // 如果 token 每次登录都一样，客户端就无法区分新旧会话，迟到 401 会误杀新会话。
+    return ok({ token: `mock-token-${user.id}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`, user }) as unknown as T
   }
 
   if (url === '/auth/me' && method === 'GET') {
@@ -331,9 +334,11 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
   /* ---------- 演示调试钩子（只在 mock 模式存在，供 e2e 验证边界行为） ---------- */
   if (url === '/_debug/slow401' && method === 'GET') {
     // 故意先等一段时间再返回 401，用来复现"旧会话的迟到 401"
+    // mode=http → HTTP 401；mode=biz → HTTP 200 但业务码 40100（评审要求的第二条真实路径）
     const ms = Number((req.query ?? {}).ms ?? 1200)
+    const mode = String((req.query ?? {}).mode ?? 'http')
     await sleep(Number.isFinite(ms) && ms >= 0 ? ms : 1200)
-    throw new ApiError('登录已过期，请重新登录', 40100, 401)
+    throw new ApiError('登录已过期，请重新登录', 40100, mode === 'biz' ? 200 : 401)
   }
 
   /* ---------- 行程 ---------- */

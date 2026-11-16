@@ -104,7 +104,7 @@ Authorization: Bearer <admin token>
 | `POST /admin/products/{id}/status` | **不做**，已并入 `PATCH /admin/products/{id}` |
 | `POST /admin/products/{id}/stock` | **不做**，已并入 `PATCH /admin/products/{id}` |
 | `POST /admin/rules`（新增规则版本） | P0 未完成（需版本化 + 生效时间 + 行程快照 + 留痕） |
-| `POST /admin/users/{id}/status`（用户启停） | **后续任务**，不属于本阶段 P0 范围，本阶段不做 |
+| `POST /admin/users/{id}/status`（用户启停） | **P1 后续**，不在本阶段 P0 范围，不阻塞验收 |
 | `POST /auth/register`（注册） | P0 未完成 |
 
 ---
@@ -150,7 +150,7 @@ VITE_DATA_SOURCE=api
 VITE_API_BASE_URL=http://localhost:8080/api
 ```
 
-切完我会重跑 `npm run e2e`（47 条断言），后端只要按本文实现，断言应全绿。
+切完我会重跑 `npm run e2e`（54 条断言），后端只要按本文实现，断言应全绿。
 
 ---
 
