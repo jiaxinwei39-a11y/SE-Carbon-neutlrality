@@ -109,10 +109,11 @@ public class TripService {
             return replayOrConflict(row, mode, distance, start, end, startPlace, endPlace);
         }
 
-        points.applyTrip(user.id(), awarded, reduction);
+        // 入账与序号分配在同一事务内：last_seq 的自增持有账户行锁
+        long accountSeq = points.applyTrip(user.id(), awarded, reduction);
         if (awarded > 0) {
             long balanceAfter = points.balance(user.id());
-            points.insertLedger(user.id(), "EARN",
+            points.insertLedger(user.id(), accountSeq, "EARN",
                     "行程核算入账 · " + modeLabel(mode) + " " + distance.stripTrailingZeros().toPlainString() + " 公里",
                     awarded, balanceAfter, "TRIP", tripId);
         }

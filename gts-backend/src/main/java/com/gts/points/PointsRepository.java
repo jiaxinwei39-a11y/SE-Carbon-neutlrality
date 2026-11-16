@@ -56,22 +56,45 @@ public class PointsRepository {
 
     /**
      * 行程入账：余额、累计获得、行程数、累计减排一次更新完。
-     * 零积分行程也调用本方法（points=0），保证 tripCount 与行程表一致；
-     * 只是不写流水 —— 因为零金额流水没有对账意义，还会污染流水列表。
+     *
+     * 有积分时同时分配账户内流水序号：
+     *   UPDATE ... last_seq = last_seq + 1 会拿到该账户的行锁，
+     *   同账户的并发发分因此排队；随后的 SELECT 读回本次分配到的值。
+     * 零积分行程不写流水，也就**不能**消耗序号，否则 account_seq 会断号。
+     *
+     * @return 分配到的 account_seq；零积分时返回 0（不占用序号）
      */
-    public void applyTrip(long userId, long points, BigDecimal reductionKg) {
+    public long applyTrip(long userId, long points, BigDecimal reductionKg) {
+        if (points > 0) {
+            int n = jdbc.update("""
+                    UPDATE t_point_account
+                    SET last_seq = last_seq + 1,
+                        balance = balance + ?,
+                        total_earned = total_earned + ?,
+                        trip_count = trip_count + 1,
+                        total_reduction_kg = total_reduction_kg + ?,
+                        version = version + 1
+                    WHERE user_id = ?
+                    """, points, points, reductionKg, userId);
+            if (n == 0) {
+                throw new IllegalStateException("积分账户不存在，userId=" + userId);
+            }
+            Long seq = jdbc.queryForObject(
+                    "SELECT last_seq FROM t_point_account WHERE user_id = ?", Long.class, userId);
+            return seq == null ? 0L : seq;
+        }
+
         int n = jdbc.update("""
                 UPDATE t_point_account
-                SET balance = balance + ?,
-                    total_earned = total_earned + ?,
-                    trip_count = trip_count + 1,
+                SET trip_count = trip_count + 1,
                     total_reduction_kg = total_reduction_kg + ?,
                     version = version + 1
                 WHERE user_id = ?
-                """, points, points, reductionKg, userId);
+                """, reductionKg, userId);
         if (n == 0) {
             throw new IllegalStateException("积分账户不存在，userId=" + userId);
         }
+        return 0L;
     }
 
     public long balance(long userId) {
@@ -93,12 +116,12 @@ public class PointsRepository {
         return rows.stream().findFirst();
     }
 
-    public void insertLedger(long userId, String type, String title, long amount,
+    public void insertLedger(long userId, long accountSeq, String type, String title, long amount,
                              long balanceAfter, String refType, String refId) {
         jdbc.update("""
-                INSERT INTO t_point_ledger (ledger_no, user_id, type, title, amount, balance_after, ref_type, ref_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """, newLedgerNo(), userId, type, title, amount, balanceAfter, refType, refId);
+                INSERT INTO t_point_ledger (ledger_no, user_id, account_seq, type, title, amount, balance_after, ref_type, ref_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, newLedgerNo(), userId, accountSeq, type, title, amount, balanceAfter, refType, refId);
     }
 
     public List<FlowRow> flows(long userId, String type, int page, int size) {
