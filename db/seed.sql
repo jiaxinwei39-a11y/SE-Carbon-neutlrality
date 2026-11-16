@@ -98,6 +98,16 @@ BEGIN
   DECLARE v_ledger    INT     DEFAULT 0;
   DECLARE v_seq_max   BIGINT  DEFAULT 0;
   DECLARE v_acct_ok   INT     DEFAULT 0;
+  DECLARE v_balance2  BIGINT  DEFAULT 0;
+
+  -- 关键：过程内任何异常都必须先回滚本事务，再把错误抛给调用方。
+  -- SIGNAL 只是"退出过程"，并不会自动回滚；调用方后续一条 COMMIT
+  -- 或一句隐式提交的 DDL，就会把前面的半截写入提交掉。
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+    ROLLBACK;
+    RESIGNAL;
+  END;
 
   SELECT id INTO v_u1 FROM t_user WHERE user_id = 'U001';
   IF v_u1 IS NULL THEN

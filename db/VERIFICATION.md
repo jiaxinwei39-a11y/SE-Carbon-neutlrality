@@ -159,11 +159,63 @@ mysql -uroot -p gts -N -B -e "<export-dict.sql 查询 1>" > cols.tsv
 python db/tools/gen_dict.py cols.tsv fk.tsv idx.tsv chk.tsv schema-dict.md
 ```
 
-## 10. 未覆盖的部分（如实标注）
+## 10. 异常回滚（第二轮评审补充）
+
+评审指出：`SIGNAL` 只让过程退出，**不等于回滚**；交互连接随后一条 `COMMIT`
+或一句隐式提交的 DDL，就会把半截写入提交掉。因此两个过程都补了 `EXIT HANDLER`：
+
+```sql
+DECLARE EXIT HANDLER FOR SQLEXCEPTION
+BEGIN
+  ROLLBACK;
+  RESIGNAL;
+END;
+```
+
+验证方式（**同一连接制造中途失败，再执行 COMMIT**）：
+
+1. 干净初始化 → `reset-demo.sql` 清空演示业务数据 → 账户余额 0、行程 0
+2. 预先插入一条 `account_seq = 9` 的流水，使种子的收尾断言（条目数 = 3）必然失败
+3. 用 `mysql --force` 执行"`seed.sql` + `COMMIT;` + 查询"（模拟调用方继续提交）
+4. 结果：
+
+```
+ERROR 1644 (45000) at line 218: 种子中止：演示数据条数/余额与预期不符，已回滚
+AFTER_COMMIT
+trips=0
+ledger=1
+```
+
+| 断言 | 实际 |
+|---|---|
+| 失败后被中止的 3 条行程没有留下 | `trips = 0` |
+| 只有预先手工插入的那 1 条流水 | `ledger = 1` |
+| 余额没有被改动 | `0` |
+
+即使同一连接紧接着执行 `COMMIT`，也没有任何半成品被提交。
+
+## 11. reset-demo 对后续规则版本的处理（第二轮评审补充）
+
+原实现只是把基线版本的 `effective_to` 置 NULL，**没有处理后续版本**：
+若已存在 `R-2026-11-BUS-V2`，重置后两条规则都覆盖当前时间，后端按 `effective_from DESC`
+仍会选中 V2，等于没重置。
+
+现在 `reset-demo.sql` 会**删除非基线版本**（被行程引用的版本不删，检测到就中止），
+再恢复基线版本的因子与区间。验证：
+
+| 步骤 | 结果 |
+|---|---|
+| 插入 `R-2026-11-BUS-V2`（2026-03-01 起，系数 20） | BUS 规则数 = 2 |
+| 重置前按"结束时间落在区间内 + effective_from DESC"匹配 | 命中 `R-2026-11-BUS-V2` |
+| 执行 `reset-demo.sql` | BUS 规则数 = 1 |
+| 重置后同样的匹配查询 | 命中 `R-2026-11-BUS`（基线） |
+| 基线系数 | 恢复为 10 |
+
+## 12. 未覆盖的部分（如实标注）
 
 | 项 | 状态 | 说明 |
 |---|---|---|
 | 迁移的**自动化**执行器 | 未实现 | 目前逐版本手工执行 + `t_schema_version` 记录；后续可接 Flyway |
 | 区间重叠的**数据库级**拦截 | 不可能 | 由锁表 + 事务内校验承担，已在 README 说明边界 |
-| 失败注入回滚（TC-13） | 未执行 | 属于 #10 后端事务验证，见 `gts-backend/TEST-REPORT.md` |
+| 失败注入回滚（TC-13） | 已在 #10 执行 | 用 `gts.test.fail-after-trip` 注入，行程/流水/余额均未变，见 `gts-backend/TEST-REPORT.md` |
 | 峰值并发（>8） | 未测 | 课程演示规模按 20 并发规划，留给 #14 压测 |

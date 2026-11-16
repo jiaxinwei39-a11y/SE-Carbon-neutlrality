@@ -21,6 +21,13 @@ DELIMITER $$
 CREATE PROCEDURE sp_reset_demo()
 BEGIN
   DECLARE v_orders BIGINT DEFAULT 0;
+  DECLARE v_ref    BIGINT DEFAULT 0;
+
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+    ROLLBACK;
+    RESIGNAL;
+  END;
 
   SELECT COUNT(*) INTO v_orders FROM t_redemption_order;
   IF v_orders > 0 THEN
@@ -58,7 +65,30 @@ BEGIN
   UPDATE t_product SET points = 800, stock = 2,   status = 'ON',  description = '仅剩 2 件，用于演示并发与库存不足' WHERE product_id = 'P007';
   UPDATE t_product SET points = 100, stock = 10,  status = 'OFF', description = '用于演示下架商品不可兑换'          WHERE product_id = 'P008';
 
-  -- 5. 规则恢复初版因子，并归档此后的版本（保留历史行，不物理删除）
+  -- 5. 规则：删除后续版本，只保留基线版本
+  --    只把基线版本的 effective_to 置 NULL 是不够的：若已存在 BUS V2，
+  --    两条规则会同时覆盖当前时间，后端按 effective_from DESC 仍会选中 V2，
+  --    重置就没有回到基线。所以必须把非基线版本真正删掉。
+  --    被行程引用的版本不能删（会破坏历史），遇到就中止。
+  SELECT COUNT(*) INTO v_ref
+    FROM t_carbon_rule r
+    JOIN t_trip t ON t.rule_id = r.id
+   WHERE (r.mode = 'BUS'    AND r.rule_id <> 'R-2026-11-BUS')
+      OR (r.mode = 'SUBWAY' AND r.rule_id <> 'R-2026-11-SUBWAY')
+      OR (r.mode = 'BIKE'   AND r.rule_id <> 'R-2026-11-BIKE')
+      OR (r.mode = 'WALK'   AND r.rule_id <> 'R-2026-11-WALK');
+  IF v_ref > 0 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = '重置中止：存在行程引用了非基线规则版本，删除会破坏历史数据';
+  END IF;
+
+  DELETE FROM t_carbon_rule
+   WHERE (mode = 'BUS'    AND rule_id <> 'R-2026-11-BUS')
+      OR (mode = 'SUBWAY' AND rule_id <> 'R-2026-11-SUBWAY')
+      OR (mode = 'BIKE'   AND rule_id <> 'R-2026-11-BIKE')
+      OR (mode = 'WALK'   AND rule_id <> 'R-2026-11-WALK');
+
+  -- 基线版本恢复初版因子与区间
   UPDATE t_carbon_rule SET base_factor = 0.200000000, mode_factor = 0.050000000, points_ratio = 10.000000000,
                            effective_from = '2026-01-01 00:00:00', effective_to = NULL, status = 'ACTIVE'
    WHERE rule_id = 'R-2026-11-BUS';
