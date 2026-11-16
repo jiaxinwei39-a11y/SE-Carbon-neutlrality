@@ -1,0 +1,13 @@
+# 构建产物
+target/
+
+# 日志
+*.log
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# 本地覆盖配置（放真实密码用，不要提交）
+application-local.properties
