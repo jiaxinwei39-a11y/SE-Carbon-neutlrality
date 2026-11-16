@@ -102,6 +102,60 @@ public class PointsRepository {
         return b == null ? 0L : b;
     }
 
+    /**
+     * 锁定账户行（当前读）。
+     * 加锁顺序的第一把锁：账户 → 商品 → 订单。必须先锁账户再动库存，
+     * 所有涉及同批资源的写操作都遵守这个顺序，才不会互相死锁。
+     */
+    public long lockAccountForUpdate(long userId) {
+        Long b = jdbc.queryForObject(
+                "SELECT balance FROM t_point_account WHERE user_id = ? FOR UPDATE", Long.class, userId);
+        return b == null ? 0L : b;
+    }
+
+    /**
+     * 扣分并分配流水序号。
+     * WHERE balance >= ? 让"余额是否够"和"扣减"变成同一条原子语句，
+     * 并发下不会扣成负数；影响行数为 0 即余额不足。
+     */
+    public long spend(long userId, long points) {
+        int n = jdbc.update("""
+                UPDATE t_point_account
+                SET last_seq = last_seq + 1,
+                    balance = balance - ?,
+                    total_spent = total_spent + ?,
+                    version = version + 1
+                WHERE user_id = ? AND balance >= ?
+                """, points, points, userId, points);
+        if (n == 0) {
+            throw new com.gts.common.Api.BizException(
+                    com.gts.common.Api.Codes.POINTS_SHORT, 400, "积分不足，请先积累更多绿色出行积分");
+        }
+        return lastSeq(userId);
+    }
+
+    /** 返还积分并分配流水序号（取消订单冲正） */
+    public long refund(long userId, long points) {
+        int n = jdbc.update("""
+                UPDATE t_point_account
+                SET last_seq = last_seq + 1,
+                    balance = balance + ?,
+                    total_spent = total_spent - ?,
+                    version = version + 1
+                WHERE user_id = ?
+                """, points, points, userId);
+        if (n == 0) {
+            throw new IllegalStateException("积分账户不存在，userId=" + userId);
+        }
+        return lastSeq(userId);
+    }
+
+    public long lastSeq(long userId) {
+        Long seq = jdbc.queryForObject(
+                "SELECT last_seq FROM t_point_account WHERE user_id = ?", Long.class, userId);
+        return seq == null ? 0L : seq;
+    }
+
     public Optional<AccountRow> account(long userId) {
         List<AccountRow> rows = jdbc.query("""
                 SELECT balance, total_earned, total_spent, trip_count, total_reduction_kg

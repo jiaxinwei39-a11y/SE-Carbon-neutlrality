@@ -70,9 +70,18 @@ public final class Api {
         public static final int BAD_CREDENTIALS = 40101;
         public static final int FORBIDDEN = 40301;
         public static final int TRIP_NOT_FOUND = 40401;
+        public static final int PRODUCT_NOT_FOUND = 40402;
+        public static final int ORDER_NOT_FOUND = 40403;
+        public static final int ENDPOINT_NOT_FOUND = 40400;
         public static final int IDEMPOTENCY_CONFLICT = 40904;
         public static final int NO_CARBON_RULE = 40905;
         public static final int PHONE_TAKEN = 40906;
+        public static final int RULE_INTERVAL_OVERLAP = 40907;
+        public static final int PRODUCT_OFF_SHELF = 40908;
+        public static final int STOCK_SHORT = 40901;
+        public static final int POINTS_SHORT = 40030;
+        public static final int CANCEL_REASON_REQUIRED = 40040;
+        public static final int ORDER_STATUS_INVALID = 40903;
         public static final int SERVER_ERROR = 50000;
 
         private Codes() {
