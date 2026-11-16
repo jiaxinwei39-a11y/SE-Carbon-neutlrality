@@ -104,7 +104,7 @@ Authorization: Bearer <admin token>
 | `POST /admin/products/{id}/status` | **不做**，已并入 `PATCH /admin/products/{id}` |
 | `POST /admin/products/{id}/stock` | **不做**，已并入 `PATCH /admin/products/{id}` |
 | `POST /admin/rules`（新增规则版本） | P0 未完成（需版本化 + 生效时间 + 行程快照 + 留痕） |
-| `POST /admin/users/{id}/status` | P0 未完成 |
+| `POST /admin/users/{id}/status`（用户启停） | **后续任务**，不属于本阶段 P0 范围，本阶段不做 |
 | `POST /auth/register`（注册） | P0 未完成 |
 
 ---
@@ -129,7 +129,8 @@ Authorization: Bearer <admin token>
 2. **同键同输入 → 重放原结果**（200 + 上次结果），不产生第二笔积分/扣减。
 3. **同键不同输入 → 409**（建议 `40904 幂等键已被不同内容使用`），不要静默覆盖。
 4. 不能只靠 Redis/内存：必须用**数据库唯一约束**兜底（如 `points_ledger(user_id, biz_type, biz_id)` 唯一索引），否则缓存过期后会二次入账。
-5. 幂等窗口 24 小时。
+5. **幂等关系不因时间失效**：不要实现“24 小时后同键算新请求”——那等于允许同一笔业务被扣第二次分。
+   Redis 的短 TTL 只能当缓存，未命中时回数据库按业务键查，仍要返回原结果。
 
 ### 4.2 取消订单（评审 #23，接口已移到管理端）
 
