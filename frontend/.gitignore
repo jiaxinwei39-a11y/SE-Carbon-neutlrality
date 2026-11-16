@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-api/
 dist-app/
 
 # 本地缓存与运行时产物（Chrome 调试用的临时 profile 也属本地产物）

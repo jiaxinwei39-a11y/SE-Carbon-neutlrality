@@ -126,6 +126,30 @@ await wait(2600)
 const afterSubmitHash = await ev('location.hash')
 check('提交后跳到行程详情', /#\/app\/trips\/T/.test(afterSubmitHash), afterSubmitHash)
 
+// 2.1 行程幂等：同键同输入回放原行程；同键不同输入（含**起终点**）必须拒绝
+const tripKey = 'TR-E2E-DUP-' + Date.now()
+const mkTripBody = (place) =>
+  JSON.stringify({
+    clientTripId: tripKey,
+    mode: 'BUS',
+    distanceKm: 8.8,
+    startTime: '2026-11-01T08:00',
+    endTime: '2026-11-01T08:40',
+    startPlace: place[0],
+    endPlace: place[1],
+  })
+const postTrip = (place) =>
+  ev(
+    `__carbonDebug.call({url:'/trips', method:'POST', body:${mkTripBody(place)},
+      headers:{'Idempotency-Key':'${tripKey}'}})
+      .then(t => t.tripId).catch(e => 'ERR:' + e.code)`
+  )
+const tripFirst = await postTrip(['A 站', 'B 站'])
+const tripSecond = await postTrip(['A 站', 'B 站'])
+check('行程同键同输入返回同一行程', tripFirst === tripSecond && /^T/.test(tripFirst), `${tripFirst} / ${tripSecond}`)
+const tripPlacesChanged = await postTrip(['C 站', 'D 站'])
+check('行程同键改起终点被拒（40904）', tripPlacesChanged === 'ERR:40904', tripPlacesChanged)
+
 console.log('\n=== 3. 核算详情 ===')
 const detailText = await ev('__t.text()')
 check('详情展示了核算过程', /核算|因子/.test(detailText))

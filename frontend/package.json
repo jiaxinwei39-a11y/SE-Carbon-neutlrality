@@ -13,6 +13,7 @@
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit",
     "e2e": "node e2e.mjs",
+    "e2e:api": "node e2e-api401.mjs",
     "app": "npm run build:single && electron .",
     "app:only": "electron ."
   },

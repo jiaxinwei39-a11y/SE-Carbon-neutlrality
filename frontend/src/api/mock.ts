@@ -395,6 +395,7 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
     }
     // 幂等：同一个 clientTripId 重复提交，返回第一次落库的那条，不重复加分；
     // 同键但内容不同 → 409（评审要求：不能静默把新内容当重放）
+    // 注意：比较必须覆盖**全部业务字段**，漏掉起终点就会把 A→B 改成 C→D 的重放当成重试放过去。
     const dupTripId = tripIdByClientId.get(body.clientTripId)
     if (dupTripId) {
       const dup = trips.find((t) => t.tripId === dupTripId)
@@ -403,7 +404,9 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
           dup.mode === body.mode &&
           Number(dup.distanceKm) === Number(body.distanceKm) &&
           dup.startTime === body.startTime &&
-          dup.endTime === body.endTime
+          dup.endTime === body.endTime &&
+          dup.startPlace === body.startPlace &&
+          dup.endPlace === body.endPlace
         if (!sameInput) throw new ApiError('幂等键已被不同内容使用', 40904, 409)
         return ok(dup) as unknown as T
       }
