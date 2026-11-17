@@ -392,7 +392,7 @@ def main(out_path, seq_path=None):
                          'source': {'$ref': ll[s]['_id']},
                          'target': {'$ref': ll[t]['_id']}})
 
-        H = 120 + len(msgs) * 50 + 80
+        H = 120 + len(msgs) * 56 + 80
         LW, LT = 96, 40
         lifeline_views = []
         x = 40
@@ -416,7 +416,7 @@ def main(out_path, seq_path=None):
         centers = [v['left'] + v['width'] // 2 for v in lifeline_views]
         views = list(lifeline_views)
         for k, m in enumerate(msgs):
-            y = 130 + k * 50
+            y = 130 + k * 56
             s, t, text = messages[k]
             mx = centers[s]
             nx = centers[t]
@@ -424,11 +424,15 @@ def main(out_path, seq_path=None):
             act = {'_type': 'UMLActivationView', '_id': uid(), '_parent': {'$ref': ''},
                    'model': {'$ref': mid}, 'visible': True, 'font': FONT, 'parentStyle': False,
                    'left': nx - 7, 'top': y, 'width': 14, 'height': 40}
+            # 标签居中、只占箭头中段约 55%，两端各留出激活条的空间，
+            # 避免文字压到源/目标生命线上的激活条
             span = abs(nx - mx)
+            lw = max(64, int(span * 0.55))
+            mid = (mx + nx) // 2
             label = {'_type': 'EdgeLabelView', '_id': uid(), '_parent': {'$ref': ''},
                      'visible': True, 'font': FONT,
-                     'left': min(mx, nx) + 6, 'top': y - 18,
-                     'width': max(40, span - 12), 'height': 13,
+                     'left': mid - lw // 2, 'top': y - 20,
+                     'width': lw, 'height': 13, 'horizontalAlignment': 1,
                      'alpha': 0.0, 'distance': 12,
                      'edgePosition': 0, 'text': text}
             mvid = uid()
