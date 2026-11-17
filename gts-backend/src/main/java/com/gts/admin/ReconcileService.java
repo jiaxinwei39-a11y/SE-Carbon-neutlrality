@@ -35,19 +35,27 @@ public class ReconcileService {
     }
 
     public AdminDto.ReconcileResultVo check() {
-        List<AdminDto.ReconcileItemVo> items = readOnlyTx.execute(status -> {
-            List<AdminDto.ReconcileItemVo> list = new ArrayList<>();
-            checkAccountBalance(list);
-            checkLastSeq(list);
-            checkSeqGap(list);
-            checkTripEarn(list);
-            checkTripAmount(list);
-            checkOrderSpend(list);
-            checkOrderReverse(list);
-            checkTripCount(list);
-            checkBalanceChain(list);
-            return list;
-        });
+        List<AdminDto.ReconcileItemVo> items;
+        try {
+            items = readOnlyTx.execute(status -> {
+                List<AdminDto.ReconcileItemVo> list = new ArrayList<>();
+                checkAccountBalance(list);
+                checkLastSeq(list);
+                checkSeqGap(list);
+                checkTripEarn(list);
+                checkTripAmount(list);
+                checkOrderSpend(list);
+                checkOrderReverse(list);
+                checkTripCount(list);
+                checkBalanceChain(list);
+                return list;
+            });
+        } catch (RuntimeException e) {
+            // 对账读取失败必须显式报错（50001），绝不能返回空数组被前端当成"无差异"
+            throw new com.gts.common.Api.BizException(
+                    com.gts.common.Api.Codes.RECONCILE_UNAVAILABLE, 500,
+                    "对账服务暂不可用，请稍后重试");
+        }
         return new AdminDto.ReconcileResultVo(TimeUtil.nowIso(), items == null ? List.of() : items);
     }
 

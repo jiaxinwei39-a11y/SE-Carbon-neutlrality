@@ -60,6 +60,16 @@ public class AdminController {
         return Api.Result.ok(adminService.updateProduct(operator(), productId, req));
     }
 
+    /**
+     * 商品部分更新 —— **v1 规范接口**，前端只需调这一个。
+     * 原有的 PUT / status / stock 三个端点保留为兼容入口，契约里标记为 deprecated。
+     */
+    @org.springframework.web.bind.annotation.PatchMapping("/products/{productId}")
+    public Api.Result<MallDto.ProductVo> patchProduct(@PathVariable String productId,
+                                                      @Valid @RequestBody AdminDto.ProductPatchRequest req) {
+        return Api.Result.ok(adminService.patchProduct(operator(), productId, req));
+    }
+
     @PostMapping("/products/{productId}/status")
     public Api.Result<MallDto.ProductVo> changeStatus(@PathVariable String productId,
                                                       @Valid @RequestBody AdminDto.StatusRequest req) {
@@ -80,6 +90,28 @@ public class AdminController {
             @RequestParam(defaultValue = "10") int size) {
         requireAdmin();
         return Api.Result.ok(adminService.listOrders(page, size));
+    }
+
+    /** 取消订单（管理员）—— 前端契约路径；用户端不再提供取消入口 */
+    @PostMapping("/orders/{orderId}/cancel")
+    public Api.Result<OrderDto.OrderVo> cancelOrder(@PathVariable String orderId,
+                                                    @Valid @RequestBody OrderDto.CancelRequest req) {
+        return Api.Result.ok(orderService.cancel(operator(), orderId, req.reason()));
+    }
+
+    @GetMapping("/users")
+    public Api.Result<Api.Page<com.gts.auth.AuthDto.UserVo>> users(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        requireAdmin();
+        return Api.Result.ok(adminService.listUsers(page, size));
+    }
+
+    /** 数据概览（只读聚合） */
+    @GetMapping("/dashboard")
+    public Api.Result<AdminDto.DashboardVo> dashboard() {
+        requireAdmin();
+        return Api.Result.ok(adminService.dashboard());
     }
 
     @PostMapping("/orders/{orderId}/fulfill")

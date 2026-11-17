@@ -116,7 +116,9 @@ public class OrderService {
         OrderRepository.OrderRow locked = orders.findByOrderIdForUpdate(orderId).orElseThrow();
 
         if ("FULFILLED".equals(locked.status())) {
-            return OrderMapper.toVo(locked);
+            // 前端契约明确：重复点"发放"必须拒绝，不能重复发货
+            throw new Api.BizException(Api.Codes.ORDER_STATUS_INVALID, 409,
+                    "订单已发放，不能重复发放，请刷新后重试");
         }
         if ("CANCELLED".equals(locked.status())) {
             throw new Api.BizException(Api.Codes.ORDER_STATUS_INVALID, 409,

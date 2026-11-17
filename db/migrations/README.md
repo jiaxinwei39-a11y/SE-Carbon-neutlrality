@@ -7,8 +7,13 @@
 
 | 场景 | 用什么 | 说明 |
 |---|---|---|
-| **全新库** | `db/schema.sql` | 已经是最新结构（V2），执行完直接 `db/seed.sql` |
-| **已有库升级** | `db/migrations/V1__init.sql` → `V2__...sql` | 逐版本执行，数据保留 |
+| **全新空库** | `db/schema.sql` | 已经是最新结构（V4），执行完直接 `db/seed.sql` |
+| **已有库升级** | `db/migrations/V1__init.sql` → `V2` → `V3` → `V4` | 逐版本执行，数据保留 |
+
+> ⚠️ **`schema.sql` 有安装闸门**：检测到库里已有 `t_schema_version` 就立即中止。
+> 因为它用 `CREATE TABLE IF NOT EXISTS`，在旧库上会跳过所有建表（旧列宽不更新），
+> 却仍会写入 V1–V4 版本号，造成"版本表说已升级、结构还是旧的"，
+> 之后 V3/V4 迁移看到版本号就拒绝执行，旧库再也升不上来。
 
 `schema.sql` 不是迁移脚本：它用 `CREATE TABLE IF NOT EXISTS`，对已存在的同名表会**跳过**，
 所以旧结构缺的列、唯一键、CHECK 都不会被补上。升级必须走本目录。
@@ -25,6 +30,8 @@ SELECT * FROM t_schema_version ORDER BY version;
 |---|---|
 | `V1` | 首版：10 张业务表 |
 | `V2` | `t_point_account.last_seq`、`t_point_ledger.account_seq` 与 `UQ(user_id, account_seq)`、`t_rule_mode_lock`、`UQ(mode, effective_from)`、`ck_rule_interval` |
+| `V3` | `t_product.icon` 放宽到 `VARCHAR(255)`（支持图片 URL） |
+| `V4` | `t_redemption_order.product_icon` 同步放宽到 `VARCHAR(255)`（订单快照必须与商品表同宽） |
 
 执行迁移前**必须先查这个表**，已有目标版本就不要重复执行。
 MySQL 不支持 `ADD CONSTRAINT IF NOT EXISTS`，重复执行会报 `Duplicate key/constraint`。

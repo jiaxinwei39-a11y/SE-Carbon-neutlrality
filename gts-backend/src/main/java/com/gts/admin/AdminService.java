@@ -59,6 +59,9 @@ public class AdminService {
                 throw new Api.BizException(Api.Codes.SERVER_ERROR, 500, "缺少商户基础数据，请先执行 seed.sql");
             }
             String icon = (req.icon() == null || req.icon().isBlank()) ? "🎁" : req.icon().trim();
+            if (icon.codePointCount(0, icon.length()) > 255) {
+                throw new Api.BizException(Api.Codes.PARAM_INVALID, 400, "商品图标最多 255 个字符");
+            }
             admin.insertProduct(productId, merchantId, req.name().trim(), icon,
                     req.points(), req.stock(), "ON", req.description());
             audit.record("PRODUCT_STOCK", productId, "CREATE", null,
@@ -104,12 +107,99 @@ public class AdminService {
         });
     }
 
+    /**
+     * 商品部分更新（v1 规范接口，与前端 PATCH 对齐）。
+     *
+     * 为什么用 PATCH 而不是三个独立端点：改价、改库存、上下架是同一资源的部分更新，
+     * 一个请求提交多个字段时只产生一条审计记录，也不会出现"改价成功、改库存失败"的半截状态。
+     * 先锁商品行，避免两个管理员并发修改时后写覆盖先写。
+     */
+    public MallDto.ProductVo patchProduct(LoginUser adminUser, String productId,
+                                          AdminDto.ProductPatchRequest req) {
+        if (req.points() == null && req.stock() == null && req.status() == null) {
+            throw new Api.BizException(Api.Codes.PARAM_INVALID, 400, "请至少提交一个待修改字段");
+        }
+
+        // 先把所有字段校验完，再进事务落盘：任何一个不合法，商品一个字段都不改。
+        // 用 BigDecimal 接收而不是 Long/Integer：Jackson 会把 1.9 静默截成 1，
+        // 那样"必须整数"的契约就形同虚设（评审实测过 {"points":1.9} 返回 200 并存成 1）。
+        final Long points = req.points() == null ? null
+                : requireIntegral(req.points(), 1, 1_000_000, Api.Codes.PRODUCT_POINTS_INVALID,
+                        "商品积分单价须为正整数");
+        final Integer stock = req.stock() == null ? null
+                : Math.toIntExact(requireIntegral(req.stock(), 0, 1_000_000, Api.Codes.PRODUCT_STOCK_INVALID,
+                        "库存须为不小于 0 的整数"));
+        if (req.status() != null && !java.util.Set.of("ON", "OFF").contains(req.status())) {
+            throw new Api.BizException(Api.Codes.PRODUCT_STATUS_INVALID, 400, "商品状态只能是 ON 或 OFF");
+        }
+
+        return tx.execute(status -> {
+            AdminRepository.AdminProductRow before = admin.findProductForUpdate(productId)
+                    .orElseThrow(() -> new Api.BizException(Api.Codes.PRODUCT_NOT_FOUND, 404, "商品不存在"));
+
+            if (points != null) {
+                admin.updateProductPoints(productId, points);
+            }
+            if (stock != null) {
+                admin.updateProductStock(productId, stock);
+            }
+            if (req.status() != null) {
+                admin.updateProductStatus(productId, req.status());
+            }
+
+            audit.record("PRODUCT_STOCK", productId, "UPDATE",
+                    "{\"points\":" + before.points() + ",\"stock\":" + before.stock()
+                            + ",\"status\":\"" + before.status() + "\"}",
+                    "{\"points\":" + (points == null ? before.points() : points)
+                            + ",\"stock\":" + (stock == null ? before.stock() : stock)
+                            + ",\"status\":\"" + (req.status() == null ? before.status() : req.status()) + "\"}",
+                    adminUser.id(), "商品部分更新");
+
+            return toVo(productId);
+        });
+    }
+
+    /**
+     * 严格整数校验：必须是整数（不能带小数）且在 [min, max] 内。
+     * 注意不能用 Long/Integer 直接接收——Jackson 会把 1.9 截断成 1，静默通过。
+     */
+    private static long requireIntegral(java.math.BigDecimal value, long min, long max, int code, String message) {
+        if (value.remainder(java.math.BigDecimal.ONE).compareTo(java.math.BigDecimal.ZERO) != 0
+                || value.compareTo(java.math.BigDecimal.valueOf(min)) < 0
+                || value.compareTo(java.math.BigDecimal.valueOf(max)) > 0) {
+            throw new Api.BizException(code, 400, message);
+        }
+        return value.longValueExact();
+    }
+
     public Api.Page<OrderDto.OrderVo> listOrders(int page, int size) {
         int p = page < 1 ? 1 : page;
         int s = size < 1 ? 10 : Math.min(size, 100);
         List<OrderDto.OrderVo> items = orders.listAll(p, s).stream()
                 .map(OrderMapper::toVo).toList();
         return new Api.Page<>(items, orders.countAll(), p, s);
+    }
+
+    /** 用户列表（只读）。完整的用户启停属于 #17，本次先满足管理端页面 */
+    public Api.Page<com.gts.auth.AuthDto.UserVo> listUsers(int page, int size) {
+        int p = page < 1 ? 1 : page;
+        int s = size < 1 ? 10 : Math.min(size, 100);
+        List<com.gts.auth.AuthDto.UserVo> items = admin.listUsers(p, s).stream()
+                .map(u -> new com.gts.auth.AuthDto.UserVo(
+                        u.userId(), u.nickname(), u.phone(), u.role(), u.avatarText(), u.points()))
+                .toList();
+        return new Api.Page<>(items, admin.countUsers(), p, s);
+    }
+
+    /** 管理端概览（只读聚合）。完整的运营统计属 #17，这里先保证页面可用 */
+    public AdminDto.DashboardVo dashboard() {
+        return new AdminDto.DashboardVo(
+                admin.countUsersByRole("USER"),
+                admin.countTrips(),
+                admin.sumReduction(),
+                admin.sumEarnedPoints(),
+                admin.modeDistribution(),
+                admin.dailyTrend());
     }
 
     /* ------------------------------------------------------------------ */

@@ -1,27 +1,29 @@
 # 数据库交付说明（#9）
 
-> 负责：郭浚文　结构版本：V2
+> 负责：郭浚文　结构版本：V4
 > 对应 PR #28 评审意见 3、4、5 的补充说明
 
 ## 1. 目录与执行顺序
 
 ```
 db/
-├── schema.sql                    全新库初始化（V2 终态）
+├── schema.sql                    空库初始化（V4 终态；已有库会被闸门拒绝）
 ├── seed.sql                      演示种子（只插入不覆盖、事务内、带前置校验）
 ├── reset-demo.sql                显式重置演示数据（破坏性，仅演示库）
 ├── schema-dict.md                逐字段字典（工具生成）
 ├── migrations/                   既有库升级
 │   ├── V1__init.sql              首版结构
 │   ├── V2__account_seq_and_rule_lock.sql
+│   ├── V3__product_icon_255.sql
+│   ├── V4__order_product_icon_255.sql
 │   └── README.md                 升级步骤与边界
 └── tools/
     ├── gen_dict.py               字典生成器
     └── export-dict.sql           字典的 4 个导出查询
 ```
 
-**全新库**：`schema.sql` → `seed.sql`
-**已有库**：`migrations/V1__init.sql` → `V2__...sql`（数据保留，见 migrations/README.md）
+**全新空库**：`schema.sql` → `seed.sql`（`schema.sql` 检测到已有结构会中止）
+**已有库**：`migrations/` 里按 V1 → V2 → V3 → V4 逐版本升级（数据保留，见 migrations/README.md）
 **恢复演示状态**：`reset-demo.sql` → `seed.sql`
 
 ## 2. 与 key-design.md 3.2/3.3 的对照

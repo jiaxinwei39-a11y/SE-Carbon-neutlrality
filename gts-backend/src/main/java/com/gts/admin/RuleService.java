@@ -136,8 +136,10 @@ public class RuleService {
     }
 
     private AdminDto.CarbonRuleVo toVo(AdminRepository.RuleRow r) {
+        // 前端契约里 effectiveFrom 是日期（"2026-11-01"），不是完整时间戳；
+        // 规则列表页面直接原样渲染这个字段，返回 ISO 时间会显示成 2026-11-01T08:00:00.000Z
         return new AdminDto.CarbonRuleVo(
                 r.ruleId(), r.version(), r.mode(), r.baseFactor(), r.modeFactor(), r.pointsRatio(),
-                TimeUtil.toIso(r.effectiveFrom()), r.status());
+                r.effectiveFrom().toLocalDate().toString(), r.status());
     }
 }

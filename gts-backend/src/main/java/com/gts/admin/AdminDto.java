@@ -36,6 +36,39 @@ public final class AdminDto {
             @Pattern(regexp = "ON|OFF", message = "状态只能是 ON 或 OFF") String status) {
     }
 
+    /**
+     * 商品部分更新（v1 规范接口）。
+     * 与高泽前端一致：改价、改库存、上下架本质是同一资源的部分更新，
+     * 用一个 PATCH 提交，字段为 null 表示不修改。
+     */
+    /**
+     * 商品部分更新（v1 规范接口）。
+     * 用 BigDecimal 接收数值，而不是 Long/Integer：
+     * Jackson 会把 1.9 静默截断成 1，导致"必须整数"的校验失效；
+     * 用 BigDecimal 才能识别出小数并返回 40041/40042。
+     */
+    public record ProductPatchRequest(
+            java.math.BigDecimal points,
+            java.math.BigDecimal stock,
+            String status) {
+    }
+
+    /** 与前端 DashboardData 一致 */
+    public record DashboardVo(
+            long userCount,
+            long tripCount,
+            BigDecimal totalReductionKg,
+            long totalPointsIssued,
+            List<ModeCountVo> modeDistribution,
+            List<DayCountVo> dailyTrend) {
+    }
+
+    public record ModeCountVo(String mode, long count) {
+    }
+
+    public record DayCountVo(String date, long count) {
+    }
+
     public record StockRequest(
             @NotNull(message = "请填写库存")
             @Min(value = 0, message = "库存不能为负") Integer stock) {

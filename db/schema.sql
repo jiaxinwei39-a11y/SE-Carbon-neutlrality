@@ -1,15 +1,17 @@
 -- =============================================================================
---  城市绿色出行碳减排积分系统 —— 数据库初始化脚本（结构版本 V2）
+--  城市绿色出行碳减排积分系统 —— 数据库初始化脚本（结构版本 V4）
 --  项目：软件工程实验 项目14        负责：郭浚文（#9）
 --  目标库：MySQL 8.0.16+（本机为 MySQL 8.4）  字符集：utf8mb4
 --
---  使用方法（空库初始化）：
+--  使用方法（**仅限空库**）：
 --      mysql -uroot -p < db/schema.sql
 --      mysql -uroot -p gts < db/seed.sql
 --
---  【本文件 = 全新安装的最终结构】
---   既有库升级请走 db/migrations/：先 V1 再 V2，不要直接执行本文件。
---   版本记录写入 t_schema_version。
+--  【本文件 = 全新安装的最终结构，只能在空库执行】
+--   脚本开头有安装闸门：检测到已存在 t_schema_version 就直接中止。
+--   原因：CREATE TABLE IF NOT EXISTS 在旧库上会全部跳过（旧列宽/旧约束不更新），
+--         而末尾又会写入 V1–V4 版本号，造成「版本表说已升级、结构还是旧的」。
+--   既有库升级请走 db/migrations/：V1 → V2 → V3 → V4。
 --
 --  V2 相对 V1 的变化（对应 PR #28 评审意见 3）：
 --   1. t_point_account 增加 last_seq，作为"账户内流水序号"的锁内游标
@@ -55,6 +57,33 @@ CREATE DATABASE IF NOT EXISTS gts
   DEFAULT COLLATE utf8mb4_0900_ai_ci;
 
 USE gts;
+
+-- -----------------------------------------------------------------------------
+-- 安装闸门：schema.sql 只用于**空库全新安装**
+--
+-- 为什么必须拦：本脚本用的是 CREATE TABLE IF NOT EXISTS，在已存在的旧库上
+-- 所有建表语句都会被跳过（旧列宽、旧约束不会更新），但脚本末尾会无条件写入
+-- V1–V4 的版本号。结果是「版本表说已升级、实际结构还是旧的」，
+-- 之后 V3/V4 迁移看到版本号已存在就拒绝执行，旧库再也升不上来。
+--
+-- 已有库请走 db/migrations（V1 → V2 → V3 → V4 逐版本执行）。
+-- -----------------------------------------------------------------------------
+DROP PROCEDURE IF EXISTS sp_schema_guard;
+DELIMITER $$
+CREATE PROCEDURE sp_schema_guard()
+BEGIN
+  DECLARE v_tbl INT DEFAULT 0;
+  SELECT COUNT(*) INTO v_tbl
+    FROM information_schema.tables
+   WHERE table_schema = DATABASE() AND table_name = 't_schema_version';
+  IF v_tbl > 0 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = '检测到已有结构：请用 db/migrations 逐版本升级；schema.sql 只用于空库';
+  END IF;
+END$$
+DELIMITER ;
+CALL sp_schema_guard();
+DROP PROCEDURE sp_schema_guard;
 
 -- -----------------------------------------------------------------------------
 -- 0. 结构版本（迁移用，见 db/migrations/）
@@ -269,7 +298,7 @@ CREATE TABLE IF NOT EXISTS t_product (
   product_id  VARCHAR(64) NOT NULL                COMMENT '对外商品编号',
   merchant_id BIGINT      NOT NULL                COMMENT '所属商户，t_merchant.id',
   name        VARCHAR(128) NOT NULL               COMMENT '商品名称',
-  icon        VARCHAR(64) NOT NULL DEFAULT '🎁'   COMMENT '商品图标（emoji，前端直接显示）',
+  icon        VARCHAR(255) NOT NULL DEFAULT '🎁'  COMMENT '商品图标：字符串（emoji 或图片 URL，前端只渲染字符串）',
   points      BIGINT      NOT NULL                COMMENT '兑换所需积分（单价）',
   stock       INT         NOT NULL DEFAULT 0      COMMENT '可兑换库存，不得为负',
   status      VARCHAR(16) NOT NULL DEFAULT 'ON'   COMMENT '状态：ON 上架 / OFF 下架',
@@ -299,7 +328,7 @@ CREATE TABLE IF NOT EXISTS t_redemption_order (
   user_id       BIGINT      NOT NULL                COMMENT '下单用户，t_user.id',
   product_id    BIGINT      NOT NULL                COMMENT '商品，t_product.id',
   product_name  VARCHAR(128) NOT NULL               COMMENT '下单时商品名称快照',
-  product_icon  VARCHAR(64) NOT NULL DEFAULT '🎁'   COMMENT '下单时商品图标快照',
+  product_icon  VARCHAR(255) NOT NULL DEFAULT '🎁'  COMMENT '下单时商品图标快照：字符串（emoji 或图片 URL）',
   quantity      INT         NOT NULL                COMMENT '兑换数量，>=1',
   unit_points   BIGINT      NOT NULL                COMMENT '下单时单价快照',
   total_points  BIGINT      NOT NULL                COMMENT '本次消耗积分=单价×数量，取消时按此值返还',
@@ -347,6 +376,8 @@ CREATE TABLE IF NOT EXISTS t_audit_log (
 -- -----------------------------------------------------------------------------
 -- 12. 记录本次安装的结构版本
 -- -----------------------------------------------------------------------------
-INSERT INTO t_schema_version (version, description)
-VALUES ('V2', '基于 V1 增加账户流水序号 last_seq/account_seq、规则串行化锁表与结构版本表')
-ON DUPLICATE KEY UPDATE description = VALUES(description);
+INSERT IGNORE INTO t_schema_version (version, description) VALUES
+  ('V1', '首版结构：10 张业务表'),
+  ('V2', '增加账户流水序号 last_seq/account_seq、规则串行化锁表与区间约束'),
+  ('V3', 't_product.icon 放宽到 VARCHAR(255)，支持未来的图片 URL'),
+  ('V4', 't_redemption_order.product_icon 同步放宽到 VARCHAR(255)');

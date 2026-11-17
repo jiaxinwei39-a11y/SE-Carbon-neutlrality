@@ -1,6 +1,6 @@
 # 数据库字典
 
-> 负责：郭浚文（#9）　数据库：`gts`　MySQL 8.4.11　结构版本：V2
+> 负责：郭浚文（#9）　数据库：`gts`　MySQL 8.4.11　结构版本：V4
 > 由 `tools/gen_dict.py` 从 `information_schema` 导出，非手写。
 > 字段中文名取自建表语句的 `COMMENT`；键列同时标注主键与外键；
 > 「取值范围」取自 `information_schema.check_constraints`。
@@ -222,7 +222,7 @@
 | 2 | 对外商品编号 | `product_id` | varchar | 64 | - | UK | 否 |  |  |
 | 3 | 所属商户 | `merchant_id` | bigint | - | - | FK→t_merchant.id | 否 |  |  |
 | 4 | 商品名称 | `name` | varchar | 128 | - |  | 否 |  |  |
-| 5 | 商品图标 | `icon` | varchar | 64 | - |  | 否 | ? |  |
+| 5 | 商品图标：字符串 | `icon` | varchar | 255 | - |  | 否 | ? |  |
 | 6 | 兑换所需积分 | `points` | bigint | - | - |  | 否 |  | points > 0 |
 | 7 | 可兑换库存 | `stock` | int | - | - |  | 否 | 0 | stock >= 0 |
 | 8 | 状态：ON 上架 / OFF 下架 | `status` | varchar | 16 | - |  | 否 | ON | status in ('ON','OFF') |
@@ -240,7 +240,7 @@
 | 3 | 下单用户 | `user_id` | bigint | - | - | FK→t_user.id | 否 |  |  |
 | 4 | 商品 | `product_id` | bigint | - | - | FK→t_product.id | 否 |  |  |
 | 5 | 下单时商品名称快照 | `product_name` | varchar | 128 | - |  | 否 |  |  |
-| 6 | 下单时商品图标快照 | `product_icon` | varchar | 64 | - |  | 否 | ? |  |
+| 6 | 下单时商品图标快照：字符串 | `product_icon` | varchar | 255 | - |  | 否 | ? |  |
 | 7 | 兑换数量 | `quantity` | int | - | - |  | 否 |  | quantity >= 1 |
 | 8 | 下单时单价快照 | `unit_points` | bigint | - | - |  | 否 |  | (unit_points > 0) and (total_points > 0) |
 | 9 | 本次消耗积分=单价×数量 | `total_points` | bigint | - | - |  | 否 |  | (unit_points > 0) and (total_points > 0) |

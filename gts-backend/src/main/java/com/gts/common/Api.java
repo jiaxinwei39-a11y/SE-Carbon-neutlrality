@@ -82,7 +82,11 @@ public final class Api {
         public static final int STOCK_SHORT = 40901;
         public static final int POINTS_SHORT = 40030;
         public static final int CANCEL_REASON_REQUIRED = 40040;
+        public static final int PRODUCT_POINTS_INVALID = 40041;
+        public static final int PRODUCT_STOCK_INVALID = 40042;
+        public static final int PRODUCT_STATUS_INVALID = 40043;
         public static final int ORDER_STATUS_INVALID = 40903;
+        public static final int RECONCILE_UNAVAILABLE = 50001;
         public static final int SERVER_ERROR = 50000;
 
         private Codes() {
