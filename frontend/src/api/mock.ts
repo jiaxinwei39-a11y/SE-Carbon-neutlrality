@@ -216,33 +216,45 @@ interface MockState {
   users: User[]
 }
 
-const state: MockState = {
-  user: null,
-  account: { balance: 0, totalEarned: 0, totalSpent: 0, tripCount: 0, totalReductionKg: 0 },
-  products: [
-    { productId: 'G01', name: '定制环保帆布袋', icon: '👜', points: 600, stock: 24, status: 'ON', desc: '加厚棉布，可装 A4 文件' },
-    { productId: 'G02', name: '咖啡券（中杯）', icon: '☕', points: 300, stock: 58, status: 'ON', desc: '校内咖啡店通用，有效期 30 天' },
-    { productId: 'G03', name: '公交纪念卡', icon: '🎫', points: 800, stock: 12, status: 'ON', desc: '限量版，含 50 元余额' },
-    { productId: 'G04', name: '校园文创笔记本', icon: '📓', points: 450, stock: 31, status: 'ON' },
-    { productId: 'G05', name: '减碳徽章套装', icon: '🏅', points: 200, stock: 66, status: 'ON' },
-    { productId: 'G06', name: '共享单车月卡', icon: '🚲', points: 1200, stock: 0, status: 'ON' },
-    { productId: 'G07', name: '运动水杯', icon: '🥤', points: 900, stock: 9, status: 'ON' },
-    { productId: 'G08', name: '公益植树证书', icon: '🌳', points: 1500, stock: 5, status: 'ON', desc: '以你名义在库布其种一棵树' },
-  ],
-  rules: [
-    { ruleId: 'R-2026-11-BUS', version: 'R-2026-11', mode: 'BUS', baseFactor: 0.2, modeFactor: 0.05, pointsRatio: 10, effectiveFrom: '2026-11-01', status: 'ACTIVE' },
-    { ruleId: 'R-2026-11-SUBWAY', version: 'R-2026-11', mode: 'SUBWAY', baseFactor: 0.2, modeFactor: 0.03, pointsRatio: 10, effectiveFrom: '2026-11-01', status: 'ACTIVE' },
-    { ruleId: 'R-2026-11-BIKE', version: 'R-2026-11', mode: 'BIKE', baseFactor: 0.2, modeFactor: 0, pointsRatio: 10, effectiveFrom: '2026-11-01', status: 'ACTIVE' },
-    { ruleId: 'R-2026-11-WALK', version: 'R-2026-11', mode: 'WALK', baseFactor: 0.2, modeFactor: 0, pointsRatio: 10, effectiveFrom: '2026-11-01', status: 'ACTIVE' },
-    { ruleId: 'R-2026-09-BUS', version: 'R-2026-09', mode: 'BUS', baseFactor: 0.2, modeFactor: 0.06, pointsRatio: 10, effectiveFrom: '2026-09-01', status: 'ARCHIVED' },
-  ],
-  users: [
-    { id: 'U001', nickname: '张生阳', phone: '138****6621', role: 'USER', avatarText: '张', points: 1280 },
-    { id: 'U002', nickname: '李明', phone: '139****1180', role: 'USER', avatarText: '李', points: 860 },
-    { id: 'U003', nickname: '王雨', phone: '137****4432', role: 'USER', avatarText: '王', points: 2405 },
-    { id: 'U004', nickname: '系统管理员', phone: '130****0001', role: 'ADMIN', avatarText: '管', points: 0 },
-  ],
+/**
+ * 全部可变状态的初始值。
+ *
+ * 复位（`/_debug/reset`）必须走这里重建，而不是只清 trips/flows/orders ——
+ * `products.stock` 和 `users` 也是可变的：兑换会扣库存，改商品会改单价，
+ * 如果复位只重播行程，就会出现「积分、订单回到初始，但库存还是被扣过的」，
+ * 紧接着 persist() 还会把这个不一致状态存进快照。
+ */
+function initialState(): MockState {
+  return {
+    user: null,
+    account: { balance: 0, totalEarned: 0, totalSpent: 0, tripCount: 0, totalReductionKg: 0 },
+    products: [
+      { productId: 'G01', name: '定制环保帆布袋', icon: '👜', points: 600, stock: 24, status: 'ON', desc: '加厚棉布，可装 A4 文件' },
+      { productId: 'G02', name: '咖啡券（中杯）', icon: '☕', points: 300, stock: 58, status: 'ON', desc: '校内咖啡店通用，有效期 30 天' },
+      { productId: 'G03', name: '公交纪念卡', icon: '🎫', points: 800, stock: 12, status: 'ON', desc: '限量版，含 50 元余额' },
+      { productId: 'G04', name: '校园文创笔记本', icon: '📓', points: 450, stock: 31, status: 'ON' },
+      { productId: 'G05', name: '减碳徽章套装', icon: '🏅', points: 200, stock: 66, status: 'ON' },
+      { productId: 'G06', name: '共享单车月卡', icon: '🚲', points: 1200, stock: 0, status: 'ON' },
+      { productId: 'G07', name: '运动水杯', icon: '🥤', points: 900, stock: 9, status: 'ON' },
+      { productId: 'G08', name: '公益植树证书', icon: '🌳', points: 1500, stock: 5, status: 'ON', desc: '以你名义在库布其种一棵树' },
+    ],
+    rules: [
+      { ruleId: 'R-2026-11-BUS', version: 'R-2026-11', mode: 'BUS', baseFactor: 0.2, modeFactor: 0.05, pointsRatio: 10, effectiveFrom: '2026-11-01', status: 'ACTIVE' },
+      { ruleId: 'R-2026-11-SUBWAY', version: 'R-2026-11', mode: 'SUBWAY', baseFactor: 0.2, modeFactor: 0.03, pointsRatio: 10, effectiveFrom: '2026-11-01', status: 'ACTIVE' },
+      { ruleId: 'R-2026-11-BIKE', version: 'R-2026-11', mode: 'BIKE', baseFactor: 0.2, modeFactor: 0, pointsRatio: 10, effectiveFrom: '2026-11-01', status: 'ACTIVE' },
+      { ruleId: 'R-2026-11-WALK', version: 'R-2026-11', mode: 'WALK', baseFactor: 0.2, modeFactor: 0, pointsRatio: 10, effectiveFrom: '2026-11-01', status: 'ACTIVE' },
+      { ruleId: 'R-2026-09-BUS', version: 'R-2026-09', mode: 'BUS', baseFactor: 0.2, modeFactor: 0.06, pointsRatio: 10, effectiveFrom: '2026-09-01', status: 'ARCHIVED' },
+    ],
+    users: [
+      { id: 'U001', nickname: '张生阳', phone: '138****6621', role: 'USER', avatarText: '张', points: 1280 },
+      { id: 'U002', nickname: '李明', phone: '139****1180', role: 'USER', avatarText: '李', points: 860 },
+      { id: 'U003', nickname: '王雨', phone: '137****4432', role: 'USER', avatarText: '王', points: 2405 },
+      { id: 'U004', nickname: '系统管理员', phone: '130****0001', role: 'ADMIN', avatarText: '管', points: 0 },
+    ],
+  }
 }
+
+const state: MockState = initialState()
 
 /* -------------------------------------------------- 本地持久化（演示用）
  * 目的：让演示时刷新页面不丢数据。
@@ -330,14 +342,34 @@ function restore(): boolean {
   }
 }
 
-/** 清掉快照并回到种子数据（`GET /_debug/reset` 用，e2e 和演示复位都靠它） */
+/** 清快照。存储被禁用时 removeItem 会抛错，这里必须吞掉，否则复位在隐私模式下直接失败 */
+function clearSnapshot(): void {
+  try {
+    storage()?.removeItem(STORAGE_KEY)
+  } catch {
+    /* 存储不可用：本来就没有快照可清 */
+  }
+}
+
+/**
+ * 清掉快照并回到种子数据（`GET /_debug/reset` 用，e2e 和演示复位都靠它）。
+ *
+ * 顺序很关键：先把**所有**可变状态重建 (含 products 库存、rules、users 余额)，
+ * 再 seed() 重播行程/流水/订单并重算账户，最后才 persist() —— 不能把一个
+ * 「只清了一半」的状态写进快照。
+ */
 function resetToSeed(): void {
-  storage()?.removeItem(STORAGE_KEY)
+  clearSnapshot()
+
   trips = []
   flows = []
   orders = []
   tripIdByClientId.clear()
   orderIdByRequestKey.clear()
+
+  // state 是 const，只换里面的字段：stock / points / users 都是会被业务改动的
+  Object.assign(state, initialState())
+
   seed()
   persist()
 }
