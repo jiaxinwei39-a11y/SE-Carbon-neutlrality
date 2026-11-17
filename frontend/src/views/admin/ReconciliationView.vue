@@ -5,6 +5,7 @@ import AppTag from '@/components/AppTag.vue'
 import { getReconciliation, type ReconcileResult } from '@/api/admin'
 import { errorMessage } from '@/api/http'
 import { fmtDateTime } from '@/utils/format'
+import { RECONCILE_OBJECT_META } from '@/utils/constants'
 
 type DemoMode = 'normal' | 'diff' | 'error'
 
@@ -106,7 +107,11 @@ onMounted(load)
             </thead>
             <tbody>
               <tr v-for="it in data.items" :key="it.id">
-                <td>{{ it.objectType === 'TRIP' ? '行程' : '订单' }}</td>
+                <td>
+                  <AppTag :tone="RECONCILE_OBJECT_META[it.objectType]?.tone ?? 'gray'">
+                    {{ RECONCILE_OBJECT_META[it.objectType]?.text ?? it.objectType }}
+                  </AppTag>
+                </td>
                 <td class="mono">{{ it.objectId }}</td>
                 <td>{{ it.checkName }}</td>
                 <td class="r num">{{ it.expected }}</td>

@@ -646,7 +646,7 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
     // 对账页三态：无差异 / 有差异 / 读取失败。
     // 这里用 query.diff=1 模拟"有差异"，diff=error 模拟"读取失败"，方便演示与验收。
     const mode = str(req.query?.diff)
-    if (mode === 'error') throw new ApiError('对账服务暂时不可用，请稍后重试', 50001, 500)
+    if (mode === 'error') throw new ApiError('对账服务暂时不可用，请稍后重试', 50000, 500)
     const items: ReconcileItem[] =
       mode === '1'
         ? [
@@ -665,6 +665,16 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
               checkName: '库存与订单不一致（件）',
               expected: 24,
               actual: 23,
+            },
+            {
+              id: 'RC-003',
+              // 账户级差异：既不是行程也不是订单，objectType 用 ACCOUNT（objectId 是用户 id）。
+              // 以前只能塞进 ORDER，语义是错的，所以放开了枚举。
+              objectType: 'ACCOUNT',
+              objectId: state.user?.id ?? 'U001',
+              checkName: '账户余额与流水合计不符（分）',
+              expected: 1437,
+              actual: 1439,
             },
           ]
         : []
@@ -709,7 +719,7 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
     }
     if (body.status !== undefined) {
       if (body.status !== 'ON' && body.status !== 'OFF') {
-        throw new ApiError('商品状态只能是 ON 或 OFF', 40010, 400)
+        throw new ApiError('商品状态只能是 ON 或 OFF', 40043, 400)
       }
       next.status = body.status
     }

@@ -446,6 +446,25 @@ check(
   balanceAfterCancel === balanceBeforeCancel + (firstParsed?.p ?? 0),
   `${balanceBeforeCancel} + ${firstParsed?.p ?? 0} = ${balanceAfterCancel}`,
 )
+console.log('\n=== 11. 积分对账：三态 + 账户级差异 ===')
+await ev(`location.hash = '#/admin/reconciliation'`)
+await wait(1600)
+await ev(PAGE_HELPERS)
+await ev(`__t.click('有差异')`)
+await wait(1600)
+const reconRows = await ev('__t.rows()')
+const allReconText = reconRows.join(' | ')
+check('有差异态列出差异项', reconRows.length >= 2, `${reconRows.length} 行`)
+check('差异项含行程级', /行程/.test(allReconText))
+check('差异项含订单级', /订单/.test(allReconText))
+// 账户级差异：objectType=ACCOUNT（以前类型只允许 TRIP|ORDER，这条会被迫塞进 ORDER，语义就错了）
+check('差异项含账户级（objectType=ACCOUNT）', /账户/.test(allReconText), allReconText.slice(0, 80))
+
+await ev(`__t.click('读取失败')`)
+await wait(1600)
+const reconErrorText = await ev('__t.text()')
+check('读取失败不显示成"无差异"', /无法判断|读取失败/.test(reconErrorText))
+
 console.log('\n=== 运行时报错 ===')
 check('全程无未捕获异常', runtimeErrors.length === 0, runtimeErrors.slice(0, 3).join(' | '))
 
