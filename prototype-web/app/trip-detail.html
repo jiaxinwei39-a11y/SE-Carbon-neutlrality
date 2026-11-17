@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>核算明细 · 绿行积分</title>
+<link rel="stylesheet" href="../assets/web.css">
+<style>
+  .kv{display:grid;grid-template-columns:120px 1fr;gap:12px 16px;font-size:13.5px}
+  .kv .k{color:var(--ink-500)}
+  .kv .v{color:var(--ink-900);font-weight:600}
+  .formula{background:#f8fafc;border:1px solid var(--line);border-radius:var(--r-md);padding:16px 18px;font-size:13px;line-height:2.1;color:var(--ink-700)}
+  .formula code{font-family:ui-monospace,Consolas,monospace;font-size:12.5px;background:#fff;border:1px solid var(--line);border-radius:5px;padding:2px 6px;color:var(--green-700)}
+  .formula .step{display:flex;gap:10px;align-items:baseline}
+  .formula .step b{flex:0 0 22px;height:22px;border-radius:50%;background:var(--green-50);color:var(--green-700);font-size:12px;display:flex;align-items:center;justify-content:center}
+  .tl{list-style:none;margin:0;padding:0}
+  .tl li{position:relative;padding:0 0 18px 22px;font-size:13px;color:var(--ink-700)}
+  .tl li::before{content:"";position:absolute;left:0;top:6px;width:9px;height:9px;border-radius:50%;background:var(--green-500);box-shadow:0 0 0 3px var(--green-50)}
+  .tl li::after{content:"";position:absolute;left:4px;top:18px;bottom:2px;width:1px;background:var(--line)}
+  .tl li:last-child{padding-bottom:0}
+  .tl li:last-child::after{display:none}
+  .tl .t{display:block;font-size:12px;color:var(--ink-400);margin-top:2px}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand"><span class="mark">🌿</span> 绿行积分</div>
+    <nav class="nav">
+      <a href="index.html">首页</a>
+      <a class="on" href="trips.html">行程</a>
+      <a href="points.html">积分</a>
+      <a href="mall.html">商城</a>
+      <a href="orders.html">订单</a>
+    </nav>
+    <div class="right">
+      <div class="pill">🌿 <span class="num">1,280</span> 分</div>
+      <div class="avatar">生</div>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <p style="margin:0 0 12px"><a href="trips.html" style="color:var(--ink-500);font-size:13px">← 返回行程记录</a></p>
+
+  <div class="page-head">
+    <div>
+      <h1>核算明细</h1>
+      <p class="mono" style="font-size:12.5px;color:var(--ink-400)">单号 T202611100001 · 公交出行</p>
+    </div>
+    <span class="tag tag-green" style="height:26px">已入账</span>
+  </div>
+
+  <div class="grid-main">
+    <div class="stack">
+      <!-- 计算过程 -->
+      <section class="card">
+        <div class="card-head">
+          <h2>这笔积分是怎么算出来的</h2>
+          <span class="hint">按入账当时的规则版本计算，之后规则变更不追溯</span>
+        </div>
+
+        <div class="formula">
+          <div class="step"><b>1</b><span>减排量 = 里程 ×（基准因子 − 方式因子）<br>
+            <code>10.0 km × (0.200 − 0.050) = 1.50 kgCO₂e</code></span></div>
+          <div class="step"><b>2</b><span>积分 = 向下取整（减排量 × 积分比例）<br>
+            <code>floor(1.50 kg × 10 分/kg) = 15 分</code></span></div>
+          <div class="step"><b>3</b><span>写入积分流水并入账，同时把本次因子快照存进行程<br>
+            <code>ruleVersion = R-2026-11-BUS</code></span></div>
+        </div>
+
+        <div class="result" style="margin-top:16px">
+          本次获得 <strong class="num">+15</strong> 分&nbsp;·&nbsp;减排 <strong class="num">1.50</strong> kgCO₂e
+        </div>
+      </section>
+
+      <!-- 行程信息 -->
+      <section class="card">
+        <div class="card-head"><h2>行程信息</h2></div>
+        <div class="kv">
+          <div class="k">出行方式</div><div class="v">🚌 公交（BUS）</div>
+          <div class="k">里程</div><div class="v num">10.0 km</div>
+          <div class="k">起点</div><div class="v">软件园东门</div>
+          <div class="k">终点</div><div class="v">地铁二号线站</div>
+          <div class="k">开始时间</div><div class="v num">2026-11-10 08:02</div>
+          <div class="k">结束时间</div><div class="v num">2026-11-10 08:12</div>
+          <div class="k">核算时间</div><div class="v num">2026-11-10 08:12:31</div>
+        </div>
+      </section>
+
+      <!-- 关联流水 -->
+      <section class="card tight">
+        <div class="card-head" style="padding:18px 20px 0;margin-bottom:0"><h2>关联积分流水</h2><a class="more" href="points.html">全部流水 →</a></div>
+        <table class="table">
+          <thead><tr><th>流水号</th><th>类型</th><th class="r">变动</th><th class="r">变动后余额</th><th>时间</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="mono">L202611100001</td>
+              <td>行程奖励 EARN</td>
+              <td class="r num" style="color:var(--green-600);font-weight:700">+15</td>
+              <td class="r num">1,280</td>
+              <td class="num" style="color:var(--ink-500)">11-10 08:12</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+
+    <!-- 右列 -->
+    <div class="stack">
+      <section class="card">
+        <div class="card-head"><h2>规则快照</h2><span class="tag tag-gray mono">R-2026-11-BUS</span></div>
+        <div class="kv" style="grid-template-columns:96px 1fr">
+          <div class="k">基准因子</div><div class="v num">0.200 kg/km</div>
+          <div class="k">方式因子</div><div class="v num">0.050 kg/km</div>
+          <div class="k">积分比例</div><div class="v num">10 分/kg</div>
+          <div class="k">生效区间</div><div class="v num">2026-11-01 起</div>
+        </div>
+        <div class="notice" style="margin:16px 0 0">
+          规则在 2026-11-01 有过一次调价（0.060 → 0.050）。这条行程用的是当时的版本，
+          后来规则再改也不会重算历史行程 —— 账面永远对得上。
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>处理过程</h2></div>
+        <ul class="tl">
+          <li>客户端上报成功<span class="t">11-10 08:12:30 · 写入行程，状态 PENDING</span></li>
+          <li>服务端核算通过<span class="t">11-10 08:12:31 · 命中 R-2026-11-BUS</span></li>
+          <li>写流水 + 加余额<span class="t">11-10 08:12:31 · 同一事务内完成</span></li>
+          <li>状态置为 POINTED<span class="t">11-10 08:12:31 · 可重复读取，不会重复加分</span></li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>异常时怎么显示</h2></div>
+        <p style="font-size:12.5px;color:var(--ink-500);margin:0 0 10px">这三种情况页面必须给出不同措辞，不能都显示「加载失败」：</p>
+        <div class="kv" style="grid-template-columns:1fr;font-size:12.5px">
+          <div class="v" style="font-weight:400">核算中 → <b>状态 PENDING</b>，显示「核算中，稍后刷新」而不是积分 0</div>
+          <div class="v" style="font-weight:400">核算失败 → <b>状态 REJECTED</b>，显示原因和「重新上报」按钮</div>
+          <div class="v" style="font-weight:400">不存在/无权 → <b>404 / 403</b>，不暴露别人的行程号</div>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+</body>
+</html>
