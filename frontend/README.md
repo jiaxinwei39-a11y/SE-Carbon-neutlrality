@@ -89,11 +89,30 @@ src/
 
 ## 五、接后端时要改的地方（只有这些）
 
-1. `.env` 里把 `VITE_DATA_SOURCE=mock` 改成 `api`，并填 `VITE_API_BASE_URL`。
-2. `src/api/http.ts`：确认响应体是 `{ code, message, data }`、`code === 0` 表示成功。
-3. `vite.config.ts`：打开 `server.proxy` 的注释（开发时把 `/api` 转给 8080）。
-4. 代码里所有 `// [接后端]` 注释处 = 需要跟后端确认的地方。
-5. 后端字段若与 `src/types/index.ts` 不一致，**改类型文件，不改页面**。
+**三步切换（已备好，不用改任何页面代码）：**
+
+```bash
+# 1. 复制环境变量模板
+cp .env.example .env.local
+
+# 2. 改 .env.local 两行
+#    VITE_DATA_SOURCE=api
+#    VITE_API_BASE_URL=/api            （走 dev server 代理，后端不用管 CORS）
+#    VITE_PROXY_TARGET=http://localhost:8080   （后端在哪台机器就写哪台）
+
+# 3. 先验后端通不通，再开前端
+npm run smoke:api                      # 或 npm run smoke:api http://192.168.1.23:8080/api
+npm run dev
+```
+
+`npm run smoke:api` 会按契约顺序打一遍：**注册 → 登录 → /auth/me → 上报行程（含幂等：同键同输入回放、同键换内容 40904）→ 积分账户/流水 → 行程详情（因子快照、原始精度）→ 列表分页 → 越权**，输出 ✓/✗ 和实测值，退出码非 0 就是没通。对着失败项查比一句句点页面快得多。
+
+**其它注意事项：**
+
+1. `src/api/http.ts`：确认响应体是 `{ code, message, data }`、`code === 0` 表示成功（这一层已经把"拆壳"和 401/403/409 都归一了）。
+2. 生产部署时不用 dev 代理，改成 Nginx 反代：`location /api/ { proxy_pass http://后端:8080/api/; }`，并且后端要放行 `Authorization` 与 `Idempotency-Key` 头。
+3. 代码里所有 `// [接后端]` 注释处 = 需要跟后端确认的地方。
+4. 后端字段若与 `src/types/index.ts` 不一致，**改类型文件，不改页面**。
 
 ## 六、这份 demo 有意做的"较真"之处（答辩加分点）
 
