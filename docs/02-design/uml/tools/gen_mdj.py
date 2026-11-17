@@ -409,7 +409,7 @@ def main(out_path, seq_path=None):
                     'nameCompartment': {'$ref': nc['_id']},
                     'linePart': {'$ref': line_part['_id']}}
             lifeline_views.append(view)
-            x += 170
+            x += 210
 
         # 消息的 tail/head 必须指向生命线内部的 linePart 视图，不是生命线视图本身
         line_parts = [v['linePart'] for v in lifeline_views]
@@ -424,9 +424,12 @@ def main(out_path, seq_path=None):
             act = {'_type': 'UMLActivationView', '_id': uid(), '_parent': {'$ref': ''},
                    'model': {'$ref': mid}, 'visible': True, 'font': FONT, 'parentStyle': False,
                    'left': nx - 7, 'top': y, 'width': 14, 'height': 40}
+            span = abs(nx - mx)
             label = {'_type': 'EdgeLabelView', '_id': uid(), '_parent': {'$ref': ''},
-                     'visible': True, 'font': FONT, 'left': min(mx, nx) + 5, 'top': y - 18,
-                     'width': 200, 'height': 13, 'alpha': 0.0, 'distance': 12,
+                     'visible': True, 'font': FONT,
+                     'left': min(mx, nx) + 6, 'top': y - 18,
+                     'width': max(40, span - 12), 'height': 13,
+                     'alpha': 0.0, 'distance': 12,
                      'edgePosition': 0, 'text': text}
             mvid = uid()
             act['_id'] = act['_id']
@@ -535,17 +538,17 @@ def main(out_path, seq_path=None):
             '序列图：上报行程与积分发放',
             ['用户（浏览器）', 'TripController', 'TripService', 'TripRepository',
              'PointsRepository', 'MySQL'],
-            [(0, 1, 'POST /trips（Idempotency-Key）'),
-             (1, 2, 'create(user, key, req)'),
-             (2, 3, '按 userId+clientTripId 查重'),
-             (2, 3, '按结束时间匹配核算规则'),
-             (3, 5, 'SELECT 规则（因子/系数）'),
-             (2, 4, 'applyTrip(points, reduction)'),
-             (4, 5, 'UPDATE 账户 last_seq+1（行锁）'),
-             (2, 3, 'INSERT 行程 + 因子快照'),
-             (4, 5, 'INSERT 流水 account_seq'),
-             (2, 1, '返回 TripDetail'),
-             (1, 0, '200 {code:0, data}')])
+            [(0, 1, 'POST /trips'),
+             (1, 2, 'create()'),
+             (2, 3, '按幂等键查重'),
+             (2, 3, '匹配核算规则'),
+             (3, 5, 'SELECT 规则'),
+             (2, 4, 'applyTrip()'),
+             (4, 5, 'UPDATE 账户'),
+             (2, 3, 'INSERT 行程'),
+             (4, 5, 'INSERT 流水'),
+             (2, 1, 'TripDetail'),
+             (1, 0, '200 OK')])
         sdata = sdoc.build()
         fix_view_parents(sdata)
         with io.open(seq_path, 'w', encoding='utf-8') as f:

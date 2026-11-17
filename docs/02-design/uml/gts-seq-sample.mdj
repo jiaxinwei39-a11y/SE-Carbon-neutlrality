@@ -178,7 +178,7 @@
               "$ref": "AAAAGTS000000000000000790"
              },
              "font": "Arial;13;1",
-             "left": 215,
+             "left": 255,
              "top": 47,
              "width": 86,
              "height": 13,
@@ -208,7 +208,7 @@
             }
            ],
            "font": "Arial;13;0",
-           "left": 210,
+           "left": 250,
            "top": 40,
            "width": 96,
            "height": 25,
@@ -236,7 +236,7 @@
            },
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 258,
+           "left": 298,
            "top": 81,
            "width": 1,
            "height": 669
@@ -244,7 +244,7 @@
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
-         "left": 210,
+         "left": 250,
          "top": 40,
          "width": 96,
          "height": 710,
@@ -292,7 +292,7 @@
               "$ref": "AAAAGTS000000000000000797"
              },
              "font": "Arial;13;1",
-             "left": 385,
+             "left": 465,
              "top": 47,
              "width": 86,
              "height": 13,
@@ -322,7 +322,7 @@
             }
            ],
            "font": "Arial;13;0",
-           "left": 380,
+           "left": 460,
            "top": 40,
            "width": 96,
            "height": 25,
@@ -350,7 +350,7 @@
            },
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 428,
+           "left": 508,
            "top": 81,
            "width": 1,
            "height": 669
@@ -358,7 +358,7 @@
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
-         "left": 380,
+         "left": 460,
          "top": 40,
          "width": 96,
          "height": 710,
@@ -406,7 +406,7 @@
               "$ref": "AAAAGTS000000000000000804"
              },
              "font": "Arial;13;1",
-             "left": 555,
+             "left": 675,
              "top": 47,
              "width": 86,
              "height": 13,
@@ -436,7 +436,7 @@
             }
            ],
            "font": "Arial;13;0",
-           "left": 550,
+           "left": 670,
            "top": 40,
            "width": 96,
            "height": 25,
@@ -464,7 +464,7 @@
            },
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 598,
+           "left": 718,
            "top": 81,
            "width": 1,
            "height": 669
@@ -472,7 +472,7 @@
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
-         "left": 550,
+         "left": 670,
          "top": 40,
          "width": 96,
          "height": 710,
@@ -520,7 +520,7 @@
               "$ref": "AAAAGTS000000000000000811"
              },
              "font": "Arial;13;1",
-             "left": 725,
+             "left": 885,
              "top": 47,
              "width": 86,
              "height": 13,
@@ -550,7 +550,7 @@
             }
            ],
            "font": "Arial;13;0",
-           "left": 720,
+           "left": 880,
            "top": 40,
            "width": 96,
            "height": 25,
@@ -578,7 +578,7 @@
            },
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 768,
+           "left": 928,
            "top": 81,
            "width": 1,
            "height": 669
@@ -586,7 +586,7 @@
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
-         "left": 720,
+         "left": 880,
          "top": 40,
          "width": 96,
          "height": 710,
@@ -634,7 +634,7 @@
               "$ref": "AAAAGTS000000000000000818"
              },
              "font": "Arial;13;1",
-             "left": 895,
+             "left": 1095,
              "top": 47,
              "width": 86,
              "height": 13,
@@ -664,7 +664,7 @@
             }
            ],
            "font": "Arial;13;0",
-           "left": 890,
+           "left": 1090,
            "top": 40,
            "width": 96,
            "height": 25,
@@ -692,7 +692,7 @@
            },
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 938,
+           "left": 1138,
            "top": 81,
            "width": 1,
            "height": 669
@@ -700,7 +700,7 @@
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
-         "left": 890,
+         "left": 1090,
          "top": 40,
          "width": 96,
          "height": 710,
@@ -729,14 +729,14 @@
            },
            "visible": true,
            "font": "Arial;13;0",
-           "left": 93,
+           "left": 94,
            "top": 112,
-           "width": 200,
+           "width": 198,
            "height": 13,
            "alpha": 0.0,
            "distance": 12,
            "edgePosition": 0,
-           "text": "POST /trips（Idempotency-Key）"
+           "text": "POST /trips"
           },
           {
            "_type": "UMLActivationView",
@@ -750,7 +750,7 @@
            "visible": true,
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 251,
+           "left": 291,
            "top": 130,
            "width": 14,
            "height": 40
@@ -764,7 +764,7 @@
          "tail": {
           "$ref": "AAAAGTS000000000000000788"
          },
-         "points": "88:130;258:130",
+         "points": "88:130;298:130",
          "nameLabel": {
           "$ref": "AAAAGTS000000000000000825"
          },
@@ -790,14 +790,14 @@
            },
            "visible": true,
            "font": "Arial;13;0",
-           "left": 263,
+           "left": 304,
            "top": 162,
-           "width": 200,
+           "width": 198,
            "height": 13,
            "alpha": 0.0,
            "distance": 12,
            "edgePosition": 0,
-           "text": "create(user, key, req)"
+           "text": "create()"
           },
           {
            "_type": "UMLActivationView",
@@ -811,7 +811,7 @@
            "visible": true,
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 421,
+           "left": 501,
            "top": 180,
            "width": 14,
            "height": 40
@@ -825,7 +825,7 @@
          "tail": {
           "$ref": "AAAAGTS000000000000000795"
          },
-         "points": "258:180;428:180",
+         "points": "298:180;508:180",
          "nameLabel": {
           "$ref": "AAAAGTS000000000000000828"
          },
@@ -851,14 +851,14 @@
            },
            "visible": true,
            "font": "Arial;13;0",
-           "left": 433,
+           "left": 514,
            "top": 212,
-           "width": 200,
+           "width": 198,
            "height": 13,
            "alpha": 0.0,
            "distance": 12,
            "edgePosition": 0,
-           "text": "按 userId+clientTripId 查重"
+           "text": "按幂等键查重"
           },
           {
            "_type": "UMLActivationView",
@@ -872,7 +872,7 @@
            "visible": true,
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 591,
+           "left": 711,
            "top": 230,
            "width": 14,
            "height": 40
@@ -886,7 +886,7 @@
          "tail": {
           "$ref": "AAAAGTS000000000000000802"
          },
-         "points": "428:230;598:230",
+         "points": "508:230;718:230",
          "nameLabel": {
           "$ref": "AAAAGTS000000000000000831"
          },
@@ -912,14 +912,14 @@
            },
            "visible": true,
            "font": "Arial;13;0",
-           "left": 433,
+           "left": 514,
            "top": 262,
-           "width": 200,
+           "width": 198,
            "height": 13,
            "alpha": 0.0,
            "distance": 12,
            "edgePosition": 0,
-           "text": "按结束时间匹配核算规则"
+           "text": "匹配核算规则"
           },
           {
            "_type": "UMLActivationView",
@@ -933,7 +933,7 @@
            "visible": true,
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 591,
+           "left": 711,
            "top": 280,
            "width": 14,
            "height": 40
@@ -947,7 +947,7 @@
          "tail": {
           "$ref": "AAAAGTS000000000000000802"
          },
-         "points": "428:280;598:280",
+         "points": "508:280;718:280",
          "nameLabel": {
           "$ref": "AAAAGTS000000000000000834"
          },
@@ -973,14 +973,14 @@
            },
            "visible": true,
            "font": "Arial;13;0",
-           "left": 603,
+           "left": 724,
            "top": 312,
-           "width": 200,
+           "width": 408,
            "height": 13,
            "alpha": 0.0,
            "distance": 12,
            "edgePosition": 0,
-           "text": "SELECT 规则（因子/系数）"
+           "text": "SELECT 规则"
           },
           {
            "_type": "UMLActivationView",
@@ -994,7 +994,7 @@
            "visible": true,
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 931,
+           "left": 1131,
            "top": 330,
            "width": 14,
            "height": 40
@@ -1008,7 +1008,7 @@
          "tail": {
           "$ref": "AAAAGTS000000000000000809"
          },
-         "points": "598:330;938:330",
+         "points": "718:330;1138:330",
          "nameLabel": {
           "$ref": "AAAAGTS000000000000000837"
          },
@@ -1034,14 +1034,14 @@
            },
            "visible": true,
            "font": "Arial;13;0",
-           "left": 433,
+           "left": 514,
            "top": 362,
-           "width": 200,
+           "width": 408,
            "height": 13,
            "alpha": 0.0,
            "distance": 12,
            "edgePosition": 0,
-           "text": "applyTrip(points, reduction)"
+           "text": "applyTrip()"
           },
           {
            "_type": "UMLActivationView",
@@ -1055,7 +1055,7 @@
            "visible": true,
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 761,
+           "left": 921,
            "top": 380,
            "width": 14,
            "height": 40
@@ -1069,7 +1069,7 @@
          "tail": {
           "$ref": "AAAAGTS000000000000000802"
          },
-         "points": "428:380;768:380",
+         "points": "508:380;928:380",
          "nameLabel": {
           "$ref": "AAAAGTS000000000000000840"
          },
@@ -1095,14 +1095,14 @@
            },
            "visible": true,
            "font": "Arial;13;0",
-           "left": 773,
+           "left": 934,
            "top": 412,
-           "width": 200,
+           "width": 198,
            "height": 13,
            "alpha": 0.0,
            "distance": 12,
            "edgePosition": 0,
-           "text": "UPDATE 账户 last_seq+1（行锁）"
+           "text": "UPDATE 账户"
           },
           {
            "_type": "UMLActivationView",
@@ -1116,7 +1116,7 @@
            "visible": true,
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 931,
+           "left": 1131,
            "top": 430,
            "width": 14,
            "height": 40
@@ -1130,7 +1130,7 @@
          "tail": {
           "$ref": "AAAAGTS000000000000000816"
          },
-         "points": "768:430;938:430",
+         "points": "928:430;1138:430",
          "nameLabel": {
           "$ref": "AAAAGTS000000000000000843"
          },
@@ -1156,14 +1156,14 @@
            },
            "visible": true,
            "font": "Arial;13;0",
-           "left": 433,
+           "left": 514,
            "top": 462,
-           "width": 200,
+           "width": 198,
            "height": 13,
            "alpha": 0.0,
            "distance": 12,
            "edgePosition": 0,
-           "text": "INSERT 行程 + 因子快照"
+           "text": "INSERT 行程"
           },
           {
            "_type": "UMLActivationView",
@@ -1177,7 +1177,7 @@
            "visible": true,
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 591,
+           "left": 711,
            "top": 480,
            "width": 14,
            "height": 40
@@ -1191,7 +1191,7 @@
          "tail": {
           "$ref": "AAAAGTS000000000000000802"
          },
-         "points": "428:480;598:480",
+         "points": "508:480;718:480",
          "nameLabel": {
           "$ref": "AAAAGTS000000000000000846"
          },
@@ -1217,14 +1217,14 @@
            },
            "visible": true,
            "font": "Arial;13;0",
-           "left": 773,
+           "left": 934,
            "top": 512,
-           "width": 200,
+           "width": 198,
            "height": 13,
            "alpha": 0.0,
            "distance": 12,
            "edgePosition": 0,
-           "text": "INSERT 流水 account_seq"
+           "text": "INSERT 流水"
           },
           {
            "_type": "UMLActivationView",
@@ -1238,7 +1238,7 @@
            "visible": true,
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 931,
+           "left": 1131,
            "top": 530,
            "width": 14,
            "height": 40
@@ -1252,7 +1252,7 @@
          "tail": {
           "$ref": "AAAAGTS000000000000000816"
          },
-         "points": "768:530;938:530",
+         "points": "928:530;1138:530",
          "nameLabel": {
           "$ref": "AAAAGTS000000000000000849"
          },
@@ -1278,14 +1278,14 @@
            },
            "visible": true,
            "font": "Arial;13;0",
-           "left": 263,
+           "left": 304,
            "top": 562,
-           "width": 200,
+           "width": 198,
            "height": 13,
            "alpha": 0.0,
            "distance": 12,
            "edgePosition": 0,
-           "text": "返回 TripDetail"
+           "text": "TripDetail"
           },
           {
            "_type": "UMLActivationView",
@@ -1299,7 +1299,7 @@
            "visible": true,
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 251,
+           "left": 291,
            "top": 580,
            "width": 14,
            "height": 40
@@ -1313,7 +1313,7 @@
          "tail": {
           "$ref": "AAAAGTS000000000000000802"
          },
-         "points": "428:580;258:580",
+         "points": "508:580;298:580",
          "nameLabel": {
           "$ref": "AAAAGTS000000000000000852"
          },
@@ -1339,14 +1339,14 @@
            },
            "visible": true,
            "font": "Arial;13;0",
-           "left": 93,
+           "left": 94,
            "top": 612,
-           "width": 200,
+           "width": 198,
            "height": 13,
            "alpha": 0.0,
            "distance": 12,
            "edgePosition": 0,
-           "text": "200 {code:0, data}"
+           "text": "200 OK"
           },
           {
            "_type": "UMLActivationView",
@@ -1374,7 +1374,7 @@
          "tail": {
           "$ref": "AAAAGTS000000000000000795"
          },
-         "points": "258:630;88:630",
+         "points": "298:630;88:630",
          "nameLabel": {
           "$ref": "AAAAGTS000000000000000855"
          },
@@ -1394,7 +1394,7 @@
        "_parent": {
         "$ref": "AAAAGTS000000000000000764"
        },
-       "name": "POST /trips（Idempotency-Key）",
+       "name": "POST /trips",
        "source": {
         "$ref": "AAAAGTS000000000000000765"
        },
@@ -1408,7 +1408,7 @@
        "_parent": {
         "$ref": "AAAAGTS000000000000000764"
        },
-       "name": "create(user, key, req)",
+       "name": "create()",
        "source": {
         "$ref": "AAAAGTS000000000000000766"
        },
@@ -1422,7 +1422,7 @@
        "_parent": {
         "$ref": "AAAAGTS000000000000000764"
        },
-       "name": "按 userId+clientTripId 查重",
+       "name": "按幂等键查重",
        "source": {
         "$ref": "AAAAGTS000000000000000767"
        },
@@ -1436,7 +1436,7 @@
        "_parent": {
         "$ref": "AAAAGTS000000000000000764"
        },
-       "name": "按结束时间匹配核算规则",
+       "name": "匹配核算规则",
        "source": {
         "$ref": "AAAAGTS000000000000000767"
        },
@@ -1450,7 +1450,7 @@
        "_parent": {
         "$ref": "AAAAGTS000000000000000764"
        },
-       "name": "SELECT 规则（因子/系数）",
+       "name": "SELECT 规则",
        "source": {
         "$ref": "AAAAGTS000000000000000768"
        },
@@ -1464,7 +1464,7 @@
        "_parent": {
         "$ref": "AAAAGTS000000000000000764"
        },
-       "name": "applyTrip(points, reduction)",
+       "name": "applyTrip()",
        "source": {
         "$ref": "AAAAGTS000000000000000767"
        },
@@ -1478,7 +1478,7 @@
        "_parent": {
         "$ref": "AAAAGTS000000000000000764"
        },
-       "name": "UPDATE 账户 last_seq+1（行锁）",
+       "name": "UPDATE 账户",
        "source": {
         "$ref": "AAAAGTS000000000000000769"
        },
@@ -1492,7 +1492,7 @@
        "_parent": {
         "$ref": "AAAAGTS000000000000000764"
        },
-       "name": "INSERT 行程 + 因子快照",
+       "name": "INSERT 行程",
        "source": {
         "$ref": "AAAAGTS000000000000000767"
        },
@@ -1506,7 +1506,7 @@
        "_parent": {
         "$ref": "AAAAGTS000000000000000764"
        },
-       "name": "INSERT 流水 account_seq",
+       "name": "INSERT 流水",
        "source": {
         "$ref": "AAAAGTS000000000000000769"
        },
@@ -1520,7 +1520,7 @@
        "_parent": {
         "$ref": "AAAAGTS000000000000000764"
        },
-       "name": "返回 TripDetail",
+       "name": "TripDetail",
        "source": {
         "$ref": "AAAAGTS000000000000000767"
        },
@@ -1534,7 +1534,7 @@
        "_parent": {
         "$ref": "AAAAGTS000000000000000764"
        },
-       "name": "200 {code:0, data}",
+       "name": "200 OK",
        "source": {
         "$ref": "AAAAGTS000000000000000766"
        },

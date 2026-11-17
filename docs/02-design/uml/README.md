@@ -32,17 +32,17 @@
 
 | # | 消息 | 代码位置 |
 |---|---|---|
-| 1 | `POST /trips`（带 `Idempotency-Key`） | `TripController.create` |
-| 2 | `create(user, key, req)` | `TripService.create` |
-| 3 | 按 `userId + clientTripId` 查重 | `TripRepository.findByClientTripId` |
-| 4 | 按结束时间匹配核算规则 | `TripRepository.findRule` |
-| 5 | `SELECT 规则（因子/系数）` | 同上 |
-| 6 | `applyTrip(points, reduction)` | `PointsRepository.applyTrip` |
-| 7 | `UPDATE 账户 last_seq+1（行锁）` | `PointsRepository.applyTrip` |
-| 8 | `INSERT 行程 + 因子快照` | `TripRepository.insert` |
-| 9 | `INSERT 流水 account_seq` | `PointsRepository.insertLedger` |
-| 10 | 返回 `TripDetail` | `TripService.create` |
-| 11 | `200 {code:0, data}` | `GlobalExceptionHandler`/Controller |
+| 1 | `POST /trips` | `TripController.create` |
+| 2 | `create()` | `TripService.create` |
+| 3 | 按幂等键查重 | `TripRepository.findByClientTripId` |
+| 4 | 匹配核算规则 | `TripRepository.findRule` |
+| 5 | `SELECT 规则` | 同上 |
+| 6 | `applyTrip()` | `PointsRepository.applyTrip` |
+| 7 | `UPDATE 账户`（行锁） | `PointsRepository.applyTrip` |
+| 8 | `INSERT 行程` | `TripRepository.insert` |
+| 9 | `INSERT 流水` | `PointsRepository.insertLedger` |
+| 10 | `TripDetail` | `TripService.create` |
+| 11 | `200 OK` | `GlobalExceptionHandler`/Controller |
 
 ## 4. 鲁棒图/序列图覆盖清单（DR-03）
 
