@@ -432,7 +432,7 @@ def main(out_path, seq_path=None):
             label = {'_type': 'EdgeLabelView', '_id': uid(), '_parent': {'$ref': ''},
                      'visible': True, 'font': FONT,
                      'left': mid - lw // 2, 'top': y - 20,
-                     'width': lw, 'height': 13, 'horizontalAlignment': 1,
+                     'width': lw, 'height': 13,
                      'alpha': 0.0, 'distance': 12,
                      'edgePosition': 0, 'text': text}
             mvid = uid()
