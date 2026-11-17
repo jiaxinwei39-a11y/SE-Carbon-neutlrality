@@ -102,6 +102,6 @@
 
 | 编号 | 现象 | 出处 | 处理 |
 |------|------|------|------|
-| D-23 | 地铁方式因子两处不同：`decisions.md` 记 **0.030000**（已确认口径），`frontend/docs/api-contract.md` 示例表仍写 **0.04** | `docs/00-product/decisions.md` 第 25 行 / `frontend/docs/api-contract.md` 第 283 行 | 原型按 **0.03** 演示（`R-2026-11-MET`）；0.04 作为 `R-2026-10-MET` 旧版本保留在规则页的「已归档」，详情页遇到旧版本快照会写明「按旧版本规则核算」。`api-contract.md` 需后端/前端同步改口径。 |
+| D-23 | 地铁方式因子两处不同：`decisions.md` 记 **0.030000**（已确认口径），`frontend/docs/api-contract.md` 示例表仍写 **0.04** | `docs/00-product/decisions.md` 第 25 行 / `frontend/docs/api-contract.md` 第 283 行 | **前端 mock 已同步 0.03**（`frontend/src/api/mock.ts` 的 `MODE_FACTOR.SUBWAY` 与 `R-2026-11-SUBWAY`）；原型按 **0.03** 演示（`R-2026-11-MET`）；0.04 作为 `R-2026-10-MET` 旧版本保留在规则页的「已归档」，详情页遇到旧版本快照会写明「按旧版本规则核算」。`api-contract.md` 需后端/前端同步改口径。 |
 
 连带修正：取整只在最后一步——减排量不预先四舍五入，`floor(未舍入值 × 比例)`。旧样例 5.6 km × 0.04 = 0.896 kg → **8 分**（不是先取 0.90 得 9 分），已在明细页与该行程的入账快照中体现。
