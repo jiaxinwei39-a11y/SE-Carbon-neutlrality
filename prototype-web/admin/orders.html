@@ -49,7 +49,7 @@
 
     <section class="card tight">
       <table class="table">
-        <thead><tr><th style="width:190px">订单号</th><th>用户</th><th>礼品</th><th class="r" style="width:100px">扣减积分</th><th style="width:110px">状态</th><th style="width:150px">下单时间</th><th style="width:170px">操作</th></tr></thead>
+        <thead><tr><th style="width:190px">订单号</th><th>用户</th><th>礼品</th><th class="r" style="width:100px">扣减积分</th><th style="width:150px">状态</th><th style="width:150px">下单时间</th><th style="width:170px">操作</th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
     </section>
@@ -74,10 +74,10 @@
         <option>用户申请取消</option>
         <option>库存不足，无法履约</option>
         <option>礼品信息有误</option>
-        <option>其他（请在下方说明）</option>
+        <option>其他</option>
       </select>
-      <input class="input" id="reasonText" maxlength="100" placeholder="补充说明（选填，最多 100 字）" style="margin-top:10px">
-      <p class="hint" style="margin-top:8px">取消原因会写入订单详情，用户端可见；未选择原因不能提交。</p>
+      <input class="input" id="reasonText" maxlength="100" placeholder="补充说明（选择「其他」时必填，其余情况选填，最多 100 字）" style="margin-top:10px">
+      <p class="hint" style="margin-top:8px" id="reasonHint">取消原因与补充说明会一起写入订单详情，用户端可见；未选择原因不能提交。</p>
     </div>
   </div>
   <div class="modal-foot">
@@ -103,7 +103,7 @@ function render() {
       <td class="t-strong">${o.user}</td>
       <td>${o.icon} ${o.goods}</td>
       <td class="r num">${o.pts}</td>
-      <td>${stateTag(o.status)}</td>
+      <td>${stateTag(o.status)}${o.status === 'CANCELLED' && o.cancelReason ? `<div class="hint" style="margin-top:6px;max-width:150px;line-height:1.5">${o.cancelReason}</div>` : ''}</td>
       <td class="num" style="color:var(--ink-500)">${o.time}</td>
       <td>${o.status === 'CREATED'
         ? `<button class="btn btn-primary btn-sm" onclick="ask('${o.id}','FULFILLED')">履约</button>
@@ -128,14 +128,23 @@ function ask(id, act) {
   document.getElementById('reasonSel').value = '';
   document.getElementById('reasonText').value = '';
   ok.disabled = false;
+  document.getElementById('reasonHint').textContent = '取消原因与补充说明会一起写入订单详情，用户端可见；未选择原因不能提交。';
   openModal('act');
 }
 document.getElementById('actOk').addEventListener('click', () => {
   if (action === 'CANCELLED') {
-    const reason = document.getElementById('reasonSel').value;
+    const sel = document.getElementById('reasonSel');
+    const txt = document.getElementById('reasonText');
+    const reason = sel.value;
+    const note = txt.value.trim();
     if (!reason) {
-      document.getElementById('reasonSel').focus();
+      sel.focus();
       toast('请先选择取消原因');
+      return;
+    }
+    if (reason === '其他' && !note) {
+      txt.focus();
+      toast('选择「其他」时必须填写补充说明');
       return;
     }
   }
@@ -143,11 +152,24 @@ document.getElementById('actOk').addEventListener('click', () => {
   if (o) {
     o.status = action;
     o.statusName = action === 'FULFILLED' ? '已履约' : '已取消';
-    if (action === 'CANCELLED') o.cancelReason = document.getElementById('reasonSel').value;
+    if (action === 'CANCELLED') {
+      const reason = document.getElementById('reasonSel').value;
+      const note = document.getElementById('reasonText').value.trim();
+      o.cancelReason = note ? `${reason}：${note}` : reason;
+    }
   }
   closeModal('act');
   toast(action === 'FULFILLED' ? '订单已履约' : `订单已取消（${o ? o.cancelReason : ''}），积分已退还`);
   render();
+});
+document.getElementById('reasonSel').addEventListener('change', function () {
+  const isOther = this.value === '其他';
+  const hint = document.getElementById('reasonHint');
+  hint.textContent = isOther
+    ? '选择「其他」时必须填写补充说明，否则不能提交。'
+    : '取消原因与补充说明会一起写入订单详情，用户端可见；未选择原因不能提交。';
+  hint.style.color = isOther ? 'var(--rose-600)' : '';
+  if (isOther) document.getElementById('reasonText').focus();
 });
 document.getElementById('statusSel').addEventListener('change', render);
 document.getElementById('kw').addEventListener('input', render);

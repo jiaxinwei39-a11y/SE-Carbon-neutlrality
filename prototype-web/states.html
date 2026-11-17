@@ -97,7 +97,7 @@
         <div class="fail-box">
           <div class="ico">⚠️</div>
           <h4>加载失败</h4>
-          <p>请求超时（<span class="mono">50001</span>），请检查网络后重试</p>
+          <p>请求超时（网络中断），请检查网络后重试</p>
           <button class="btn btn-secondary btn-sm" onclick="toast('正在重试…')">重新加载</button>
         </div>
       </div>
@@ -134,12 +134,12 @@
       </thead>
       <tbody>
         <tr><td>登录 / 注册</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td class="c yes">✓</td><td class="c no">—</td><td>账号或密码错误（<span class="mono">40101</span>）；账号已停用（<span class="mono">40302</span>）</td></tr>
-        <tr><td>首页 / 上报行程</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td>还没上报过 → 「今天还没有行程」；核算失败 → 显示 REJECTED 原因</td></tr>
+        <tr><td>首页 / 上报行程</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td>还没上报过 → 「今天还没有行程」；核算失败 → 状态 FAILED，显示失败原因</td></tr>
         <tr><td>行程记录</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td>无记录 vs 筛选无结果（清除筛选）</td></tr>
         <tr><td>核算明细</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td class="c yes">✓</td><td class="c yes">✓</td><td>403 他人行程按 404「行程不存在」</td></tr>
         <tr><td>积分明细</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td>无流水 → 「还没有积分变动」</td></tr>
         <tr><td>积分商城</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td>全部兑完 → 空态 + 「等补货」；库存不足在卡片内提示</td></tr>
-        <tr><td>礼品详情 / 兑换确认</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td class="c yes">✓</td><td class="c no">—</td><td>积分不足 <span class="mono">40901</span>、库存不足 <span class="mono">40908</span>、重复兑换走幂等</td></tr>
+        <tr><td>礼品详情 / 兑换确认</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td class="c yes">✓</td><td class="c no">—</td><td>积分不足 <span class="mono">40030</span>、库存不足 <span class="mono">40901</span>、商品已下架 <span class="mono">40908</span>、重复兑换走幂等</td></tr>
         <tr><td>我的订单</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td>无订单 → 「还没有兑换记录」</td></tr>
         <tr><td>个人资料</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td class="c yes">✓</td><td class="c no">—</td><td>保存失败保留已填内容，标红出错字段</td></tr>
         <tr><td>运营概览</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td>当天无数据 → 图表显示 0 并提示「今日还没有数据」</td></tr>

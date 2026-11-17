@@ -46,7 +46,7 @@
   <div class="page-head">
     <div>
       <h1>核算明细</h1>
-      <p class="mono" style="font-size:12.5px;color:var(--ink-400)">单号 T202611100001 · 公交出行</p>
+      <p class="mono" id="subLine" style="font-size:12.5px;color:var(--ink-400)">单号 T202611100001 · 公交出行</p>
     </div>
     <span class="tag tag-green" style="height:26px">已入账</span>
   </div>
@@ -137,12 +137,18 @@
         <p style="font-size:12.5px;color:var(--ink-500);margin:0 0 10px">这三种情况页面必须给出不同措辞，不能都显示「加载失败」：</p>
         <div class="kv" style="grid-template-columns:1fr;font-size:12.5px">
           <div class="v" style="font-weight:400">核算中 → <b>状态 PENDING</b>，显示「核算中，稍后刷新」而不是积分 0</div>
-          <div class="v" style="font-weight:400">核算失败 → <b>状态 REJECTED</b>，显示原因和「重新上报」按钮</div>
-          <div class="v" style="font-weight:400">不存在/无权 → <b>404 / 403</b>，不暴露别人的行程号</div>
+          <div class="v" style="font-weight:400">核算失败 → <b>状态 FAILED</b>：显示失败原因和「重新上报」按钮；同步核算失败时接口直接返回错误，不留下半成品行程</div>
+          <div class="v" style="font-weight:400">不存在/无权 → <b>404 / 403</b>（<span class="mono">40401 / 40301</span>），不暴露别人的行程号</div>
         </div>
       </section>
     </div>
   </div>
 </main>
+<script>
+(function () {
+  var id = new URLSearchParams(location.search).get('id');
+  if (id) document.getElementById('subLine').textContent = '单号 ' + id + ' · 公交出行';
+})();
+</script>
 </body>
 </html>

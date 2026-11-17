@@ -61,7 +61,7 @@
         <tr>
           <th style="width:110px">日期</th><th style="width:110px">出行方式</th>
           <th class="r" style="width:100px">里程</th><th class="r" style="width:130px">减排量</th>
-          <th class="r" style="width:100px">积分</th><th>规则版本</th><th style="width:160px">单号</th>
+          <th class="r" style="width:100px">积分</th><th>规则版本</th><th style="width:170px">单号</th><th style="width:110px;text-align:right">明细</th>
         </tr>
       </thead>
       <tbody id="rows"></tbody>
@@ -82,8 +82,9 @@ function render(mode) {
       <td class="r num">${kg(t.red)} kg</td>
       <td class="r num" style="color:var(--green-600);font-weight:600">+${t.pts}</td>
       <td class="mono">${t.rule}</td>
-      <td class="mono">${t.id}</td>
-    </tr>`).join('') || '<tr><td colspan="7" class="empty">没有符合条件的行程</td></tr>';
+      <td class="mono"><a href="trip-detail.html?id=${t.id}" style="color:var(--green-700)">${t.id}</a></td>
+      <td class="r"><a class="btn btn-secondary btn-sm" href="trip-detail.html?id=${t.id}" style="white-space:nowrap">查看明细</a></td>
+    </tr>`).join('') || '<tr><td colspan="8" class="empty">没有符合条件的行程，试试切换出行方式</td></tr>';
 }
 bindSeg('#modeSeg', render);
 render('ALL');

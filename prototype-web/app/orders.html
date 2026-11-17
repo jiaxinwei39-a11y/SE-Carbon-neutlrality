@@ -25,7 +25,7 @@
   <div class="page-head">
     <div>
       <h1>我的订单</h1>
-      <p>待处理订单可自行取消；已履约与已取消的订单不可再变更</p>
+      <p>兑换后由运营管理员履约或取消；取消原因会显示在表格里，积分原路返还</p>
     </div>
   </div>
 
@@ -47,7 +47,7 @@
           <th style="width:190px">订单号</th><th>礼品</th>
           <th class="r" style="width:80px">数量</th><th class="r" style="width:110px">积分</th>
           <th style="width:120px">状态</th><th style="width:150px">下单时间</th>
-          <th style="width:120px">操作</th>
+          <th style="width:150px">取消原因</th>
         </tr>
       </thead>
       <tbody id="rows"></tbody>
@@ -55,26 +55,15 @@
   </div>
 
   <p class="hint" style="margin:16px 2px">
-    订单状态：待处理 →（管理员履约）已履约；待处理可取消，取消后积分冲正并显示「+N 分 · 已退还」。
+    订单状态：待处理 →（管理员履约）已履约。<b>用户端不提供取消入口</b>，如需取消请联系运营管理员；
+    取消后积分冲正并显示「+N 分 · 已退还」，右侧显示管理员填写的取消原因。
   </p>
 </main>
-
-<div class="mask" id="mask" onclick="closeModal('cancel')"></div>
-<div class="modal" id="cancel">
-  <h3>取消订单</h3>
-  <p class="m-sub">取消后积分将立即退回，礼品库存同步归还，该操作不可撤销。</p>
-  <div class="confirm-row"><span>订单号</span><b class="mono" id="cancelId">—</b></div>
-  <div class="confirm-row" style="border-bottom:0"><span>退还积分</span><b class="num" style="color:var(--green-600)" id="cancelPts">—</b></div>
-  <div class="modal-foot">
-    <button class="btn btn-secondary" onclick="closeModal('cancel')">保留订单</button>
-    <button class="btn btn-danger" onclick="confirmCancel()">取消订单</button>
-  </div>
-</div>
 
 <div class="toast"></div>
 <script src="../assets/app.js"></script>
 <script>
-let pending = null;
+
 
 function render(status) {
   const rows = MOCK.orders.filter(o => status === 'ALL' || o.status === status);
@@ -84,31 +73,18 @@ function render(status) {
       <td class="mono">${o.id}</td>
       <td><span style="font-size:16px">${o.icon}</span> <span class="t-strong">${o.goods}</span></td>
       <td class="r num">${o.qty}</td>
-      <td class="r num" style="color:${refunded ? 'var(--green-600)' : 'var(--ink-700)'};font-weight:600">
-        ${refunded ? '+' + fmt(o.pts) + ' 已退还' : '−' + fmt(o.pts)}
+      <td class="r num" style="color:${refunded ? 'var(--green-600)' : 'var(--ink-700)'};font-weight:600;white-space:nowrap">
+        ${refunded ? '+' + fmt(o.pts) + ' · 已退还' : '−' + fmt(o.pts)}
       </td>
       <td>${stateTag(o.status)}</td>
       <td class="num" style="color:var(--ink-500)">${o.time}</td>
-      <td>${o.status === 'CREATED'
-        ? `<button class="btn btn-secondary btn-sm" onclick="askCancel('${o.id}', ${o.pts})">取消订单</button>`
+      <td>${o.status === 'CANCELLED'
+        ? `<span style="font-size:12.5px;color:var(--ink-600)">${o.cancelReason || '管理员取消'}</span>`
         : '<span style="color:var(--ink-400);font-size:13px">—</span>'}</td>
     </tr>`;
   }).join('') || '<tr><td colspan="7" class="empty"><span class="ico">📭</span>暂无相关订单</td></tr>';
 }
 
-function askCancel(id, pts) {
-  pending = id;
-  document.getElementById('cancelId').textContent = id;
-  document.getElementById('cancelPts').textContent = '+' + fmt(pts) + ' 分';
-  openModal('cancel');
-}
-function confirmCancel() {
-  closeModal('cancel');
-  const o = MOCK.orders.find(x => x.id === pending);
-  if (o) { o.status = 'CANCELLED'; o.statusName = '已取消'; }
-  toast('订单已取消，积分已退还');
-  render(document.querySelector('#seg .on').dataset.value);
-}
 bindSeg('#seg', render);
 render('ALL');
 </script>

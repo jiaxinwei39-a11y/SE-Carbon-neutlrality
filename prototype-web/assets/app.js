@@ -30,7 +30,7 @@ const MOCK = {
     { id: 'O202611100001', goods: '咖啡兑换券', icon: '☕', qty: 1, pts: 300, status: 'CREATED',   statusName: '待处理', time: '11-10 12:02', user: '张生阳' },
     { id: 'O202611100002', goods: '共享单车月卡', icon: '🚲', qty: 1, pts: 800, status: 'CREATED',  statusName: '待处理', time: '11-10 11:48', user: '魏嘉鑫' },
     { id: 'O202611090003', goods: '地铁 5 次卡', icon: '🎫', qty: 1, pts: 500, status: 'FULFILLED', statusName: '已履约', time: '11-09 16:20', user: '郭浚文' },
-    { id: 'O202611090004', goods: '树苗认养证书', icon: '🌱', qty: 1, pts: 200, status: 'CANCELLED', statusName: '已取消', time: '11-09 10:05', user: '李金平' }
+    { id: 'O202611090004', goods: '树苗认养证书', icon: '🌱', qty: 1, pts: 200, status: 'CANCELLED', statusName: '已取消', time: '11-09 10:05', user: '李金平', cancelReason: '库存不足，无法履约' }
   ],
   rules: [
     { v: 'R-2026-11-BUS', mode: '公交 🚌', base: 0.200, factor: 0.050, ratio: 10, from: '2026-11-01', to: '', state: '生效中' },
