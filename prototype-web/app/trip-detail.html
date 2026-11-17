@@ -85,6 +85,19 @@
   const rawText = String(Math.round(rawRed * 10000) / 10000);
   const kmText = t.km.toFixed(1);
 
+  // 关联流水：按 tripId 从共享 Mock 里取，余额用条目自带的 balance，不自己编
+  const rel = MOCK.ledger.filter(e => e.tripId === t.id);
+  const ledgerRows = rel.length
+    ? rel.map(e => `
+        <tr>
+          <td class="mono">${e.id}</td>
+          <td>${e.icon} ${e.type}</td>
+          <td class="r num" style="color:${e.delta > 0 ? 'var(--green-600)' : 'var(--ink-700)'};font-weight:700">${e.delta > 0 ? '+' : ''}${e.delta}</td>
+          <td class="r num">${fmt(e.balance)}</td>
+          <td class="num" style="color:var(--ink-500)">${e.time}</td>
+        </tr>`).join('')
+    : `<tr><td colspan="5" class="empty">这笔行程没有关联的积分流水（示意数据未覆盖）。真实环境按 <span class="mono">tripId</span> 关联，取不到就显示空态，不会编造余额。</td></tr>`;
+
   app.innerHTML = back + `
     <div class="page-head">
       <div>
@@ -133,15 +146,7 @@
           <div class="card-head" style="padding:18px 20px 0;margin-bottom:0"><h2>关联积分流水</h2><a class="more" href="points.html">全部流水 →</a></div>
           <table class="table">
             <thead><tr><th>流水号</th><th>类型</th><th class="r">变动</th><th class="r">变动后余额</th><th>时间</th></tr></thead>
-            <tbody>
-              <tr>
-                <td class="mono">${'L' + t.id.slice(1)}</td>
-                <td>行程奖励 EARN</td>
-                <td class="r num" style="color:var(--green-600);font-weight:700">+${snapPts}</td>
-                <td class="r num">1,280</td>
-                <td class="num" style="color:var(--ink-500)">${t.date}</td>
-              </tr>
-            </tbody>
+            <tbody>${ledgerRows}</tbody>
           </table>
         </section>
       </div>

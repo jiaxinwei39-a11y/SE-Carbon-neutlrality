@@ -16,12 +16,18 @@ const MOCK = {
     { id: 'T202610280006', mode: 'MET',  modeName: '地铁', icon: '🚇', km: 5.6,  red: 0.896, pts: 8,  date: '10-28 08:30', rule: 'R-2026-10-MET',
       from: '地铁二号线站', to: '软件园东门', start: '2026-10-28 08:16', end: '2026-10-28 08:30', calcAt: '2026-10-28 08:30:19' }
   ],
+  // 按时间倒序；balance = 这一笔之后的余额，逐笔首尾相接，最后一笔等于当前可用积分 1280
+  // tripId 指向 trips[].id，明细页按它取关联流水；null 表示与行程无关（兑换 / 冲正）
   ledger: [
-    { icon: '🎁', type: '兑换咖啡券', time: '11-10 12:02', delta: -300, balance: 1280, kind: 'out' },
-    { icon: '🚌', type: '公交出行 · 10.0 km', time: '11-10 08:12', delta: 15, balance: 1580, kind: 'in' },
-    { icon: '🚇', type: '地铁出行 · 10.0 km', time: '11-09 18:40', delta: 17, balance: 1565, kind: 'in' },
-    { icon: '↩️', type: '订单取消冲正', time: '11-09 09:20', delta: 200, balance: 1548, kind: 'back' },
-    { icon: '🎁', type: '兑换地铁 5 次卡', time: '11-08 20:15', delta: -500, balance: 1356, kind: 'out' }
+    { id: 'L202611100003', tripId: null, icon: '🎁', type: '兑换咖啡券', time: '11-10 12:02', delta: -300, balance: 1280, kind: 'out' },
+    { id: 'L202611100001', tripId: 'T202611100001', icon: '🚌', type: '公交出行 · 10.0 km', time: '11-10 08:12', delta: 15, balance: 1580, kind: 'in' },
+    { id: 'L202611090002', tripId: 'T202611090002', icon: '🚇', type: '地铁出行 · 10.0 km', time: '11-09 18:40', delta: 17, balance: 1565, kind: 'in' },
+    { id: 'L202611090001', tripId: null, icon: '↩️', type: '订单取消冲正', time: '11-09 09:20', delta: 200, balance: 1548, kind: 'back' },
+    { id: 'L202611080004', tripId: null, icon: '🎁', type: '兑换地铁 5 次卡', time: '11-08 20:15', delta: -500, balance: 1348, kind: 'out' },
+    { id: 'L202611080003', tripId: 'T202611080003', icon: '🚲', type: '骑行出行 · 3.2 km', time: '11-08 19:05', delta: 6, balance: 1848, kind: 'in' },
+    { id: 'L202611070004', tripId: 'T202611070004', icon: '🚶', type: '步行出行 · 1.8 km', time: '11-07 12:30', delta: 3, balance: 1842, kind: 'in' },
+    { id: 'L202611060005', tripId: 'T202611060005', icon: '🚌', type: '公交出行 · 12.5 km', time: '11-06 07:55', delta: 18, balance: 1839, kind: 'in' },
+    { id: 'L202610280006', tripId: 'T202610280006', icon: '🚇', type: '地铁出行 · 5.6 km', time: '10-28 08:30', delta: 8, balance: 1821, kind: 'in' }
   ],
   goods: [
     { id: 'G01', name: '环保帆布袋', icon: '👜', cost: 120, stock: 8,  state: 'ok' },
