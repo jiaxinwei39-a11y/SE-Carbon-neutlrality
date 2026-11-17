@@ -137,7 +137,7 @@ def main():
     lines = []
     lines.append('# 数据库字典')
     lines.append('')
-    lines.append('> 负责：郭浚文（#9）　数据库：`gts`　MySQL 8.4.11　结构版本：V3')
+    lines.append('> 负责：郭浚文（#9）　数据库：`gts`　MySQL 8.4.11　结构版本：V4')
     lines.append('> 由 `tools/gen_dict.py` 从 `information_schema` 导出，非手写。')
     lines.append('> 字段中文名取自建表语句的 `COMMENT`；键列同时标注主键与外键；')
     lines.append('> 「取值范围」取自 `information_schema.check_constraints`。')

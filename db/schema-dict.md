@@ -1,6 +1,6 @@
 # 数据库字典
 
-> 负责：郭浚文（#9）　数据库：`gts`　MySQL 8.4.11　结构版本：V3
+> 负责：郭浚文（#9）　数据库：`gts`　MySQL 8.4.11　结构版本：V4
 > 由 `tools/gen_dict.py` 从 `information_schema` 导出，非手写。
 > 字段中文名取自建表语句的 `COMMENT`；键列同时标注主键与外键；
 > 「取值范围」取自 `information_schema.check_constraints`。
@@ -240,7 +240,7 @@
 | 3 | 下单用户 | `user_id` | bigint | - | - | FK→t_user.id | 否 |  |  |
 | 4 | 商品 | `product_id` | bigint | - | - | FK→t_product.id | 否 |  |  |
 | 5 | 下单时商品名称快照 | `product_name` | varchar | 128 | - |  | 否 |  |  |
-| 6 | 下单时商品图标快照 | `product_icon` | varchar | 64 | - |  | 否 | ? |  |
+| 6 | 下单时商品图标快照：字符串 | `product_icon` | varchar | 255 | - |  | 否 | ? |  |
 | 7 | 兑换数量 | `quantity` | int | - | - |  | 否 |  | quantity >= 1 |
 | 8 | 下单时单价快照 | `unit_points` | bigint | - | - |  | 否 |  | (unit_points > 0) and (total_points > 0) |
 | 9 | 本次消耗积分=单价×数量 | `total_points` | bigint | - | - |  | 否 |  | (unit_points > 0) and (total_points > 0) |

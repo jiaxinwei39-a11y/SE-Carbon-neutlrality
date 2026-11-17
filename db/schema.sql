@@ -1,5 +1,5 @@
 -- =============================================================================
---  城市绿色出行碳减排积分系统 —— 数据库初始化脚本（结构版本 V3）
+--  城市绿色出行碳减排积分系统 —— 数据库初始化脚本（结构版本 V4）
 --  项目：软件工程实验 项目14        负责：郭浚文（#9）
 --  目标库：MySQL 8.0.16+（本机为 MySQL 8.4）  字符集：utf8mb4
 --
@@ -299,7 +299,7 @@ CREATE TABLE IF NOT EXISTS t_redemption_order (
   user_id       BIGINT      NOT NULL                COMMENT '下单用户，t_user.id',
   product_id    BIGINT      NOT NULL                COMMENT '商品，t_product.id',
   product_name  VARCHAR(128) NOT NULL               COMMENT '下单时商品名称快照',
-  product_icon  VARCHAR(64) NOT NULL DEFAULT '🎁'   COMMENT '下单时商品图标快照',
+  product_icon  VARCHAR(255) NOT NULL DEFAULT '🎁'  COMMENT '下单时商品图标快照：字符串（emoji 或图片 URL）',
   quantity      INT         NOT NULL                COMMENT '兑换数量，>=1',
   unit_points   BIGINT      NOT NULL                COMMENT '下单时单价快照',
   total_points  BIGINT      NOT NULL                COMMENT '本次消耗积分=单价×数量，取消时按此值返还',
@@ -350,4 +350,5 @@ CREATE TABLE IF NOT EXISTS t_audit_log (
 INSERT IGNORE INTO t_schema_version (version, description) VALUES
   ('V1', '首版结构：10 张业务表'),
   ('V2', '增加账户流水序号 last_seq/account_seq、规则串行化锁表与区间约束'),
-  ('V3', 't_product.icon 放宽到 VARCHAR(255)，支持未来的图片 URL');
+  ('V3', 't_product.icon 放宽到 VARCHAR(255)，支持未来的图片 URL'),
+  ('V4', 't_redemption_order.product_icon 同步放宽到 VARCHAR(255)');
