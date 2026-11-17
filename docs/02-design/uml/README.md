@@ -9,11 +9,11 @@
 |---|---|---|
 | `gts-design.mdj` | 包图、部署图、设计类图、5 张活动图 | 已验证可打开 |
 | `gts-seq-sample.mdj` | 序列图：上报行程与积分发放（11 条消息） | 已验证可打开 |
-| `gts-seq-redeem.mdj` | 序列图：积分商品兑换 | 待验收 |
-| `gts-seq-order-admin.mdj` | 序列图：订单履约与取消 | 待验收 |
-| `gts-seq-rule.mdj` | 序列图：核算规则版本切换 | 待验收 |
-| `gts-seq-recon.mdj` | 序列图：只读一致性对账 | 待验收 |
-| `images/seq-sample.png` | 上报行程序列图预览（StarUML 截图） | — |
+| `gts-seq-redeem.mdj` | 序列图：积分商品兑换 | 已验证 |
+| `gts-seq-order-admin.mdj` | 序列图：订单履约与取消 | 已验证 |
+| `gts-seq-rule.mdj` | 序列图：核算规则版本切换 | 已验证 |
+| `gts-seq-recon.mdj` | 序列图：只读一致性对账 | 已验证 |
+| `images/seq-*.png` | 5 张序列图的预览截图（StarUML 截图） | — |
 
 ## 2. 图与核对项对应
 
