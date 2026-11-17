@@ -118,7 +118,7 @@
           <b style="color:var(--ink-900)">要点：</b><br>
           · 说清「谁」没权限、这个页面属于谁<br>
           · 给一条出口（回首页 / 切换账号）<br>
-          · 不要把 403 和 404 混用：<b>存在但无权</b>用 403，<b>不存在</b>用 404，防止探测他人数据<br>
+          · 管理端按 <b>403</b>（存在但无权，如 40301）；用户端「他人的行程」按 <b>404</b> 处理，与不存在一致，防止探测他人数据<br>
           · 前端路由守卫 + 后端接口鉴权双保险，前端拦截只为体验
         </div>
       </div>
@@ -134,9 +134,9 @@
       </thead>
       <tbody>
         <tr><td>登录 / 注册</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td class="c yes">✓</td><td class="c no">—</td><td>账号或密码错误（<span class="mono">40101</span>）；账号已停用（<span class="mono">40302</span>）</td></tr>
-        <tr><td>首页 / 上报行程</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td>还没上报过 → 「今天还没有行程」；核算失败 → 状态 FAILED，显示失败原因</td></tr>
+        <tr><td>首页 / 上报行程</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td>还没上报过 → 「今天还没有行程」；核算失败 → 接口直接报错并提示原因（<b>FAILED 为预留状态</b>）</td></tr>
         <tr><td>行程记录</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td>无记录 vs 筛选无结果（清除筛选）</td></tr>
-        <tr><td>核算明细</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td class="c yes">✓</td><td class="c yes">✓</td><td>403 他人行程按 404「行程不存在」</td></tr>
+        <tr><td>核算明细</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td>无效单号与他人行程<b>同为</b> 404「行程不存在」（<span class="mono">40401</span>），不暴露存在性；该页不出现 403 态</td></tr>
         <tr><td>积分明细</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td>无流水 → 「还没有积分变动」</td></tr>
         <tr><td>积分商城</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td>全部兑完 → 空态 + 「等补货」；库存不足在卡片内提示</td></tr>
         <tr><td>礼品详情 / 兑换确认</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td class="c yes">✓</td><td class="c no">—</td><td>积分不足 <span class="mono">40030</span>、库存不足 <span class="mono">40901</span>、商品已下架 <span class="mono">40908</span>、重复兑换走幂等</td></tr>
@@ -157,7 +157,7 @@
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;font-size:13px;color:var(--ink-700);line-height:1.9">
       <div><b>组件层</b><br>统一封装 <span class="mono">AsyncBlock</span>：接 <span class="mono">loading / error / empty / forbidden</span> 四个 slot，页面只传数据和回调，不各写一遍。</div>
       <div><b>请求层</b><br>Axios 拦截器把 401/403/5xx 映射到统一错误对象；组件只读 <span class="mono">error.kind</span>，不解析后端文案。</div>
-      <div><b>验收</b><br>每个数据区在断网、慢网、空账号、越权账号下各点一遍；五态截图进 <span class="mono">docs/screenshots/states/</span>，作为 UX-01 的验收证据。</div>
+      <div><b>验收</b><br>每个数据区在断网、慢网、空账号、越权账号下各点一遍；<span class="mono">docs/screenshots/states/</span> 里是<b>设计样例</b>（部分为注入的静态示意，未做浏览器实跑验收），UX-01 的可实现性确认仍待高泽。</div>
     </div>
   </section>
 </main>
