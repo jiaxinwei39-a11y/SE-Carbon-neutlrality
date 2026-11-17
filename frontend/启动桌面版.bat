@@ -1,21 +1,18 @@
 @echo off
 cd /d "%~dp0"
-if not exist "node_modules" goto noinstall
 if not exist "dist-app\index.html" (
+  if not exist "node_modules\.bin\vite.cmd" goto noinstall
   echo First run: building the app, please wait...
-  call npm run build:single
+  call npm.cmd run build:single
+  if errorlevel 1 goto nobuild
 )
 if not exist "dist-app\index.html" goto nobuild
-set "EXE=C:\Program Files\Google\Chrome\Application\chrome.exe"
-if not exist "%EXE%" set "EXE=C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-if not exist "%EXE%" goto noapp
-set "URLP=%CD:\=/%"
-start "" "%EXE%" --app="file:///%URLP%/dist-app/index.html" --window-size=1440,900 --user-data-dir="%CD%\.app-profile"
-if exist "scripts\activate.ps1" powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "scripts\activate.ps1" -ProfileDir "%CD%\.app-profile"
+start "" "%CD%\dist-app\index.html"
+if errorlevel 1 goto noapp
 exit /b 0
 
 :noinstall
-echo [ERROR] node_modules not found in this folder:
+echo [ERROR] Vite is not installed in this folder:
 echo         %CD%
 echo         Run:  npm install
 pause
@@ -28,6 +25,7 @@ pause
 exit /b 1
 
 :noapp
-echo [ERROR] Chrome or Edge not found.
+echo [ERROR] Windows could not open the page with the default HTML app.
+echo         Open dist-app\index.html in Chrome or Edge manually.
 pause
 exit /b 1
