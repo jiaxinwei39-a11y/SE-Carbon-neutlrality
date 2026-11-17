@@ -94,7 +94,14 @@ export interface Order {
 
 export interface ReconcileItem {
   id: string
-  objectType: 'TRIP' | 'ORDER'
+  /**
+   * 差异对象类型：
+   * - TRIP    行程级（如"积分应发未发"）
+   * - ORDER   订单级（如"库存与订单不一致"）
+   * - ACCOUNT 账户级（如"余额与流水合计不符"，此时 objectId 是用户/账户 id）
+   * 账户级差异既不是行程也不是订单，硬塞进 ORDER 会让语义错乱，所以放开枚举。
+   */
+  objectType: 'TRIP' | 'ORDER' | 'ACCOUNT'
   objectId: string
   checkName: string
   /** 期望值与实际值都用 number，保留后端原精度，前端只做展示格式化 */

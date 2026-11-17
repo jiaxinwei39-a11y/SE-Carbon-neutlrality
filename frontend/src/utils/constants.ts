@@ -40,6 +40,13 @@ export const FLOW_TYPE_META: Record<PointsFlowType, { text: string }> = {
   REVERSE: { text: '冲正' },
 }
 
+/** 对账差异的对象类型：账户级差异（余额与流水不符）既不是行程也不是订单，单独一类 */
+export const RECONCILE_OBJECT_META: Record<string, { text: string; tone: TagTone }> = {
+  TRIP: { text: '行程', tone: 'gray' },
+  ORDER: { text: '订单', tone: 'gray' },
+  ACCOUNT: { text: '账户', tone: 'amber' },
+}
+
 /** 分页默认每页条数：与后端约定一致，不要各页各写一个 */
 export const PAGE_SIZE = 10
 

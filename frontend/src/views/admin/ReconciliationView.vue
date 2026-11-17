@@ -5,6 +5,7 @@ import AppTag from '@/components/AppTag.vue'
 import { getReconciliation, type ReconcileResult } from '@/api/admin'
 import { errorMessage } from '@/api/http'
 import { fmtDateTime } from '@/utils/format'
+import { RECONCILE_OBJECT_META } from '@/utils/constants'
 
 type DemoMode = 'normal' | 'diff' | 'error'
 
@@ -66,16 +67,16 @@ onMounted(load)
     </div>
 
     <!-- 读取失败：不能显示成"无差异" -->
-    <div v-else-if="err" class="card" style="text-align: center; padding: 40px 24px">
+    <div v-else-if="err" class="card" data-check="recon-error" style="text-align: center; padding: 40px 24px">
       <div style="font-size: 34px; margin-bottom: 10px" aria-hidden="true">⚠️</div>
-      <h2 style="margin-bottom: 6px">核对结果读取失败</h2>
+      <h2 data-check="recon-error-title" style="margin-bottom: 6px">核对结果读取失败</h2>
       <p style="color: #334155; margin-bottom: 6px">当前<b>无法判断</b>是否存在积分差异，请稍后重试。</p>
       <p class="hint" style="margin-bottom: 18px">错误信息：{{ err }}</p>
       <button class="btn btn-primary btn-sm" type="button" @click="load">重试</button>
     </div>
 
     <!-- 无差异 -->
-    <AppCard v-else-if="data && data.items.length === 0">
+    <AppCard v-else-if="data && data.items.length === 0" data-check="recon-empty">
       <div class="result" style="padding: 12px 0">
         <div class="big" style="font-size: 28px">✅ 未发现差异</div>
         <p class="hint">
@@ -90,6 +91,7 @@ onMounted(load)
       <AppCard
         :title="`发现 ${data.items.length} 处差异`"
         hint="需要人工核查，页面不提供自动修复"
+        data-check="recon-diff"
         tight
       >
         <div class="table-wrap">
@@ -106,7 +108,11 @@ onMounted(load)
             </thead>
             <tbody>
               <tr v-for="it in data.items" :key="it.id">
-                <td>{{ it.objectType === 'TRIP' ? '行程' : '订单' }}</td>
+                <td>
+                  <AppTag :tone="RECONCILE_OBJECT_META[it.objectType]?.tone ?? 'gray'">
+                    {{ RECONCILE_OBJECT_META[it.objectType]?.text ?? it.objectType }}
+                  </AppTag>
+                </td>
                 <td class="mono">{{ it.objectId }}</td>
                 <td>{{ it.checkName }}</td>
                 <td class="r num">{{ it.expected }}</td>

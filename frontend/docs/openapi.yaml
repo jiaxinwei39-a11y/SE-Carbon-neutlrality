@@ -810,8 +810,13 @@ components:
       type: object
       properties:
         id: { type: string }
-        objectType: { type: string, enum: [TRIP, ORDER] }
-        objectId: { type: string }
+        objectType:
+          type: string
+          enum: [TRIP, ORDER, ACCOUNT]
+          description: |
+            TRIP=行程级、ORDER=订单级、ACCOUNT=账户级（objectId 为 userId，例如"余额与流水合计不符"）。
+            账户级差异不要塞进 ORDER，否则无法判断该找谁核查。
+        objectId: { type: string, description: "TRIP→tripId / ORDER→orderId / ACCOUNT→userId" }
         checkName: { type: string, example: "积分应发未发（分）" }
         expected: { type: number }
         actual: { type: number }

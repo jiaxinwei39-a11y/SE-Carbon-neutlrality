@@ -666,6 +666,26 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
               expected: 24,
               actual: 23,
             },
+            {
+              id: 'RC-003',
+              // 账户级差异：既不是行程也不是订单，objectType 用 ACCOUNT（objectId 是用户 id）。
+              // 以前只能塞进 ORDER，语义是错的，所以放开了枚举。
+              objectType: 'ACCOUNT',
+              objectId: state.user?.id ?? 'U001',
+              checkName: '账户余额与流水合计不符（分）',
+              expected: 1437,
+              actual: 1439,
+            },
+            {
+              id: 'RC-004',
+              // 账户级的第二种粒度：流水逐笔，objectId 是 `userId#流水序号`（如 U001#7）。
+              // 前端原样展示、不假设 objectId 一定是纯 userId。
+              objectType: 'ACCOUNT',
+              objectId: `${state.user?.id ?? 'U001'}#7`,
+              checkName: '流水序号不连续（应无断号）',
+              expected: 7,
+              actual: 8,
+            },
           ]
         : []
     return ok({ checkedAt: new Date().toISOString(), items }) as unknown as T
@@ -709,7 +729,7 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
     }
     if (body.status !== undefined) {
       if (body.status !== 'ON' && body.status !== 'OFF') {
-        throw new ApiError('商品状态只能是 ON 或 OFF', 40010, 400)
+        throw new ApiError('商品状态只能是 ON 或 OFF', 40043, 400)
       }
       next.status = body.status
     }
