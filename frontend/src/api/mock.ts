@@ -646,7 +646,7 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
     // 对账页三态：无差异 / 有差异 / 读取失败。
     // 这里用 query.diff=1 模拟"有差异"，diff=error 模拟"读取失败"，方便演示与验收。
     const mode = str(req.query?.diff)
-    if (mode === 'error') throw new ApiError('对账服务暂时不可用，请稍后重试', 50000, 500)
+    if (mode === 'error') throw new ApiError('对账服务暂时不可用，请稍后重试', 50001, 500)
     const items: ReconcileItem[] =
       mode === '1'
         ? [

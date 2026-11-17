@@ -447,23 +447,47 @@ check(
   `${balanceBeforeCancel} + ${firstParsed?.p ?? 0} = ${balanceAfterCancel}`,
 )
 console.log('\n=== 11. 积分对账：三态 + 账户级差异 ===')
+// 断言必须打在"结果面板"上，不能全页搜关键词：
+// 页面常驻的演示说明里就有"无法判断/读取失败"，按钮本身也叫"读取失败"，
+// 全页搜索会在"错误地显示成无差异"时依然通过（上一轮评审指出的问题）。
 await ev(`location.hash = '#/admin/reconciliation'`)
 await wait(1600)
 await ev(PAGE_HELPERS)
+
+// 11.1 初始正常态：默认无差异
+const initState = await ev(`(() => ({
+  empty: !!document.querySelector('[data-check="recon-empty"]'),
+  error: !!document.querySelector('[data-check="recon-error"]'),
+  diff: !!document.querySelector('[data-check="recon-diff"]'),
+}))()`)
+check('初始态显示"无差异"面板', initState?.empty === true, JSON.stringify(initState))
+check('初始态不显示读取失败面板', initState?.error === false)
+
+// 11.2 有差异态
 await ev(`__t.click('有差异')`)
 await wait(1600)
 const reconRows = await ev('__t.rows()')
 const allReconText = reconRows.join(' | ')
-check('有差异态列出差异项', reconRows.length >= 2, `${reconRows.length} 行`)
+check('有差异态出现差异表', await ev(`!!document.querySelector('[data-check="recon-diff"]')`))
+check('有差异态不显示无差异面板', await ev(`!document.querySelector('[data-check="recon-empty"]')`))
 check('差异项含行程级', /行程/.test(allReconText))
 check('差异项含订单级', /订单/.test(allReconText))
 // 账户级差异：objectType=ACCOUNT（以前类型只允许 TRIP|ORDER，这条会被迫塞进 ORDER，语义就错了）
 check('差异项含账户级（objectType=ACCOUNT）', /账户/.test(allReconText), allReconText.slice(0, 80))
 
+// 11.3 读取失败态：必须命中专用面板，且无差异/差异表都不出现
 await ev(`__t.click('读取失败')`)
 await wait(1600)
-const reconErrorText = await ev('__t.text()')
-check('读取失败不显示成"无差异"', /无法判断|读取失败/.test(reconErrorText))
+const failState = await ev(`(() => ({
+  error: !!document.querySelector('[data-check="recon-error"]'),
+  title: (document.querySelector('[data-check="recon-error-title"]') || {}).textContent || '',
+  empty: !!document.querySelector('[data-check="recon-empty"]'),
+  diff: !!document.querySelector('[data-check="recon-diff"]'),
+}))()`)
+check('读取失败显示专用面板', failState?.error === true, JSON.stringify(failState))
+check('失败面板标题是"核对结果读取失败"', String(failState?.title).trim() === '核对结果读取失败', String(failState?.title))
+check('读取失败时不显示"无差异"面板', failState?.empty === false)
+check('读取失败时不显示差异表', failState?.diff === false)
 
 console.log('\n=== 运行时报错 ===')
 check('全程无未捕获异常', runtimeErrors.length === 0, runtimeErrors.slice(0, 3).join(' | '))

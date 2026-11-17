@@ -165,7 +165,7 @@ VITE_DATA_SOURCE=api
 VITE_API_BASE_URL=http://localhost:8080/api
 ```
 
-切完我会重跑 `npm run e2e`（65 条断言），后端只要按本文实现，断言应全绿。
+切完我会重跑 `npm run e2e`（71 条断言），后端只要按本文实现，断言应全绿。
 
 ---
 
