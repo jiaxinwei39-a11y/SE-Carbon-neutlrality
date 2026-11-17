@@ -855,7 +855,12 @@ components:
           description: |
             TRIP=行程级、ORDER=订单级、ACCOUNT=账户级（objectId 为 userId，例如"余额与流水合计不符"）。
             账户级差异不要塞进 ORDER，否则无法判断该找谁核查。
-        objectId: { type: string, description: "TRIP→tripId / ORDER→orderId / ACCOUNT→userId" }
+        objectId:
+          type: string
+          description: |
+            TRIP→tripId；ORDER→orderId；ACCOUNT→userId（账户汇总 "U001"；流水逐笔 "U001#7"，即 userId#accountSeq）。
+            前端原样展示、不解析。注意：目标口径是"对外业务编号"，
+            主分支 ReconcileService 目前仍返回内部自增 id（如 "4" / "4#7"），待后端改为 t_user.user_id。
         checkName: { type: string, example: "积分应发未发（分）" }
         expected: { type: number }
         actual: { type: number }

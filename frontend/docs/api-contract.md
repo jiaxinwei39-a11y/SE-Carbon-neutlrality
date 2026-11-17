@@ -82,8 +82,8 @@ Idempotency-Key: <客户端生成的唯一串>
 
 ### 1.6 错误码表
 
-> 图例：**✅ 已在后端主分支实现**（`gts-backend/src/main/java/com/gts/common/Api.java`，2026-11-17 核对）；
-> **🟡 待联调契约**（与后端确认过、但还没落在合并分支里，Mock 已按 🟡 实现）。
+> 图例：**✅ 已在后端主分支实现**（`gts-backend/src/main/java/com/gts/common/Api.java`，`upstream/main@1c718ff` 核对，2026-11-17）；
+> **🟡 待联调契约**（与后端确认过、但还没落在合并分支里）。
 > 前端判定只认 `code`，`message` 仅兜底展示；业务错误用 HTTP 200~499 + 非 0 code，`5xx` 只表示服务端异常。
 
 | code | HTTP | 含义 | 状态 |
@@ -98,9 +98,9 @@ Idempotency-Key: <客户端生成的唯一串>
 | `40013` | 400 | 手机号格式非法 | ✅ `PHONE_INVALID` |
 | `40030` | 400 | 积分不足 | ✅ `POINTS_SHORT` |
 | `40040` | 400 | 取消原因为空 | ✅ `CANCEL_REASON_REQUIRED` |
-| `40041` | 400 | 商品积分单价非法（须为正整数） | 🟡 约定 `PRODUCT_POINTS_INVALID` |
-| `40042` | 400 | 商品库存非法（须为 ≥0 的整数） | 🟡 约定 `PRODUCT_STOCK_INVALID` |
-| `40043` | 400 | 商品状态非法（只能是 `ON` / `OFF`） | 🟡 约定 `PRODUCT_STATUS_INVALID` |
+| `40041` | 400 | 商品积分单价非法（须为正整数） | ✅ `PRODUCT_POINTS_INVALID` |
+| `40042` | 400 | 商品库存非法（须为 ≥0 的整数） | ✅ `PRODUCT_STOCK_INVALID` |
+| `40043` | 400 | 商品状态非法（只能是 `ON` / `OFF`） | ✅ `PRODUCT_STATUS_INVALID` |
 | `40100` | 401 | 未登录 / 登录已过期 | ✅ `UNAUTHORIZED` |
 | `40101` | 401 | 账号或密码错误 | ✅ `BAD_CREDENTIALS` |
 | `40301` | 403 | 非管理员调用管理端接口 | ✅ `FORBIDDEN` |
@@ -117,14 +117,15 @@ Idempotency-Key: <客户端生成的唯一串>
 | `40908` | 409 | 商品已下架（兑换时） | ✅ `PRODUCT_OFF_SHELF` |
 | `40909` | 409 | 规则不可追溯生效：`effectiveFrom` **早于服务端当前时间** | ✅ `RULE_RETROACTIVE` |
 | `50000` | 500 | 服务端异常（兜底） | ✅ `SERVER_ERROR` |
-| `50001` | 500 | **对账接口专用**：核对结果读取失败 | 🟡 后端 PR #31 返回 |
+| `50001` | 500 | **对账接口专用**：核对结果读取失败 | ✅ `RECONCILE_UNAVAILABLE` |
 
-> **关于 🟡 三个商品码**：前端要把红字挂到具体输入框，靠中文 `message` 匹配会在后端改文案时静默失效，
-> 所以议定用独立码。**在后端把 `40041/40042/40043` 加进 `Api.java` 之前，真实后端仍会返回 `40000`**：
-> 前端逻辑写成"优先按独立码定位字段，收到 `40000` 时回退到通用提示"，两种都能跑。
+> **关于 🟡 与商品码的现状**：`40041/40042/40043` 已随 #31 进入后端主分支 `Api.java`
+> （`PRODUCT_POINTS_INVALID` / `PRODUCT_STOCK_INVALID` / `PRODUCT_STATUS_INVALID`），
+> 后端用 `BigDecimal` 接 `points`/`stock` 以识别小数并返回对应码，**前后端已一致**；
+> 前端逻辑仍是"优先按独立码定位输入框，收到 `40000` 回退通用提示"（兼容旧后端，不影响现在联调）。
 > 注意 `40010` 是里程非法（`DISTANCE_INVALID`），不能拿来当商品状态码——文档早前写错，已更正。
 
-> **关于 `50001`**：对账读取失败是**专用码**，不要并进 `50000`。前端页面对账的三态靠它区分：
+> **关于 `50001`**：对账读取失败是**专用码**（后端 `RECONCILE_UNAVAILABLE`），不要并进 `50000`。前端页面对账的三态靠它区分：
 > `50001`/任意 5xx → 显示「核对结果读取失败（无法判断是否存在差异）」，**绝不能显示成"无差异"**。
 
 ## 2. 接口清单（23 个）
@@ -487,6 +488,11 @@ GET /admin/orders?page&size   → Page<Order>（全量）
 GET /admin/users?page&size    → Page<User>
 ```
 
+> `User` 形状与登录/注册返回的 `user` **完全一致**：`{ id, nickname, phone, role, avatarText, points }`
+> （后端 `AuthDto.UserVo`）。用户编号的键名是 **`id`**，值是对外业务编号（如 `U001`，由 `t_user.user_id` 映射而来）；
+> **不要写成 `userId`** —— 前端类型 `User.id`、页面渲染都按 `id` 取值。
+> `points` 来自 `t_point_account.balance`；`status`（启用/停用）目前不在 `UserVo` 里，属 P1。
+
 `CarbonRule`：
 
 ```json
@@ -532,9 +538,17 @@ GET /admin/reconciliation
 > 切不出来就整体显示，不能报错。`tripId` / `orderId` 同样当**不透明字符串**处理（上表示例只说明形状，
 > 实际由服务端生成，前端不做前缀解析）。
 
+> ⚠️ **目标契约 vs 主分支实际响应（2026-11-17 核对，尚未统一）**
+> 上表是**目标契约**：`ACCOUNT` 的 `objectId` 用对外业务编号 `U001` / `U001#7`。
+> 但主分支 `ReconcileService` 现在取的是 `t_point_account.user_id`（`BIGINT`，即 `t_user.id` 内部主键）
+> 再拼 `account_seq`，**实际返回的是 `4` / `4#7` 这种内部 id**。
+> 影响：前端不做解析，展示层不会崩，但对账页上运营看到的是数字而非 `U00x`，无法直接拿去查用户。
+> **待后端改为对外业务编号**（`t_user.user_id`），改完后本表口径才算真正落地；
+> 在那之前，联调时以接口实际返回为准，不要按 `U001` 形状写死断言。
+
 - `items` 为空数组 = **无差异**；非空 = 有差异（前端渲染差异表）。
 - 差异值由前端按 `actual - expected` 计算展示，**后端不用再单独算一列**。
-- **服务端出错必须返回 5xx**（对账专用错误码 `50001`，后端 PR #31 已返回），**不能返回空数组** ——
+- **服务端出错必须返回 5xx**（对账专用错误码 `50001` / `RECONCILE_UNAVAILABLE`，已随 #31 进主分支），**不能返回空数组** ——
   前端把「读取失败」和「无差异」分成两个界面，混了就是漏报。
 - 只读：不提供自动修复、不提供导出。
 
@@ -545,10 +559,10 @@ GET /admin/reconciliation
 > 拆成多个动作接口会让"改价 + 改库存"无法放进同一个事务。
 > 新增商品（`POST /admin/products`）与改名称/图文排在 v1.1。
 
-> **实现对齐（2026-11-17，与后端确认选 A）**：后端现有 `PUT /admin/products/{id}` 是**全量必填**
-> （`name`/`points`/`status`/`stock`），前端发 `PATCH` 会 405。请后端补一个 `@PatchMapping`
-> 指向同一处理逻辑、只校验传了的字段，校验全部通过后再落盘（失败不得改动任何字段）。
-> 后端已有的 `/status`、`/stock` 可以留着，但**不作为前端契约**。
+> **实现现状（2026-11-17 核对 `upstream/main@1c718ff`）**：后端已按方案 A 补上
+> `@PatchMapping("/products/{productId}")`（`AdminController`），注释写明"v1 规范接口，前端只需调这一个"；
+> 原有 `PUT /admin/products/{id}` 与 `/status`、`/stock` 三个端点保留为兼容入口，**不作为前端契约**。
+> 校验用 `BigDecimal` 接 `points`/`stock`（避免 `1.9` 被静默截断成 `1`），全部通过后才落盘，失败不改任何字段。
 
 ```
 PATCH /admin/products/{productId}
@@ -609,7 +623,9 @@ Authorization: Bearer <admin token>
 写接口（上报行程、兑换下单、履约、取消）都必须满足：
 
 1. **按「用户 + 业务键」隔离**：幂等键只在**同一个用户**内有效，不能跨用户命中别人的结果。
-   行程用 `Idempotency-Key` 头，兑换用 `requestId`，取消/履约用资源 id 本身（订单只能取消一次）。
+   键**一律走 `Idempotency-Key` 请求头**（不是请求体里的 JSON 字段）：行程、兑换下单都是如此；
+   后端 `MallController` 就是 `@RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey`。
+   取消/履约不用幂等键，用资源 id 本身（订单只能取消一次，重复调用按下面的规则重放）。
 2. **同键同输入 → 重放原结果**：返回 200 + 上一次的结果，**不产生第二笔积分、第二笔扣减**。
 3. **同键不同输入 → 拒绝**：返回 `409`（建议 `40904 幂等键已被不同内容使用`），不要静默覆盖。
    **"内容"指请求体的全部业务字段，不是其中几个**——行程要连 `startPlace`/`endPlace` 一起比，
@@ -626,7 +642,8 @@ Authorization: Bearer <admin token>
      `orders(user_id, request_id)` 这类唯一索引，数据库层面就写不进第二条。
    - 清理只允许发生在业务已终结且归档之后，且清理后重放应查业务表返回原结果，而不是重新记账。
 
-前端对应做法（已实现）：`clientTripId` 在页面打开时生成、成功后重建；`requestId` 在打开兑换确认框时生成、失败复用；
+前端对应做法（已实现）：`clientTripId` 在页面打开时生成、成功后重建、失败复用；
+兑换的幂等键 `requestId` 在打开兑换确认框时生成、失败复用，提交时放进 `Idempotency-Key` 头；
 超时提示「结果尚未确认」，**不当成失败自动换号重试**。
 
 ---
@@ -716,7 +733,7 @@ interface CarbonRule {
   effectiveFrom: string; status: 'ACTIVE' | 'ARCHIVED'
 }
 
-interface ReconcileItem { id: string; objectType: 'TRIP' | 'ORDER'; objectId: string; checkName: string; expected: number; actual: number }
+interface ReconcileItem { id: string; objectType: 'TRIP' | 'ORDER' | 'ACCOUNT'; objectId: string; checkName: string; expected: number; actual: number }
 
 interface ApiResult<T> { code: number; message: string; data: T }
 interface Page<T> { items: T[]; total: number; page: number; size: number }
