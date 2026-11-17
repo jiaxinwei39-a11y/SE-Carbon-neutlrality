@@ -25,7 +25,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Service
 public class RuleService {
 
-    private static final DateTimeFormatter TS = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+    // 精确到毫秒并带随机后缀：同一秒内连续创建两条规则时，只到秒的编号会撞主键
+    private static final DateTimeFormatter TS = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
 
     private final AdminRepository admin;
     private final AuditRepository audit;
@@ -62,6 +63,20 @@ public class RuleService {
 
     private AdminDto.CarbonRuleVo createInTx(LoginUser operator, AdminDto.RuleCreateRequest req,
                                              String mode, LocalDateTime from, LocalDateTime to) {
+        // 0) 禁止追溯生效（BR-01 / TC-06）。
+        //    新规则只能从现在或将来开始，否则会把旧规则截断到过去，
+        //    历史补录的行程就会按新系数算分，与原记录口径不一致。
+        //    允许 5 秒容差吸收客户端时钟与传输延迟，不能用来"回到过去"。
+        LocalDateTime now = LocalDateTime.now(TimeUtil.ZONE);
+        if (from.isBefore(now.minusSeconds(5))) {
+            throw new Api.BizException(Api.Codes.RULE_RETROACTIVE, 409,
+                    "规则不能追溯生效：生效时间必须不早于当前时间（服务端当前为 "
+                            + TimeUtil.toIso(now) + "）");
+        }
+        if (to != null && !to.isAfter(from)) {
+            throw new Api.BizException(Api.Codes.PARAM_INVALID, 400, "失效时间必须晚于生效时间");
+        }
+
         // 1) 锁该方式的串行化闸门
         admin.lockMode(mode);
 
@@ -97,7 +112,8 @@ public class RuleService {
                     "新版本生效，结束旧区间");
         }
 
-        String ruleId = "R-" + LocalDateTime.now(TimeUtil.ZONE).format(TS) + "-" + mode;
+        String ruleId = "R-" + LocalDateTime.now(TimeUtil.ZONE).format(TS) + "-"
+                + java.util.concurrent.ThreadLocalRandom.current().nextInt(100, 1000) + "-" + mode;
         admin.insertRule(ruleId, mode, req.baseFactor(), req.modeFactor(), req.pointsRatio(), from, to, ruleId);
 
         audit.record("CARBON_RULE", ruleId, "CREATE", null,

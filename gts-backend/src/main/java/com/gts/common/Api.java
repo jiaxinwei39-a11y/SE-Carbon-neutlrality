@@ -77,6 +77,7 @@ public final class Api {
         public static final int NO_CARBON_RULE = 40905;
         public static final int PHONE_TAKEN = 40906;
         public static final int RULE_INTERVAL_OVERLAP = 40907;
+        public static final int RULE_RETROACTIVE = 40909;
         public static final int PRODUCT_OFF_SHELF = 40908;
         public static final int STOCK_SHORT = 40901;
         public static final int POINTS_SHORT = 40030;

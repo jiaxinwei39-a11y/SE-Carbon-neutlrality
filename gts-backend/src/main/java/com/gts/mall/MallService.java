@@ -107,6 +107,18 @@ public class MallService {
         // ① 锁账户
         points.lockAccountForUpdate(user.id());
 
+        // ①.5 拿到账户锁之后必须再用**当前读**复查一次幂等记录。
+        //     理由（评审复现）：两个同键请求都通过了上面的锁外查重，
+        //     第一个先拿到锁并把库存扣到 0，第二个在锁上等待；
+        //     等它拿到锁时若先去校验库存，会直接报"库存不足"就退出，
+        //     根本走不到 DuplicateKeyException 的回查分支 —— 用户拿到的是 40901 而不是原订单。
+        //     FOR UPDATE 是当前读，能看到对手刚提交的订单。
+        java.util.Optional<OrderRepository.OrderRow> afterLock =
+                orders.findByUserAndRequestIdForUpdate(user.id(), idempotencyKey);
+        if (afterLock.isPresent()) {
+            return replayOrConflict(afterLock.get(), req);
+        }
+
         // ② 锁商品
         MallRepository.ProductRow product = mall.findByProductIdForUpdate(req.productId())
                 .orElseThrow(() -> new Api.BizException(Api.Codes.PRODUCT_NOT_FOUND, 404, "商品不存在或已下架"));
