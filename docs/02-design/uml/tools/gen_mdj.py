@@ -3,6 +3,7 @@
 用法：python gen_mdj.py <输出.mdj>
 """
 import io, json, sys
+from interaction_specs import CASES
 
 _counter = [0]
 def uid():
@@ -263,7 +264,7 @@ def fix_view_parents(node):
     elif isinstance(node, list):
         for x in node:
             fix_view_parents(x)
-def main(out_path, seq_path=None):
+def main(out_path):
     doc = Doc('城市绿色出行碳减排积分系统')
 
     # 文本宽度估算：CJK 按 13px、其它按 7px，用来保证标签单行不换行
@@ -381,6 +382,7 @@ def main(out_path, seq_path=None):
     def build_sequence(self, name, lifeline_names, messages):
         """messages: [(源索引, 目标索引, 文本)]"""
         inter_id = uid()
+        collab_id = uid()
         ll = []
         for n in lifeline_names:
             ll.append({'_type': 'UMLLifeline', '_id': uid(),
@@ -389,6 +391,7 @@ def main(out_path, seq_path=None):
         for s, t, text in messages:
             msgs.append({'_type': 'UMLMessage', '_id': uid(), '_parent': {'$ref': inter_id},
                          'name': text,
+                         'messageSort': 'reply' if text.startswith('返回') else 'synchCall',
                          'source': {'$ref': ll[s]['_id']},
                          'target': {'$ref': ll[t]['_id']}})
 
@@ -428,15 +431,16 @@ def main(out_path, seq_path=None):
             # 避免文字压到源/目标生命线上的激活条
             span = abs(nx - mx)
             lw = max(64, int(span * 0.55))
-            mid = (mx + nx) // 2
+            label_x = (mx + nx) // 2
             label = {'_type': 'EdgeLabelView', '_id': uid(), '_parent': {'$ref': ''},
                      'visible': True, 'font': FONT,
-                     'left': mid - lw // 2, 'top': y - 20,
+                     'left': label_x - lw // 2, 'top': y - 20,
                      'width': lw, 'height': 13,
                      'alpha': 0.0, 'distance': 12,
                      'edgePosition': 0, 'text': text}
             mvid = uid()
-            act['_id'] = act['_id']
+            act['visible'] = m['messageSort'] != 'reply'
+            label['hostEdge'] = {'$ref': mvid}
             act['_parent'] = {'$ref': mvid}
             mview = {'_type': 'UMLSeqMessageView', '_id': mvid, '_parent': {'$ref': ''},
                      'model': {'$ref': mid}, 'subViews': [label, act], 'font': FONT,
@@ -451,9 +455,10 @@ def main(out_path, seq_path=None):
         diagram = {'_type': 'UMLSequenceDiagram', '_id': uid(), '_parent': {'$ref': inter_id},
                    'name': name, 'ownedViews': views,
                    'showSequenceNumber': True, 'showActivation': True}
-        inter = {'_type': 'UMLInteraction', '_id': inter_id, '_parent': {'$ref': self.model_id},
+        inter = {'_type': 'UMLInteraction', '_id': inter_id, '_parent': {'$ref': collab_id},
                  'name': name, 'ownedElements': [diagram], 'messages': msgs, 'participants': ll}
-        self.model_elements.append((self.model_id, inter))
+        self.model_elements.append((self.model_id, {'_type': 'UMLCollaboration', '_id': collab_id,
+                                    '_parent': {'$ref': self.model_id}, 'name': name, 'ownedElements': [inter]}))
         return inter_id
 
     def build_activity(self, name, steps, decision_text, fail_text):
@@ -467,13 +472,13 @@ def main(out_path, seq_path=None):
         nodes['init'] = self.control_node(act, 'UMLInitialNode', '开始', COL - 10, y)
         y += 70
         chain = []
-        for s in steps:
+        for s in steps[:-1]:
             nodes['s%d' % len(chain)] = self.action(act, s, x, y)
             chain.append('s%d' % len(chain))
             y += 90
         nodes['dec'] = self.control_node(act, 'UMLDecisionNode', decision_text, COL - 10, y)
         y += 80
-        nodes['ok'] = self.action(act, '提交事务并返回成功', x, y)
+        nodes['ok'] = self.action(act, steps[-1], x, y)
         nodes['fail'] = self.action(act, fail_text, x + 300, y - 80)
         nodes['end'] = self.control_node(act, 'UMLActivityFinalNode', '结束', COL - 10, y + 80)
         nodes['end2'] = self.control_node(act, 'UMLActivityFinalNode', '结束', x + 300 + 90 - 10, y - 80 + 60)
@@ -501,8 +506,8 @@ def main(out_path, seq_path=None):
 
         seq = ['init'] + chain + ['dec', 'ok', 'end']
         for a, b in zip(seq, seq[1:]):
-            flow_views.append(vertical(a, b))
-        flow_views.append(horizontal('dec', 'fail', '校验失败'))
+            flow_views.append(vertical(a, b, '是' if a == 'dec' else ''))
+        flow_views.append(horizontal('dec', 'fail', '否'))
         flow_views.append(vertical('fail', 'end2'))
 
         self.diagram('UMLActivityDiagram', name, views + flow_views, parent_id=act)
@@ -512,7 +517,7 @@ def main(out_path, seq_path=None):
                     '同事务写行程快照、流水与余额'],
                    '校验通过？', '拒绝请求，不落库')
     build_activity(doc, '活动图：积分商品兑换',
-                   ['锁账户 → 锁商品', '当前读复查幂等记录', '校验库存与余额',
+                   ['锁账户', '按请求号当前读；命中则重放或拒绝', '未命中才锁商品并校验库存与余额',
                     '原子扣分、扣库存、建订单、写流水'],
                    '库存与余额充足？', '整笔回滚，提示不足')
     build_activity(doc, '活动图：订单取消冲正',
@@ -528,6 +533,39 @@ def main(out_path, seq_path=None):
                     '核对行程发分、订单扣减与冲正', '输出差异清单（不修账）'],
                    '读取成功？', '抛 50001，不得显示为无差异')
 
+
+    # 每组的边界及控制使用设计角色，持久化对象沿用领域类含义。
+    def robustness(name, actor, boundary, control, entities):
+        package = doc.package(name)
+        a = uid()
+        doc.model_elements.append((package, {'_type': 'UMLActor', '_id': a,
+            '_parent': {'$ref': package}, 'name': actor}))
+        elements = [a]
+        views = [doc.box_view('UMLActorView', a, actor, 35, 105, 100, 80, '')]
+        for label, stereotype, x, y in [(boundary, 'boundary', 180, 115),
+                                        (control, 'control', 415, 115)] + [
+            (entity, 'entity', 660, 32 + i * 96) for i, entity in enumerate(entities)
+        ]:
+            cid, _ = doc.uml_class(label, [], package)
+            doc.model_elements[-1][1]['stereotype'] = stereotype
+            v = doc.class_view(cid, [], [], label, x, y, 185)
+            v.update(suppressAttributes=True, suppressOperations=True, height=56)
+            elements.append(cid)
+            views.append(v)
+        lines = []
+        for a_idx, b_idx in [(0, 1), (1, 2)] + [(2, i) for i in range(3, len(views))]:
+            left, right = views[a_idx], views[b_idx]
+            relation = doc.dependency('', elements[a_idx], elements[b_idx], package)
+            sx, sy = left['left'] + left['width'], left['top'] + left['height'] // 2
+            tx, ty = right['left'], right['top'] + right['height'] // 2
+            lines.append(doc.edge_view('UMLDependencyView', relation, left['_id'], right['_id'],
+                                      f'{sx}:{sy};{tx}:{ty}', 1, ''))
+        doc.diagram('UMLClassDiagram', name, views + lines, parent_id=package)
+
+    for code, title, actor, boundary, control, entities, lanes, messages in CASES:
+        robustness(f'鲁棒图 {code} {title}', actor, boundary, control, entities)
+        build_sequence(doc, f'序列图 {code} {title}', lanes, messages)
+
     data = doc.build()
     fix_view_parents(data)
 
@@ -535,30 +573,7 @@ def main(out_path, seq_path=None):
         json.dump(data, f, ensure_ascii=False, indent=1)
     print('written', out_path)
 
-    # ---------------- 独立样例工程：序列图（按组长要求先交一张样例） ----------------
-    if seq_path:
-        sdoc = Doc('样例：行程上报与积分发放（序列图）')
-        build_sequence(sdoc, 
-            '序列图：上报行程与积分发放',
-            ['用户（浏览器）', 'TripController', 'TripService', 'TripRepository',
-             'PointsRepository', 'MySQL'],
-            [(0, 1, 'POST /trips'),
-             (1, 2, 'create()'),
-             (2, 3, '按幂等键查重'),
-             (2, 3, '匹配核算规则'),
-             (3, 5, 'SELECT 规则'),
-             (2, 4, 'applyTrip()'),
-             (4, 5, 'UPDATE 账户'),
-             (2, 3, 'INSERT 行程'),
-             (4, 5, 'INSERT 流水'),
-             (2, 1, 'TripDetail'),
-             (1, 0, '200 OK')])
-        sdata = sdoc.build()
-        fix_view_parents(sdata)
-        with io.open(seq_path, 'w', encoding='utf-8') as f:
-            json.dump(sdata, f, ensure_ascii=False, indent=1)
-        print('written', seq_path)
 
 
 if __name__ == '__main__':
-    main(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else None)
+    main(sys.argv[1])
