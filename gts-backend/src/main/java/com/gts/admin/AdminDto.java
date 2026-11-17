@@ -44,7 +44,7 @@ public final class AdminDto {
     public record ProductPatchRequest(
             Long points,
             Integer stock,
-            @Pattern(regexp = "ON|OFF", message = "状态只能是 ON 或 OFF") String status) {
+            String status) {
     }
 
     /** 与前端 DashboardData 一致 */

@@ -120,12 +120,15 @@ public class AdminService {
             AdminRepository.AdminProductRow before = admin.findProductForUpdate(productId)
                     .orElseThrow(() -> new Api.BizException(Api.Codes.PRODUCT_NOT_FOUND, 404, "商品不存在"));
 
-            // 按前端契约的专用错误码校验：points→40041，stock→40042
+            // 按前端契约的专用错误码校验：points→40041，stock→40042，status→40043
             if (req.points() != null && req.points() < 1) {
                 throw new Api.BizException(Api.Codes.PRODUCT_POINTS_INVALID, 400, "商品积分单价须为正整数");
             }
             if (req.stock() != null && req.stock() < 0) {
                 throw new Api.BizException(Api.Codes.PRODUCT_STOCK_INVALID, 400, "库存须为不小于 0 的整数");
+            }
+            if (req.status() != null && !java.util.Set.of("ON", "OFF").contains(req.status())) {
+                throw new Api.BizException(Api.Codes.PRODUCT_STATUS_INVALID, 400, "商品状态只能是 ON 或 OFF");
             }
 
             if (req.points() != null) {

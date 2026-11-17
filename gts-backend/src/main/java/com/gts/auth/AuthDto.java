@@ -15,17 +15,15 @@ public final class AuthDto {
             @NotBlank(message = "请输入密码") String password) {
     }
 
+    /**
+     * 注册请求：格式校验放在 Service 里做，
+     * 这样能返回前端契约要求的专用码（手机号 40013、密码 40012），
+     * 而不是被 @Valid 统一成 40000。
+     */
     public record RegisterRequest(
-            @NotBlank(message = "请输入手机号")
-            @Pattern(regexp = "^1\\d{10}$", message = "手机号格式不正确")
-            String phone,
-
-            @NotBlank(message = "请输入密码")
-            @Size(min = 6, max = 32, message = "密码长度需为 6-32 位")
-            String password,
-
-            @Size(max = 20, message = "昵称最长 20 个字")
-            String nickname) {
+            @NotBlank(message = "请输入手机号") String phone,
+            @NotBlank(message = "请输入密码") String password,
+            @Size(max = 20, message = "昵称最长 20 个字") String nickname) {
     }
 
     /** 与前端 User 接口一一对应 */

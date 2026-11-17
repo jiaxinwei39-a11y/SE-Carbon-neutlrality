@@ -51,6 +51,13 @@ public class AuthService {
 
     @Transactional
     public AuthDto.LoginResult register(String phone, String rawPassword, String nickname) {
+        // 专用错误码（前端契约）：手机号 40013、密码 40012
+        if (phone == null || !phone.matches("^1\\d{10}$")) {
+            throw new Api.BizException(Api.Codes.PHONE_INVALID, 400, "手机号格式不正确");
+        }
+        if (rawPassword == null || rawPassword.length() < 6 || rawPassword.length() > 32) {
+            throw new Api.BizException(Api.Codes.PASSWORD_INVALID, 400, "密码长度需为 6-32 位");
+        }
         if (users.existsByPhone(phone)) {
             throw new Api.BizException(Api.Codes.PHONE_TAKEN, 409, "该手机号已注册，请直接登录");
         }
