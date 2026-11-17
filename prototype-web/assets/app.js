@@ -5,20 +5,22 @@ const MOCK = {
   trips: [
     { id: 'T202611100001', mode: 'BUS',  modeName: '公交', icon: '🚌', km: 10.0, red: 1.5,  pts: 15, date: '11-10 08:12', rule: 'R-2026-11-BUS',
       from: '软件园东门', to: '地铁二号线站', start: '2026-11-10 08:02', end: '2026-11-10 08:12', calcAt: '2026-11-10 08:12:31' },
-    { id: 'T202611090002', mode: 'MET',  modeName: '地铁', icon: '🚇', km: 5.6,  red: 0.9,  pts: 9,  date: '11-09 18:40', rule: 'R-2026-11-MET',
+    { id: 'T202611090002', mode: 'MET',  modeName: '地铁', icon: '🚇', km: 10.0, red: 1.7,  pts: 17,  date: '11-09 18:40', rule: 'R-2026-11-MET',
       from: '地铁二号线站', to: '市民中心', start: '2026-11-09 18:26', end: '2026-11-09 18:40', calcAt: '2026-11-09 18:40:22' },
     { id: 'T202611080003', mode: 'BIK',  modeName: '骑行', icon: '🚲', km: 3.2,  red: 0.64, pts: 6,  date: '11-08 19:05', rule: 'R-2026-11-BIK',
       from: '市民中心', to: '滨江绿道', start: '2026-11-08 18:49', end: '2026-11-08 19:05', calcAt: '2026-11-08 19:05:08' },
     { id: 'T202611070004', mode: 'WAL',  modeName: '步行', icon: '🚶', km: 1.8,  red: 0.36, pts: 3,  date: '11-07 12:30', rule: 'R-2026-11-WAL',
       from: '滨江绿道', to: '园区食堂', start: '2026-11-07 12:08', end: '2026-11-07 12:30', calcAt: '2026-11-07 12:30:44' },
     { id: 'T202611060005', mode: 'BUS',  modeName: '公交', icon: '🚌', km: 12.5, red: 1.88, pts: 18, date: '11-06 07:55', rule: 'R-2026-11-BUS',
-      from: '园区北门', to: '软件园东门', start: '2026-11-06 07:18', end: '2026-11-06 07:55', calcAt: '2026-11-06 07:55:12' }
+      from: '园区北门', to: '软件园东门', start: '2026-11-06 07:18', end: '2026-11-06 07:55', calcAt: '2026-11-06 07:55:12' },
+    { id: 'T202610280006', mode: 'MET',  modeName: '地铁', icon: '🚇', km: 5.6,  red: 0.896, pts: 8,  date: '10-28 08:30', rule: 'R-2026-10-MET',
+      from: '地铁二号线站', to: '软件园东门', start: '2026-10-28 08:16', end: '2026-10-28 08:30', calcAt: '2026-10-28 08:30:19' }
   ],
   ledger: [
     { icon: '🎁', type: '兑换咖啡券', time: '11-10 12:02', delta: -300, balance: 1280, kind: 'out' },
     { icon: '🚌', type: '公交出行 · 10.0 km', time: '11-10 08:12', delta: 15, balance: 1580, kind: 'in' },
-    { icon: '🚇', type: '地铁出行 · 5.6 km', time: '11-09 18:40', delta: 9, balance: 1565, kind: 'in' },
-    { icon: '↩️', type: '订单取消冲正', time: '11-09 09:20', delta: 200, balance: 1556, kind: 'back' },
+    { icon: '🚇', type: '地铁出行 · 10.0 km', time: '11-09 18:40', delta: 17, balance: 1565, kind: 'in' },
+    { icon: '↩️', type: '订单取消冲正', time: '11-09 09:20', delta: 200, balance: 1548, kind: 'back' },
     { icon: '🎁', type: '兑换地铁 5 次卡', time: '11-08 20:15', delta: -500, balance: 1356, kind: 'out' }
   ],
   goods: [
@@ -39,9 +41,10 @@ const MOCK = {
   ],
   rules: [
     { v: 'R-2026-11-BUS', mode: '公交 🚌', base: 0.200, factor: 0.050, ratio: 10, from: '2026-11-01', to: '', state: '生效中' },
-    { v: 'R-2026-11-MET', mode: '地铁 🚇', base: 0.200, factor: 0.040, ratio: 10, from: '2026-11-01', to: '', state: '生效中' },
+    { v: 'R-2026-11-MET', mode: '地铁 🚇', base: 0.200, factor: 0.030, ratio: 10, from: '2026-11-01', to: '', state: '生效中' },
     { v: 'R-2026-11-BIK', mode: '骑行 🚲', base: 0.200, factor: 0.000, ratio: 10, from: '2026-11-01', to: '', state: '生效中' },
     { v: 'R-2026-11-WAL', mode: '步行 🚶', base: 0.200, factor: 0.000, ratio: 10, from: '2026-11-01', to: '', state: '生效中' },
+    { v: 'R-2026-10-MET', mode: '地铁 🚇', base: 0.200, factor: 0.040, ratio: 10, from: '2026-10-01', to: '2026-11-01', state: '已归档' },
     { v: 'R-2026-10-BUS', mode: '公交 🚌', base: 0.200, factor: 0.050, ratio: 10, from: '2026-10-01', to: '2026-11-01', state: '已归档' }
   ]
 };
