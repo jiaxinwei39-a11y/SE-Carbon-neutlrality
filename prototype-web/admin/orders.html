@@ -16,6 +16,7 @@
       <a href="products.html">🎁 礼品与库存</a>
       <a class="on" href="orders.html">📦 订单处理</a>
       <a href="users.html">👥 用户管理</a>
+      <a href="reconciliation.html">🧮 积分对账</a>
     </nav>
     <div class="foot"><div class="avatar" style="width:28px;height:28px;font-size:11px">管</div> 管理员 admin</div>
   </aside>
@@ -48,7 +49,7 @@
 
     <section class="card tight">
       <table class="table">
-        <thead><tr><th style="width:190px">订单号</th><th>用户</th><th>礼品</th><th class="r" style="width:100px">扣减积分</th><th style="width:110px">状态</th><th style="width:150px">下单时间</th><th style="width:170px">操作</th></tr></thead>
+        <thead><tr><th style="width:190px">订单号</th><th>用户</th><th>礼品</th><th class="r" style="width:100px">扣减积分</th><th style="width:150px">状态</th><th style="width:150px">下单时间</th><th style="width:170px">操作</th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
     </section>
@@ -65,6 +66,20 @@
   <p class="m-sub" id="actSub">履约后订单不可撤销，礼品将线下发放给用户。</p>
   <div class="confirm-row"><span>订单号</span><b class="mono" id="actId">—</b></div>
   <div class="confirm-row" style="border-bottom:0"><span>用户</span><b id="actUser">—</b></div>
+  <div id="reasonBox" style="display:none;padding-top:14px">
+    <div class="field">
+      <label for="reasonSel">取消原因 <span style="color:var(--rose-600)">*</span></label>
+      <select class="select" id="reasonSel">
+        <option value="">请选择原因</option>
+        <option>用户申请取消</option>
+        <option>库存不足，无法履约</option>
+        <option>礼品信息有误</option>
+        <option>其他</option>
+      </select>
+      <input class="input" id="reasonText" maxlength="100" placeholder="补充说明（选择「其他」时必填，其余情况选填，最多 100 字）" style="margin-top:10px">
+      <p class="hint" style="margin-top:8px" id="reasonHint">取消原因与补充说明会一起写入订单详情，用户端可见；未选择原因不能提交。</p>
+    </div>
+  </div>
   <div class="modal-foot">
     <button class="btn btn-secondary" onclick="closeModal('act')">取消</button>
     <button class="btn btn-primary" id="actOk">确认</button>
@@ -88,7 +103,7 @@ function render() {
       <td class="t-strong">${o.user}</td>
       <td>${o.icon} ${o.goods}</td>
       <td class="r num">${o.pts}</td>
-      <td>${stateTag(o.status)}</td>
+      <td>${stateTag(o.status)}${o.status === 'CANCELLED' && o.cancelReason ? `<div class="hint" style="margin-top:6px;max-width:150px;line-height:1.5">${o.cancelReason}</div>` : ''}</td>
       <td class="num" style="color:var(--ink-500)">${o.time}</td>
       <td>${o.status === 'CREATED'
         ? `<button class="btn btn-primary btn-sm" onclick="ask('${o.id}','FULFILLED')">履约</button>
@@ -109,14 +124,52 @@ function ask(id, act) {
   const ok = document.getElementById('actOk');
   ok.className = act === 'FULFILLED' ? 'btn btn-primary' : 'btn btn-danger';
   ok.textContent = act === 'FULFILLED' ? '确认履约' : '确认取消';
+  document.getElementById('reasonBox').style.display = act === 'CANCELLED' ? '' : 'none';
+  document.getElementById('reasonSel').value = '';
+  document.getElementById('reasonText').value = '';
+  ok.disabled = false;
+  document.getElementById('reasonHint').textContent = '取消原因与补充说明会一起写入订单详情，用户端可见；未选择原因不能提交。';
   openModal('act');
 }
 document.getElementById('actOk').addEventListener('click', () => {
+  if (action === 'CANCELLED') {
+    const sel = document.getElementById('reasonSel');
+    const txt = document.getElementById('reasonText');
+    const reason = sel.value;
+    const note = txt.value.trim();
+    if (!reason) {
+      sel.focus();
+      toast('请先选择取消原因');
+      return;
+    }
+    if (reason === '其他' && !note) {
+      txt.focus();
+      toast('选择「其他」时必须填写补充说明');
+      return;
+    }
+  }
   const o = MOCK.orders.find(x => x.id === target);
-  if (o) { o.status = action; o.statusName = action === 'FULFILLED' ? '已履约' : '已取消'; }
+  if (o) {
+    o.status = action;
+    o.statusName = action === 'FULFILLED' ? '已履约' : '已取消';
+    if (action === 'CANCELLED') {
+      const reason = document.getElementById('reasonSel').value;
+      const note = document.getElementById('reasonText').value.trim();
+      o.cancelReason = note ? `${reason}：${note}` : reason;
+    }
+  }
   closeModal('act');
-  toast(action === 'FULFILLED' ? '订单已履约' : '订单已取消，积分已退还');
+  toast(action === 'FULFILLED' ? '订单已履约' : `订单已取消（${o ? o.cancelReason : ''}），积分已退还`);
   render();
+});
+document.getElementById('reasonSel').addEventListener('change', function () {
+  const isOther = this.value === '其他';
+  const hint = document.getElementById('reasonHint');
+  hint.textContent = isOther
+    ? '选择「其他」时必须填写补充说明，否则不能提交。'
+    : '取消原因与补充说明会一起写入订单详情，用户端可见；未选择原因不能提交。';
+  hint.style.color = isOther ? 'var(--rose-600)' : '';
+  if (isOther) document.getElementById('reasonText').focus();
 });
 document.getElementById('statusSel').addEventListener('change', render);
 document.getElementById('kw').addEventListener('input', render);

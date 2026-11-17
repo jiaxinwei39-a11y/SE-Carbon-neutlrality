@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>积分对账 · 绿行积分管理端</title>
+<link rel="stylesheet" href="../assets/web.css">
+<style>
+  .diff{color:var(--rose-600);font-weight:700}
+  .agree{color:var(--green-600);font-weight:700}
+</style>
+</head>
+<body>
+<div class="admin">
+  <aside class="sidebar">
+    <div class="brand"><span class="mark">🌿</span> 绿行积分 · 运营端</div>
+    <nav>
+      <a href="dashboard.html">📊 运营概览</a>
+      <a href="rules.html">⚙️ 碳核算规则</a>
+      <a href="products.html">🎁 礼品与库存</a>
+      <a href="orders.html">📦 订单处理</a>
+      <a href="users.html">👥 用户管理</a>
+      <a class="on" href="reconciliation.html">🧮 积分对账</a>
+    </nav>
+    <div class="foot"><div class="avatar" style="width:28px;height:28px;font-size:11px">管</div> 管理员 admin</div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-top">
+      <div>
+        <div class="crumb">管理端 / <b>积分对账</b></div>
+        <h1>积分对账</h1>
+        <p>只读检查：余额是否等于流水累计、订单是否与库存一致。对账不自动修账，发现问题由人工确认后处理</p>
+      </div>
+      <div class="segs" id="scene">
+        <button class="on" data-value="ok">无差异</button>
+        <button data-value="diff">发现差异</button>
+        <button data-value="fail">读取失败</button>
+      </div>
+    </div>
+
+    <!-- 正常：无差异 -->
+    <section id="panel-ok">
+      <div class="card" style="text-align:center;padding:48px 24px">
+        <div style="font-size:42px;line-height:1">✅</div>
+        <h2 style="font-size:18px;margin:12px 0 6px">对账通过，没有发现差异</h2>
+        <p style="font-size:13px;color:var(--ink-500);margin:0">
+          本次检查时间 <b class="num">2026-11-17 14:05:11</b> · 核对 37 条行程、12 笔订单、8 个商品库存
+        </p>
+        <p class="hint" style="margin-top:14px">「无差异」和「读取失败」必须分开显示，混在一起就等于漏报。</p>
+      </div>
+
+      <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="stat"><div class="k">核对行程</div><div class="v num">37</div><div class="d">积分应发 = 实发</div></div>
+        <div class="stat"><div class="k">核对订单</div><div class="v num">12</div><div class="d">状态与冲正一致</div></div>
+        <div class="stat"><div class="k">核对库存</div><div class="v num">8</div><div class="d">库存 + 已兑 = 初始</div></div>
+      </div>
+    </section>
+
+    <!-- 异常：有差异 -->
+    <section id="panel-diff" style="display:none">
+      <div class="notice">
+        <b>发现 2 条差异。</b>下面列出的是「期望值 ≠ 实际值」的记录，只读展示，系统不会自动修正。
+        请联系对应负责人确认后再手工处理，处理完重新跑一次对账。
+      </div>
+
+      <section class="card tight">
+        <table class="table">
+          <thead>
+            <tr>
+              <th style="width:80px">编号</th>
+              <th style="width:90px">对象类型</th>
+              <th>对象 ID</th>
+              <th>检查项</th>
+              <th class="r" style="width:100px">期望值</th>
+              <th class="r" style="width:100px">实际值</th>
+              <th class="r" style="width:90px">差值</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="mono">RC-001</td>
+              <td><span class="tag tag-gray">TRIP</span></td>
+              <td class="mono">T202610030003</td>
+              <td>积分应发未发（分）</td>
+              <td class="r num">64</td>
+              <td class="r num diff">0</td>
+              <td class="r num diff">−64</td>
+            </tr>
+            <tr>
+              <td class="mono">RC-002</td>
+              <td><span class="tag tag-gray">ORDER</span></td>
+              <td class="mono">O202611080001</td>
+              <td>库存与订单不一致（件）</td>
+              <td class="r num">24</td>
+              <td class="r num diff">23</td>
+              <td class="r num diff">−1</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <div class="card" style="margin-top:16px">
+        <div class="card-head"><h2>怎么处理这两条</h2></div>
+        <ol style="margin:0;padding-left:20px;font-size:13px;line-height:2;color:var(--ink-700)">
+          <li>RC-001：去「订单处理」外查该行程的流水，确认是「行程有了但没加分」，补发需走人工补录并留痕</li>
+          <li>RC-002：去「礼品与库存」看该商品库存变更记录，确认是少扣了还是多还了</li>
+          <li>修完重新执行一次对账，差异归零后才算关闭</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- 异常：读取失败 -->
+    <section id="panel-fail" style="display:none">
+      <div class="card" style="text-align:center;padding:48px 24px">
+        <div style="font-size:42px;line-height:1">⚠️</div>
+        <h2 style="font-size:18px;margin:12px 0 6px;color:var(--rose-600)">对账数据读取失败</h2>
+        <p style="font-size:13px;color:var(--ink-500);margin:0 0 4px">
+          服务端返回 <b class="mono">50001 对账服务暂不可用</b>，或网络中断
+        </p>
+        <p style="font-size:13px;color:var(--ink-500);margin:0">
+          <b>这不代表没有问题</b> —— 请稍后重试，不要按「无差异」处理
+        </p>
+        <button class="btn btn-primary" style="margin-top:20px" onclick="toast('已重新发起对账请求')">重新检查</button>
+      </div>
+    </section>
+
+    <p class="hint" style="margin-top:18px">最近一次成功对账：2026-11-17 14:05:11 · 由 admin 手动触发 · 只读，不提供自动修复与导出</p>
+  </main>
+</div>
+
+<div class="toast"></div>
+<script src="../assets/app.js"></script>
+<script>
+  const panels = { ok: document.getElementById('panel-ok'), diff: document.getElementById('panel-diff'), fail: document.getElementById('panel-fail') };
+  document.querySelectorAll('#scene button').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('#scene button').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    Object.keys(panels).forEach(k => panels[k].style.display = k === b.dataset.value ? '' : 'none');
+  }));
+</script>
+</body>
+</html>

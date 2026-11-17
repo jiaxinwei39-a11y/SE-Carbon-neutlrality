@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>核算明细 · 绿行积分</title>
+<link rel="stylesheet" href="../assets/web.css">
+<style>
+  .kv{display:grid;grid-template-columns:120px 1fr;gap:12px 16px;font-size:13.5px}
+  .kv .k{color:var(--ink-500)}
+  .kv .v{color:var(--ink-900);font-weight:600}
+  .formula{background:#f8fafc;border:1px solid var(--line);border-radius:var(--r-md);padding:16px 18px;font-size:13px;line-height:2.1;color:var(--ink-700)}
+  .formula code{font-family:ui-monospace,Consolas,monospace;font-size:12.5px;background:#fff;border:1px solid var(--line);border-radius:5px;padding:2px 6px;color:var(--green-700)}
+  .formula .step{display:flex;gap:10px;align-items:baseline}
+  .formula .step b{flex:0 0 22px;height:22px;border-radius:50%;background:var(--green-50);color:var(--green-700);font-size:12px;display:flex;align-items:center;justify-content:center}
+  .tl{list-style:none;margin:0;padding:0}
+  .tl li{position:relative;padding:0 0 18px 22px;font-size:13px;color:var(--ink-700)}
+  .tl li::before{content:"";position:absolute;left:0;top:6px;width:9px;height:9px;border-radius:50%;background:var(--green-500);box-shadow:0 0 0 3px var(--green-50)}
+  .tl li::after{content:"";position:absolute;left:4px;top:18px;bottom:2px;width:1px;background:var(--line)}
+  .tl li:last-child{padding-bottom:0}
+  .tl li:last-child::after{display:none}
+  .tl .t{display:block;font-size:12px;color:var(--ink-400);margin-top:2px}
+  .kv-row{display:grid;gap:8px;font-size:12.5px;font-weight:400;color:var(--ink-700)}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand"><span class="mark">🌿</span> 绿行积分</div>
+    <nav class="nav">
+      <a href="index.html">首页</a>
+      <a class="on" href="trips.html">行程</a>
+      <a href="points.html">积分</a>
+      <a href="mall.html">商城</a>
+      <a href="orders.html">订单</a>
+    </nav>
+    <div class="right">
+      <div class="pill">🌿 <span class="num">1,280</span> 分</div>
+      <div class="avatar">生</div>
+    </div>
+  </div>
+</header>
+
+<main class="page" id="app"></main>
+
+<div class="toast"></div>
+<script src="../assets/app.js"></script>
+<script>
+(function () {
+  const app = document.getElementById('app');
+  const rawId = new URLSearchParams(location.search).get('id') || '';
+  const back = '<p style="margin:0 0 12px"><a href="trips.html" style="color:var(--ink-500);font-size:13px">← 返回行程记录</a></p>';
+
+  // 单号来自 URL：只用 textContent 输出，绝不拼进 innerHTML
+  function notFound(reason) {
+    app.innerHTML = back + `
+      <div class="card" style="padding:52px 24px;text-align:center">
+        <div style="font-size:44px;line-height:1">📭</div>
+        <h2 style="font-size:18px;margin:14px 0 8px">行程不存在</h2>
+        <p style="font-size:13.5px;color:var(--ink-500);margin:0 0 6px" id="nfMsg"></p>
+        <p style="font-size:12.5px;color:var(--ink-400);margin:0 0 22px">错误码 <span class="mono">40401</span>；他人的行程与不存在的行程返回同样的结果</p>
+        <a class="btn btn-primary btn-sm" href="trips.html">返回行程记录</a>
+      </div>`;
+    document.getElementById('nfMsg').textContent = reason;
+  }
+
+  if (!/^T\d{12}$/.test(rawId)) { notFound('没有找到这条行程记录'); return; }
+  const t = MOCK.trips.find(x => x.id === rawId);
+  if (!t) { notFound('没有找到单号 ' + rawId + ' 的行程'); return; }
+
+  const rule = MOCK.rules.find(r => r.v === t.rule);
+  const base = rule ? rule.base : 0.2;
+  const factor = rule ? rule.factor : 0;
+  const ratio = rule ? rule.ratio : 10;
+
+  // 计算用未舍入值：只有最终积分向下取整，减排量仅展示时格式化
+  const rawRed = t.km * (base - factor);
+  const calcPts = Math.floor(rawRed * ratio);
+
+  // 入账快照：列表与明细共用这两个值，不再自己算一遍当结果
+  const snapRed = t.red;
+  const snapPts = t.pts;
+  const mismatch = calcPts !== snapPts || Math.abs(rawRed - snapRed) > 0.005;
+
+  const rawText = String(Math.round(rawRed * 10000) / 10000);
+  const kmText = t.km.toFixed(1);
+
+  // 关联流水：按 tripId 从共享 Mock 里取，余额用条目自带的 balance，不自己编
+  const rel = MOCK.ledger.filter(e => e.tripId === t.id);
+  const ledgerRows = rel.length
+    ? rel.map(e => `
+        <tr>
+          <td class="mono">${e.id}</td>
+          <td>${e.icon} ${e.type}</td>
+          <td class="r num" style="color:${e.delta > 0 ? 'var(--green-600)' : 'var(--ink-700)'};font-weight:700">${e.delta > 0 ? '+' : ''}${e.delta}</td>
+          <td class="r num">${fmt(e.balance)}</td>
+          <td class="num" style="color:var(--ink-500)">${e.time}</td>
+        </tr>`).join('')
+    : `<tr><td colspan="5" class="empty">这笔行程没有关联的积分流水（示意数据未覆盖）。真实环境按 <span class="mono">tripId</span> 关联，取不到就显示空态，不会编造余额。</td></tr>`;
+
+  app.innerHTML = back + `
+    <div class="page-head">
+      <div>
+        <h1>核算明细</h1>
+        <p class="mono" id="subLine" style="font-size:12.5px;color:var(--ink-400)"></p>
+      </div>
+      <span class="tag tag-green" style="height:26px">已入账</span>
+    </div>
+
+    <div class="grid-main">
+      <div class="stack">
+        <section class="card">
+          <div class="card-head">
+            <h2>这笔积分是怎么算出来的</h2>
+            <span class="hint">按入账当时的规则版本计算，之后规则变更不追溯</span>
+          </div>
+          <div class="formula">
+            <div class="step"><b>1</b><span>减排量 = 里程 ×（基准因子 − 方式因子）<br>
+              <code>${kmText} km × (${base.toFixed(3)} − ${factor.toFixed(3)}) = ${rawText} kgCO₂e</code></span></div>
+            <div class="step"><b>2</b><span>积分 = 对「未舍入的减排量」向下取整（只取整一次）<br>
+              <code>floor(${rawText} × ${ratio} 分/kg) = ${calcPts} 分</code></span></div>
+            <div class="step"><b>3</b><span>写积分流水 + 加余额，行程与流水在同一事务里一次性落库<br>
+              <code>ruleVersion = ${t.rule}</code></span></div>
+          </div>
+          <div class="result" style="margin-top:16px">
+            本次获得 <strong class="num">+${snapPts}</strong> 分&nbsp;·&nbsp;减排 <strong class="num">${snapRed.toFixed(2)}</strong> kgCO₂e
+            <span class="hint" style="margin-left:8px">（入账快照，展示保留 2 位小数）</span>
+          </div>
+          ${mismatch ? `<div class="notice" style="margin-top:12px">这条行程的入账快照与当前规则算出来的结果不一致：快照 ${snapRed.toFixed(2)} kg / ${snapPts} 分，按规则应得 ${rawText} kg / ${calcPts} 分。说明它用的是<b>旧版本规则</b>入账，页面以快照为准，不回算历史。</div>` : ''}
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2>行程信息</h2></div>
+          <div class="kv">
+            <div class="k">出行方式</div><div class="v" id="kvMode"></div>
+            <div class="k">里程</div><div class="v num">${kmText} km</div>
+            <div class="k">起点</div><div class="v" id="kvFrom"></div>
+            <div class="k">终点</div><div class="v" id="kvTo"></div>
+            <div class="k">开始时间</div><div class="v num">${t.start}</div>
+            <div class="k">结束时间</div><div class="v num">${t.end}</div>
+            <div class="k">核算时间</div><div class="v num">${t.calcAt}</div>
+          </div>
+        </section>
+
+        <section class="card tight">
+          <div class="card-head" style="padding:18px 20px 0;margin-bottom:0"><h2>关联积分流水</h2><a class="more" href="points.html">全部流水 →</a></div>
+          <table class="table">
+            <thead><tr><th>流水号</th><th>类型</th><th class="r">变动</th><th class="r">变动后余额</th><th>时间</th></tr></thead>
+            <tbody>${ledgerRows}</tbody>
+          </table>
+        </section>
+      </div>
+
+      <div class="stack">
+        <section class="card">
+          <div class="card-head"><h2>规则快照</h2><span class="tag tag-gray mono">${t.rule}</span></div>
+          <div class="kv" style="grid-template-columns:96px 1fr">
+            <div class="k">基准因子</div><div class="v num">${base.toFixed(3)} kg/km</div>
+            <div class="k">方式因子</div><div class="v num">${factor.toFixed(3)} kg/km</div>
+            <div class="k">积分比例</div><div class="v num">${ratio} 分/kg</div>
+            <div class="k">生效区间</div><div class="v num">${rule ? rule.from + ' 起' : '—'}</div>
+          </div>
+          <div class="notice" style="margin:16px 0 0">
+            这条行程用的是入账当时的规则版本，因子快照随行程保存；后来规则再改也不会重算历史行程 —— 账面永远对得上。
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2>处理过程</h2></div>
+          <ul class="tl">
+            <li>客户端提交上报<span class="t">${t.calcAt} · 带幂等键，同一请求重复提交只算一条</span></li>
+            <li>服务端核算通过<span class="t">${t.calcAt} · 命中 ${t.rule}</span></li>
+            <li>写流水 + 加余额<span class="t">${t.calcAt} · 同一事务内完成</span></li>
+            <li>行程落库并标记 POINTED<span class="t">${t.calcAt} · 同步上报只有成功才落库，失败直接报错</span></li>
+          </ul>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2>异常时怎么显示</h2></div>
+          <p style="font-size:12.5px;color:var(--ink-500);margin:0 0 10px">下面几种情况页面必须给出不同措辞，不能都显示「加载失败」：</p>
+          <div class="kv-row">
+            <div>核算失败 → <b>接口直接返回错误</b>，行程不落库、不留半成品；页面显示失败原因 +「重新上报」</div>
+            <div>不存在 / 他人的行程 → 一律 <b>404（<span class="mono">40401</span>）</b>，两种情况返回同样的结果，不暴露存在性</div>
+            <div>原型里的 <b>PENDING / FAILED</b> 是<b>预留状态</b>：为将来改成异步核算预留，当前同步口径下不会产生</div>
+          </div>
+          <div class="notice" style="margin:14px 0 0;font-size:12px">
+            契约依据：同步上报成功返回 POINTED，失败直接报错；查询行程按「是否存在且属于本人」判定，其余一律 404。
+          </div>
+        </section>
+      </div>
+    </div>`;
+
+  // 文本类字段一律 textContent 写入
+  document.getElementById('subLine').textContent = '单号 ' + t.id + ' · ' + t.modeName + '出行';
+  document.getElementById('kvMode').textContent = t.icon + ' ' + t.modeName + '（' + t.mode + '）';
+  document.getElementById('kvFrom').textContent = t.from;
+  document.getElementById('kvTo').textContent = t.to;
+})();
+</script>
+</body>
+</html>

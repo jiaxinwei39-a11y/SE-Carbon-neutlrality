@@ -3,18 +3,31 @@ const MOCK = {
   user: { name: '张生阳', handle: '@shengyang', role: '普通用户', points: 1280,
           earned: 3450, spent: 2170, trips: 37, reduction: 48.6, today: 2 },
   trips: [
-    { id: 'T202611100001', mode: 'BUS',  modeName: '公交', icon: '🚌', km: 10.0, red: 1.5,  pts: 15, date: '11-10 08:12', rule: 'R-2026-11-BUS' },
-    { id: 'T202611090002', mode: 'MET',  modeName: '地铁', icon: '🚇', km: 6.4,  red: 0.9,  pts: 9,  date: '11-09 18:40', rule: 'R-2026-11-MET' },
-    { id: 'T202611080003', mode: 'BIK',  modeName: '骑行', icon: '🚲', km: 3.2,  red: 0.64, pts: 6,  date: '11-08 19:05', rule: 'R-2026-11-BIK' },
-    { id: 'T202611070004', mode: 'WAL',  modeName: '步行', icon: '🚶', km: 1.8,  red: 0.36, pts: 3,  date: '11-07 12:30', rule: 'R-2026-11-WAL' },
-    { id: 'T202611060005', mode: 'BUS',  modeName: '公交', icon: '🚌', km: 12.5, red: 1.88, pts: 18, date: '11-06 07:55', rule: 'R-2026-11-BUS' }
+    { id: 'T202611100001', mode: 'BUS',  modeName: '公交', icon: '🚌', km: 10.0, red: 1.5,  pts: 15, date: '11-10 08:12', rule: 'R-2026-11-BUS',
+      from: '软件园东门', to: '地铁二号线站', start: '2026-11-10 08:02', end: '2026-11-10 08:12', calcAt: '2026-11-10 08:12:31' },
+    { id: 'T202611090002', mode: 'MET',  modeName: '地铁', icon: '🚇', km: 10.0, red: 1.7,  pts: 17,  date: '11-09 18:40', rule: 'R-2026-11-MET',
+      from: '地铁二号线站', to: '市民中心', start: '2026-11-09 18:26', end: '2026-11-09 18:40', calcAt: '2026-11-09 18:40:22' },
+    { id: 'T202611080003', mode: 'BIK',  modeName: '骑行', icon: '🚲', km: 3.2,  red: 0.64, pts: 6,  date: '11-08 19:05', rule: 'R-2026-11-BIK',
+      from: '市民中心', to: '滨江绿道', start: '2026-11-08 18:49', end: '2026-11-08 19:05', calcAt: '2026-11-08 19:05:08' },
+    { id: 'T202611070004', mode: 'WAL',  modeName: '步行', icon: '🚶', km: 1.8,  red: 0.36, pts: 3,  date: '11-07 12:30', rule: 'R-2026-11-WAL',
+      from: '滨江绿道', to: '园区食堂', start: '2026-11-07 12:08', end: '2026-11-07 12:30', calcAt: '2026-11-07 12:30:44' },
+    { id: 'T202611060005', mode: 'BUS',  modeName: '公交', icon: '🚌', km: 12.5, red: 1.88, pts: 18, date: '11-06 07:55', rule: 'R-2026-11-BUS',
+      from: '园区北门', to: '软件园东门', start: '2026-11-06 07:18', end: '2026-11-06 07:55', calcAt: '2026-11-06 07:55:12' },
+    { id: 'T202610280006', mode: 'MET',  modeName: '地铁', icon: '🚇', km: 5.6,  red: 0.896, pts: 8,  date: '10-28 08:30', rule: 'R-2026-10-MET',
+      from: '地铁二号线站', to: '软件园东门', start: '2026-10-28 08:16', end: '2026-10-28 08:30', calcAt: '2026-10-28 08:30:19' }
   ],
+  // 按时间倒序；balance = 这一笔之后的余额，逐笔首尾相接，最后一笔等于当前可用积分 1280
+  // tripId 指向 trips[].id，明细页按它取关联流水；null 表示与行程无关（兑换 / 冲正）
   ledger: [
-    { icon: '🎁', type: '兑换咖啡券', time: '11-10 12:02', delta: -300, balance: 1280, kind: 'out' },
-    { icon: '🚌', type: '公交出行 · 10.0 km', time: '11-10 08:12', delta: 15, balance: 1580, kind: 'in' },
-    { icon: '🚇', type: '地铁出行 · 6.4 km', time: '11-09 18:40', delta: 9, balance: 1565, kind: 'in' },
-    { icon: '↩️', type: '订单取消冲正', time: '11-09 09:20', delta: 200, balance: 1556, kind: 'back' },
-    { icon: '🎁', type: '兑换地铁 5 次卡', time: '11-08 20:15', delta: -500, balance: 1356, kind: 'out' }
+    { id: 'L202611100003', tripId: null, icon: '🎁', type: '兑换咖啡券', time: '11-10 12:02', delta: -300, balance: 1280, kind: 'out' },
+    { id: 'L202611100001', tripId: 'T202611100001', icon: '🚌', type: '公交出行 · 10.0 km', time: '11-10 08:12', delta: 15, balance: 1580, kind: 'in' },
+    { id: 'L202611090002', tripId: 'T202611090002', icon: '🚇', type: '地铁出行 · 10.0 km', time: '11-09 18:40', delta: 17, balance: 1565, kind: 'in' },
+    { id: 'L202611090001', tripId: null, icon: '↩️', type: '订单取消冲正', time: '11-09 09:20', delta: 200, balance: 1548, kind: 'back' },
+    { id: 'L202611080004', tripId: null, icon: '🎁', type: '兑换地铁 5 次卡', time: '11-08 20:15', delta: -500, balance: 1348, kind: 'out' },
+    { id: 'L202611080003', tripId: 'T202611080003', icon: '🚲', type: '骑行出行 · 3.2 km', time: '11-08 19:05', delta: 6, balance: 1848, kind: 'in' },
+    { id: 'L202611070004', tripId: 'T202611070004', icon: '🚶', type: '步行出行 · 1.8 km', time: '11-07 12:30', delta: 3, balance: 1842, kind: 'in' },
+    { id: 'L202611060005', tripId: 'T202611060005', icon: '🚌', type: '公交出行 · 12.5 km', time: '11-06 07:55', delta: 18, balance: 1839, kind: 'in' },
+    { id: 'L202610280006', tripId: 'T202610280006', icon: '🚇', type: '地铁出行 · 5.6 km', time: '10-28 08:30', delta: 8, balance: 1821, kind: 'in' }
   ],
   goods: [
     { id: 'G01', name: '环保帆布袋', icon: '👜', cost: 120, stock: 8,  state: 'ok' },
@@ -30,13 +43,14 @@ const MOCK = {
     { id: 'O202611100001', goods: '咖啡兑换券', icon: '☕', qty: 1, pts: 300, status: 'CREATED',   statusName: '待处理', time: '11-10 12:02', user: '张生阳' },
     { id: 'O202611100002', goods: '共享单车月卡', icon: '🚲', qty: 1, pts: 800, status: 'CREATED',  statusName: '待处理', time: '11-10 11:48', user: '魏嘉鑫' },
     { id: 'O202611090003', goods: '地铁 5 次卡', icon: '🎫', qty: 1, pts: 500, status: 'FULFILLED', statusName: '已履约', time: '11-09 16:20', user: '郭浚文' },
-    { id: 'O202611090004', goods: '树苗认养证书', icon: '🌱', qty: 1, pts: 200, status: 'CANCELLED', statusName: '已取消', time: '11-09 10:05', user: '李金平' }
+    { id: 'O202611090004', goods: '树苗认养证书', icon: '🌱', qty: 1, pts: 200, status: 'CANCELLED', statusName: '已取消', time: '11-09 10:05', user: '李金平', cancelReason: '库存不足，无法履约' }
   ],
   rules: [
     { v: 'R-2026-11-BUS', mode: '公交 🚌', base: 0.200, factor: 0.050, ratio: 10, from: '2026-11-01', to: '', state: '生效中' },
-    { v: 'R-2026-11-MET', mode: '地铁 🚇', base: 0.200, factor: 0.040, ratio: 10, from: '2026-11-01', to: '', state: '生效中' },
+    { v: 'R-2026-11-MET', mode: '地铁 🚇', base: 0.200, factor: 0.030, ratio: 10, from: '2026-11-01', to: '', state: '生效中' },
     { v: 'R-2026-11-BIK', mode: '骑行 🚲', base: 0.200, factor: 0.000, ratio: 10, from: '2026-11-01', to: '', state: '生效中' },
     { v: 'R-2026-11-WAL', mode: '步行 🚶', base: 0.200, factor: 0.000, ratio: 10, from: '2026-11-01', to: '', state: '生效中' },
+    { v: 'R-2026-10-MET', mode: '地铁 🚇', base: 0.200, factor: 0.040, ratio: 10, from: '2026-10-01', to: '2026-11-01', state: '已归档' },
     { v: 'R-2026-10-BUS', mode: '公交 🚌', base: 0.200, factor: 0.050, ratio: 10, from: '2026-10-01', to: '2026-11-01', state: '已归档' }
   ]
 };

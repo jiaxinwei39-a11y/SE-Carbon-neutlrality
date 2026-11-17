@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>五态规范 · 绿行积分</title>
+<link rel="stylesheet" href="assets/web.css">
+<style>
+  .state-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .state{border:1px solid var(--line);border-radius:var(--r-lg);background:#fff;overflow:hidden;box-shadow:var(--shadow-sm)}
+  .state .hd{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);background:#fbfcfe}
+  .state .hd h3{font-size:14px;margin:0}
+  .state .hd .no{width:22px;height:22px;border-radius:50%;background:var(--green-50);color:var(--green-700);font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:700}
+  .state .body{padding:18px;min-height:150px}
+  .state .body .empty{padding:22px 12px}
+  .state .rule{padding:12px 18px;border-top:1px dashed var(--line);font-size:12px;color:var(--ink-500);line-height:1.8;background:#fcfdfe}
+  .mini{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f4f7fb;font-size:13px}
+  .mini:last-child{border-bottom:0}
+  .fail-box{text-align:center;padding:14px 0}
+  .fail-box .ico{font-size:30px}
+  .fail-box h4{font-size:14px;margin:8px 0 4px;color:var(--ink-900)}
+  .fail-box p{font-size:12.5px;color:var(--ink-500);margin:0 0 12px}
+  .matrix{width:100%;border-collapse:collapse;font-size:13px}
+  .matrix th,.matrix td{border-bottom:1px solid #f4f7fb;padding:10px 12px;text-align:left}
+  .matrix th{font-size:11.5px;color:var(--ink-500);background:#fbfcfe;font-weight:600;white-space:nowrap}
+  .matrix td.c{text-align:center;width:76px}
+  .yes{color:var(--green-600);font-weight:700}
+  .no{color:#cbd5e1}
+  .why{color:var(--ink-400);font-size:12px;margin-left:8px}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand"><span class="mark">🌿</span> 绿行积分</div>
+    <nav class="nav"><a href="index.html">← 返回原型总览</a></nav>
+    <div class="right"><span class="tag tag-gray">UX-01 · 五态规范</span></div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="page-head">
+    <div>
+      <h1>界面五态规范</h1>
+      <p>每个数据区都必须交代这五种情况，缺一种就会出现「白屏 / 转圈转到天荒地老 / 把失败说成没数据」</p>
+    </div>
+  </div>
+
+  <div class="notice">
+    <b>三条铁律：</b>①「加载中」和「没有数据」不能长得一样，加载中给骨架屏而不是空状态；
+    ②「失败」必须能重试并显示错误码，不能显示成「暂无数据」；
+    ③「无权限」要说明是谁没权限、能去哪，不要只弹 403。
+  </div>
+
+  <div class="state-grid">
+    <!-- 1 正常 -->
+    <section class="state">
+      <div class="hd"><span class="no">1</span><h3>正常 · 有数据</h3></div>
+      <div class="body">
+        <div class="mini"><span>🚌 公交 · 10.0 km<span class="why"> 11-10 08:12</span></span><b class="num" style="color:var(--green-600)">+15</b></div>
+        <div class="mini"><span>🚇 地铁 · 6.4 km<span class="why"> 11-09 18:40</span></span><b class="num" style="color:var(--green-600)">+9</b></div>
+        <div class="mini"><span>🚲 骑行 · 3.2 km<span class="why"> 11-08 19:05</span></span><b class="num" style="color:var(--green-600)">+6</b></div>
+      </div>
+      <div class="rule">数字右对齐、用等宽数字；列表按时间倒序；金额/积分带正负号与颜色。</div>
+    </section>
+
+    <!-- 2 加载 -->
+    <section class="state">
+      <div class="hd"><span class="no">2</span><h3>加载中 · 骨架屏</h3></div>
+      <div class="body">
+        <div class="skel" style="height:14px;width:62%;margin-bottom:14px"></div>
+        <div class="skel" style="height:14px;width:84%;margin-bottom:14px"></div>
+        <div class="skel" style="height:14px;width:48%;margin-bottom:22px"></div>
+        <div class="skel" style="height:60px;width:100%"></div>
+      </div>
+      <div class="rule">骨架保持布局结构，避免内容突然跳动；首次加载才用骨架，分页/刷新用顶部细进度条；超过 8 秒仍未返回则转「失败」并给重试。</div>
+    </section>
+
+    <!-- 3 空 -->
+    <section class="state">
+      <div class="hd"><span class="no">3</span><h3>空 · 没有数据</h3></div>
+      <div class="body">
+        <div class="empty">
+          <span class="ico">🗒️</span>
+          还没有行程记录<br>
+          <span style="font-size:12px">上报第一段绿色出行，积分会立刻到账</span>
+        </div>
+        <div style="text-align:center;margin-top:-18px"><a class="btn btn-primary btn-sm" href="app/index.html">去上报行程</a></div>
+      </div>
+      <div class="rule">空状态分两种文案：<b>「还没有 X」+ 主行动按钮</b>（首次使用）、<b>「没有符合条件的 X」+ 清除筛选</b>（筛选无结果）。两者不能混用。</div>
+    </section>
+
+    <!-- 4 失败 -->
+    <section class="state">
+      <div class="hd"><span class="no">4</span><h3>失败 · 可重试</h3></div>
+      <div class="body">
+        <div class="fail-box">
+          <div class="ico">⚠️</div>
+          <h4>加载失败</h4>
+          <p>请求超时（网络中断），请检查网络后重试</p>
+          <button class="btn btn-secondary btn-sm" onclick="toast('正在重试…')">重新加载</button>
+        </div>
+      </div>
+      <div class="rule">必须给出<b>错误码 + 一句人话 + 重试按钮</b>；不要吞掉错误显示成空列表；401 跳登录、403 走「无权限」、5xx 保留当前页面内容并提供重试。</div>
+    </section>
+
+    <!-- 5 无权限 -->
+    <section class="state" style="grid-column:1 / -1">
+      <div class="hd"><span class="no">5</span><h3>无权限 · 403</h3></div>
+      <div class="body" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:center">
+        <div class="fail-box">
+          <div class="ico">🔒</div>
+          <h4>没有访问权限</h4>
+          <p>当前账号是普通用户，管理端功能仅对运营管理员开放（<span class="mono">40301</span>）</p>
+          <a class="btn btn-primary btn-sm" href="app/index.html">回到我的首页</a>
+        </div>
+        <div style="font-size:12.5px;color:var(--ink-500);line-height:2">
+          <b style="color:var(--ink-900)">要点：</b><br>
+          · 说清「谁」没权限、这个页面属于谁<br>
+          · 给一条出口（回首页 / 切换账号）<br>
+          · 管理端按 <b>403</b>（存在但无权，如 40301）；用户端「他人的行程」按 <b>404</b> 处理，与不存在一致，防止探测他人数据<br>
+          · 前端路由守卫 + 后端接口鉴权双保险，前端拦截只为体验
+        </div>
+      </div>
+      <div class="rule">管理端 6 个页面（运营概览、规则、礼品、订单、用户、对账）都必须有这一态；用户端不出现该态，越权请求按 404 处理。</div>
+    </section>
+  </div>
+
+  <h2 style="font-size:16px;margin:32px 0 12px">页面 × 状态矩阵</h2>
+  <section class="card tight">
+    <table class="matrix">
+      <thead>
+        <tr><th>页面</th><th class="c">正常</th><th class="c">加载</th><th class="c">空</th><th class="c">失败</th><th class="c">无权限</th><th>空/失败时的具体措辞</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>登录 / 注册</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td class="c yes">✓</td><td class="c no">—</td><td>账号或密码错误（<span class="mono">40101</span>）；账号已停用（<span class="mono">40302</span>）</td></tr>
+        <tr><td>首页 / 上报行程</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td>还没上报过 → 「今天还没有行程」；核算失败 → 接口直接报错并提示原因（<b>FAILED 为预留状态</b>）</td></tr>
+        <tr><td>行程记录</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td>无记录 vs 筛选无结果（清除筛选）</td></tr>
+        <tr><td>核算明细</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td>无效单号与他人行程<b>同为</b> 404「行程不存在」（<span class="mono">40401</span>），不暴露存在性；该页不出现 403 态</td></tr>
+        <tr><td>积分明细</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td>无流水 → 「还没有积分变动」</td></tr>
+        <tr><td>积分商城</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td>全部兑完 → 空态 + 「等补货」；库存不足在卡片内提示</td></tr>
+        <tr><td>礼品详情 / 兑换确认</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td class="c yes">✓</td><td class="c no">—</td><td>积分不足 <span class="mono">40030</span>、库存不足 <span class="mono">40901</span>、商品已下架 <span class="mono">40908</span>、重复兑换走幂等</td></tr>
+        <tr><td>我的订单</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td>无订单 → 「还没有兑换记录」</td></tr>
+        <tr><td>个人资料</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td class="c yes">✓</td><td class="c no">—</td><td>保存失败保留已填内容，标红出错字段</td></tr>
+        <tr><td>运营概览</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td>当天无数据 → 图表显示 0 并提示「今日还没有数据」</td></tr>
+        <tr><td>碳核算规则</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td>无规则 → 「尚未配置规则，行程不会加分」+ 新建按钮</td></tr>
+        <tr><td>礼品与库存</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td>无商品 → 「还没有上架礼品」</td></tr>
+        <tr><td>订单处理</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td>筛选无结果 vs 全无订单分开写；取消必须填原因</td></tr>
+        <tr><td>用户管理</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td>搜索无结果 → 「没有匹配的用户」+ 清除关键词</td></tr>
+        <tr><td>积分对账</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td class="c yes">✓</td><td class="c yes">✓</td><td><b>无差异</b>与<b>读取失败（50001）</b>必须分开：失败不代表没问题</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card" style="margin-top:18px">
+    <div class="card-head"><h2>落地到工程里怎么分工</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;font-size:13px;color:var(--ink-700);line-height:1.9">
+      <div><b>组件层</b><br>统一封装 <span class="mono">AsyncBlock</span>：接 <span class="mono">loading / error / empty / forbidden</span> 四个 slot，页面只传数据和回调，不各写一遍。</div>
+      <div><b>请求层</b><br>Axios 拦截器把 401/403/5xx 映射到统一错误对象；组件只读 <span class="mono">error.kind</span>，不解析后端文案。</div>
+      <div><b>验收</b><br>每个数据区在断网、慢网、空账号、越权账号下各点一遍；<span class="mono">docs/screenshots/states/</span> 里是<b>设计样例</b>（部分为注入的静态示意，未做浏览器实跑验收），UX-01 的可实现性确认仍待高泽。</div>
+    </div>
+  </section>
+</main>
+
+<div class="toast"></div>
+<script src="assets/app.js"></script>
+</body>
+</html>
