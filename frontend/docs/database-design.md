@@ -42,6 +42,7 @@
 | # | 接口 | 来源表 | 字段映射要点 |
 |---|---|---|---|
 | 1 | `POST /auth/login` | `t_user`、`t_login_session` | 入参 `account`/`password` → `login_account`/`password_hash` 校验；返回 `user{id,nickname,phone,role,avatarText,points}`，`points` 取 `t_point_account.balance`；`token` 原文只在响应里，库里只有 `token_hash` |
+| 1.5 | `POST /auth/register` | `t_user`、`t_point_account`、`t_login_session` | 插 `t_user`（`phone`、`password_hash`、`nickname`、`role='USER'`、`avatar_text`）；**同一事务插 `t_point_account` 余额 0 行**（否则后续 `/points/account` 会查不到）；手机号唯一约束兜底 → 冲突映射 `40906`；成功后签会话、返回 `{token,user}` |
 | 2 | `GET /auth/me` | 同上 | 同登录返回的 `user` |
 | 3 | `POST /auth/logout` | `t_login_session` | 置 `revoked_at` |
 | 4 | `GET /trips` | `t_trip` | `tripId`←`trip_id`、`mode`、`distanceKm`←`distance_km`、`reductionKg`←`reduction_kg`、`awardedPoints`←`awarded_points`、`status`、`startTime`/`endTime`←`start_time`/`end_time`、`startPlace`/`endPlace`←`start_place`/`end_place` |

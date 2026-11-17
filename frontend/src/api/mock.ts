@@ -50,6 +50,11 @@ const tripIdByClientId = new Map<string, string>()
 const orderIdByRequestKey = new Map<string, string>()
 
 function seed(): void {
+  // 重新播种时把幂等表一起清掉：它们是"上次会话"的产物，
+  // 留着会让新的 clientTripId 撞上旧 tripId（真后端换库/重置数据时同理）。
+  tripIdByClientId.clear()
+  orderIdByRequestKey.clear()
+
   const plan: Array<[TripMode, number, number, string, string, number]> = [
     ['BUS', 10, 0, '软件园东门', '地铁二号线站', 8],
     ['SUBWAY', 12.5, 1, '地铁二号线站', '市民中心', 9],
@@ -266,6 +271,35 @@ const MOCK_ADMIN: User = {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
+/** 已注册手机号：mock 没有用户表，用一个 Set 模拟数据库上的 UNIQUE(phone) */
+const registeredPhones = new Set<string>(['13800138000'])
+
+function maskPhone(phone: string): string {
+  return phone.length === 11 ? `${phone.slice(0, 3)}****${phone.slice(7)}` : phone
+}
+
+/**
+ * 每次登录/注册都签发一个「新」token（真实 JWT 的 iat/jti 也会变）。
+ * 前端靠"发请求时的 token ≠ 当前 token"识别"旧会话的迟到响应"；
+ * 如果每次都是同一个字符串，客户端就没法区分新旧会话，迟到 401 会误杀新会话。
+ */
+function issueToken(user: User): string {
+  return `mock-token-${user.id}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+/**
+ * 新用户的业务数据从零开始（真后端里新账号本来就没有行程/积分/订单）。
+ * 顺带让"首次进入的空态"成为可验收的东西，而不是永远有 20 条假行程。
+ */
+function resetToEmptyUser(): void {
+  trips = []
+  flows = []
+  orders = []
+  tripIdByClientId.clear()
+  orderIdByRequestKey.clear()
+  state.account = { balance: 0, totalEarned: 0, totalSpent: 0, tripCount: 0, totalReductionKg: 0 }
+}
+
 function paginate<T>(list: T[], query?: PageQuery | Record<string, unknown>): Page<T> {
   const page = Number(query?.page ?? 1)
   const size = Number(query?.size ?? 10)
@@ -317,10 +351,40 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
     const isAdmin = body.account.toLowerCase() === 'admin'
     const user = isAdmin ? { ...MOCK_ADMIN } : { ...MOCK_USER }
     state.user = user
-    // 每次登录都签发一个「新」token（真实 JWT 也是这样：iat/jti 变了，字符串就变了）。
-    // 这一点很重要：前端靠"发请求时的 token ≠ 当前 token"来识别"旧会话的迟到响应"，
-    // 如果 token 每次登录都一样，客户端就无法区分新旧会话，迟到 401 会误杀新会话。
-    return ok({ token: `mock-token-${user.id}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`, user }) as unknown as T
+    // 演示账号登录时恢复演示数据（注册出来的新账号在上一次会话里可能把数据清空过）
+    seed()
+    return ok({ token: issueToken(user), user }) as unknown as T
+  }
+
+  /* 注册：与后端 AuthController#register 对齐
+     —— 手机号格式 40013、密码长度 40012、手机号占用 40906，成功直接返回 { token, user } */
+  if (url === '/auth/register' && method === 'POST') {
+    const body = req.body as { phone?: string; password?: string; nickname?: string } | undefined
+    const phone = str(body?.phone).trim()
+    const password = str(body?.password)
+    const nickname = str(body?.nickname).trim()
+    if (!phone || !password) throw new ApiError('请输入手机号和密码', 40001, 400)
+    if (!/^1\d{10}$/.test(phone)) throw new ApiError('手机号格式不正确', 40013, 400)
+    if (password.length < 6 || password.length > 32)
+      throw new ApiError('密码长度需为 6-32 位', 40012, 400)
+    if (nickname.length > 20) throw new ApiError('昵称最长 20 个字', 40000, 400)
+    if (registeredPhones.has(phone))
+      throw new ApiError('该手机号已注册，请直接登录', 40906, 409)
+
+    registeredPhones.add(phone)
+    const fallbackName = maskPhone(phone)
+    const user: User = {
+      id: `U${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
+      nickname: nickname || fallbackName,
+      phone: fallbackName,
+      role: 'USER',
+      avatarText: (nickname || '绿').slice(0, 1),
+      points: 0,
+    }
+    resetToEmptyUser()
+    state.user = user
+    state.users.push(user)
+    return ok({ token: issueToken(user), user }) as unknown as T
   }
 
   if (url === '/auth/me' && method === 'GET') {

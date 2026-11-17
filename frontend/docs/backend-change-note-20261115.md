@@ -105,7 +105,7 @@ Authorization: Bearer <admin token>
 | `POST /admin/products/{id}/stock` | 后端已有；契约仍以 `PATCH /admin/products/{id}` 为准 |
 | `POST /admin/rules`（新增规则版本） | **后端已实现**，前端页面排期 v1.1 |
 | `POST /admin/users/{id}/status`（用户启停） | **P1 后续**，不在本阶段 P0 范围，不阻塞验收 |
-| `POST /auth/register`（注册） | **后端已实现**，前端页面未做（P0 未完成） |
+| `POST /auth/register`（注册） | **前后端均已实现**（2026-11-17 前端接入完成，见契约 §3.1.1） |
 
 > **口径提醒（2026-11-17）**：上面"前端页面排期 v1.1"指的是**前端页面**没做，
 > 不是后端没实现——后端在 `gts-backend` 里已经有 `POST /admin/products`、`POST /admin/rules`、`POST /auth/register`。
@@ -165,7 +165,7 @@ VITE_DATA_SOURCE=api
 VITE_API_BASE_URL=http://localhost:8080/api
 ```
 
-切完我会重跑 `npm run e2e`（72 条断言），后端只要按本文实现，断言应全绿。
+切完我会重跑 `npm run e2e`（81 条断言），后端只要按本文实现，断言应全绿。
 
 ---
 

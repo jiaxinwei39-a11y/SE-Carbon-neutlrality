@@ -127,36 +127,38 @@ Idempotency-Key: <客户端生成的唯一串>
 > **关于 `50001`**：对账读取失败是**专用码**，不要并进 `50000`。前端页面对账的三态靠它区分：
 > `50001`/任意 5xx → 显示「核对结果读取失败（无法判断是否存在差异）」，**绝不能显示成"无差异"**。
 
-## 2. 接口清单（22 个）
+## 2. 接口清单（23 个）
 
 | # | 方法 | 路径 | 用途 | 鉴权 |
 |---|---|---|---|---|
 | 1 | POST | `/auth/login` | 登录 | 否 |
-| 2 | GET | `/auth/me` | 取当前用户 | 是 |
-| 3 | POST | `/auth/logout` | 退出 | 是 |
-| 4 | GET | `/trips` | 行程列表（分页） | 是 |
-| 5 | POST | `/trips` | 上报行程 | 是 |
-| 6 | GET | `/trips/{tripId}` | 行程详情（含核算明细） | 是 |
-| 7 | GET | `/points/account` | 积分账户 | 是 |
-| 8 | GET | `/points/flows` | 积分流水（分页） | 是 |
-| 9 | GET | `/mall/products` | 商品列表（分页） | 是 |
-| 10 | GET | `/mall/products/{productId}` | 商品详情 | 是 |
-| 11 | POST | `/mall/orders` | 兑换下单 | 是 |
-| 12 | GET | `/orders` | 我的订单（分页） | 是 |
-| 13 | GET | `/orders/{orderId}` | 订单详情 | 是 |
-| 14 | POST | `/admin/orders/{orderId}/cancel` | 取消订单（**管理员**，用户端无此能力） | 管理员 |
-| 15 | GET | `/admin/dashboard` | 数据概览 | 管理员 |
-| 16 | GET | `/admin/rules` | 核算规则列表 | 管理员 |
-| 17 | GET | `/admin/products` | 商品管理（分页，含下架） | 管理员 |
-| 18 | **PATCH** | **`/admin/products/{productId}`** | **商品维护（改价/改库存/上下架）** | 管理员 |
-| 19 | GET | `/admin/orders` | 订单管理（分页，全量） | 管理员 |
-| 20 | **POST** | **`/admin/orders/{orderId}/fulfill`** | **订单履约（发放）** | 管理员 |
-| 21 | GET | `/admin/users` | 用户管理（分页） | 管理员 |
-| 22 | GET | `/admin/reconciliation` | 积分对账 | 管理员 |
+| 2 | **POST** | **`/auth/register`** | **注册（成功即登录，返回 token）** | 否 |
+| 3 | GET | `/auth/me` | 取当前用户 | 是 |
+| 4 | POST | `/auth/logout` | 退出 | 是 |
+| 5 | GET | `/trips` | 行程列表（分页） | 是 |
+| 6 | POST | `/trips` | 上报行程 | 是 |
+| 7 | GET | `/trips/{tripId}` | 行程详情（含核算明细） | 是 |
+| 8 | GET | `/points/account` | 积分账户 | 是 |
+| 9 | GET | `/points/flows` | 积分流水（分页） | 是 |
+| 10 | GET | `/mall/products` | 商品列表（分页） | 是 |
+| 11 | GET | `/mall/products/{productId}` | 商品详情 | 是 |
+| 12 | POST | `/mall/orders` | 兑换下单 | 是 |
+| 13 | GET | `/orders` | 我的订单（分页） | 是 |
+| 14 | GET | `/orders/{orderId}` | 订单详情 | 是 |
+| 15 | POST | `/admin/orders/{orderId}/cancel` | 取消订单（**管理员**，用户端无此能力） | 管理员 |
+| 16 | GET | `/admin/dashboard` | 数据概览 | 管理员 |
+| 17 | GET | `/admin/rules` | 核算规则列表 | 管理员 |
+| 18 | GET | `/admin/products` | 商品管理（分页，含下架） | 管理员 |
+| 19 | **PATCH** | **`/admin/products/{productId}`** | **商品维护（改价/改库存/上下架）** | 管理员 |
+| 20 | GET | `/admin/orders` | 订单管理（分页，全量） | 管理员 |
+| 21 | **POST** | **`/admin/orders/{orderId}/fulfill`** | **订单履约（发放）** | 管理员 |
+| 22 | GET | `/admin/users` | 用户管理（分页） | 管理员 |
+| 23 | GET | `/admin/reconciliation` | 积分对账 | 管理员 |
 
 > 管理端目前做**两个写操作**（订单履约、商品维护最小版）+ 一个取消动作。
 > **修订（2026-11-15，评审 #23）**：取消订单从用户端挪到管理端，接口路径改为 `/admin/orders/{orderId}/cancel`；用户端不再提供任何取消入口。
-> **未完成的 P0 仍然计入 P0**：注册、商品维护（当前只有改价/改库存/上下架，缺新增与图文）、规则管理。口径要缩减须先走「产品范围变更确认」，不能只改文档。
+> **未完成的 P0 仍然计入 P0**：商品维护（当前只有改价/改库存/上下架，缺新增与图文）、规则管理。口径要缩减须先走「产品范围变更确认」，不能只改文档。
+> **修订（2026-11-17，#11 注册）**：注册接口 `POST /auth/register` 已实现并接入前端（见 §3.1.1），从"P0 未完成"清单移除。
 
 ---
 
@@ -191,6 +193,40 @@ POST /auth/login
 ```
 
 失败：`40001`（缺参数）、`40101`（账号或密码错误）。
+
+### 3.1.1 注册（2026-11-17 新增，P0 #11）
+
+```
+POST /auth/register
+```
+
+与后端 `AuthController.register` 对齐，**成功即登录**（返回的 `LoginResult` 和登录接口同构，前端不必再发一次登录）。
+
+请求：
+
+```json
+{ "phone": "13900001111", "password": "abc123456", "nickname": "新同学" }
+```
+
+| 字段 | 必填 | 规则 |
+|---|---|---|
+| `phone` | 是 | `^1\d{10}$`，不匹配 → `40013` |
+| `password` | 是 | 长度 6–32，越界 → `40012` |
+| `nickname` | 否 | `maxLength=20`，超长 → `40000`；为空时后端用手机号生成（如 `138****6621`） |
+
+响应（201/200，业务码 0）：
+
+```json
+{ "code": 0, "message": "ok", "data": {
+    "token": "eyJhbGciOi...",
+    "user": { "id": "U3F2A91C", "nickname": "新同学", "phone": "13900001111",
+              "role": "USER", "avatarText": "新", "points": 0 }
+} }
+```
+
+失败：`40001`（缺参数）、`40012`（密码长度非法）、`40013`（手机号格式非法）、`40906`（手机号已注册）、`40000`（昵称为空串以外的其它非法输入）。
+
+前端行为（`src/views/auth/RegisterView.vue`）：格式先本地校验 → 成功后 `useUserStore().register()` 写 token 与用户 → toast 并 `router.replace({name:'home'})`；失败直接展示后端 `message`（四类错误都有中文提示，不吞错、不假装成功）。
 
 > `account` 既可能是手机号，也可能是 `admin` 这类管理员账号，后端自行区分。
 
