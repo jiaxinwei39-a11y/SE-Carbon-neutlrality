@@ -55,6 +55,45 @@ paths:
                           token: { type: string }
                           user: { $ref: "#/components/schemas/User" }
 
+  /auth/register:
+    post:
+      tags: [auth]
+      summary: 注册（成功即登录，返回 token）
+      description: |
+        手机号 ^1\d{10}$（非法 40013）、密码 6-32 位（非法 40012）、昵称 maxLength 20（超长 40000）。
+        手机号已注册返回 40906。成功返回与登录同构的 { token, user }，前端不必再发一次登录。
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, password]
+              properties:
+                phone: { type: string, example: "13900001111" }
+                password: { type: string, example: "abc123456" }
+                nickname: { type: string, maxLength: 20, example: "新同学" }
+      responses:
+        "200":
+          description: 成功（部分实现返回 201，前端两者都接受）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResult"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          token: { type: string }
+                          user: { $ref: "#/components/schemas/User" }
+        "400":
+          description: 40012 密码长度非法 / 40013 手机号格式非法 / 40001 缺参数 / 40000 其它非法输入
+        "409":
+          description: 40906 手机号已注册
+
   /auth/me:
     get:
       tags: [auth]
@@ -816,7 +855,12 @@ components:
           description: |
             TRIP=行程级、ORDER=订单级、ACCOUNT=账户级（objectId 为 userId，例如"余额与流水合计不符"）。
             账户级差异不要塞进 ORDER，否则无法判断该找谁核查。
-        objectId: { type: string, description: "TRIP→tripId / ORDER→orderId / ACCOUNT→userId" }
+        objectId:
+          type: string
+          description: |
+            TRIP→tripId；ORDER→orderId；ACCOUNT→userId（账户汇总 "U001"；流水逐笔 "U001#7"，即 userId#accountSeq）。
+            前端原样展示、不解析。注意：目标口径是"对外业务编号"，
+            主分支 ReconcileService 目前仍返回内部自增 id（如 "4" / "4#7"），待后端改为 t_user.user_id。
         checkName: { type: string, example: "积分应发未发（分）" }
         expected: { type: number }
         actual: { type: number }

@@ -33,6 +33,24 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  /**
+   * 注册后直接进入登录态：后端 register 返回的也是 { token, user }，
+   * 和 login 一样，所以复用同一套写入逻辑，不再多发一次登录请求。
+   */
+  async function register(phone: string, password: string, nickname?: string): Promise<User> {
+    loading.value = true
+    try {
+      const res = await authApi.register({ phone, password, nickname })
+      token.value = res.token
+      setToken(res.token)
+      user.value = res.user
+      initialized.value = true
+      return res.user
+    } finally {
+      loading.value = false
+    }
+  }
+
   /** 刷新页面后恢复登录态：有 token 才去问后端"我是谁" */
   async function restore(): Promise<void> {
     if (initialized.value) return
@@ -61,5 +79,18 @@ export const useUserStore = defineStore('user', () => {
     clearToken()
   }
 
-  return { user, token, loading, initialized, isLogin, isAdmin, nickname, login, restore, logout, reset }
+  return {
+    user,
+    token,
+    loading,
+    initialized,
+    isLogin,
+    isAdmin,
+    nickname,
+    login,
+    register,
+    restore,
+    logout,
+    reset,
+  }
 })

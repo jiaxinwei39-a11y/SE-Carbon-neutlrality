@@ -22,6 +22,25 @@ export function fetchMe(): Promise<User> {
   return request<User>({ url: '/auth/me' })
 }
 
+export interface RegisterPayload {
+  phone: string
+  password: string
+  /** 选填；不填由后端用手机号生成（形如 138****6621） */
+  nickname?: string
+}
+
+/**
+ * 真后端：POST /api/auth/register -> { token, user }（注册成功即登录）
+ * 专用错误码：手机号格式 40013、密码长度 40012、手机号已占用 40906。
+ */
+export function register(payload: RegisterPayload): Promise<LoginResult> {
+  return request<LoginResult, RegisterPayload>({
+    url: '/auth/register',
+    method: 'POST',
+    body: payload,
+  })
+}
+
 export function logout(): Promise<null> {
   return request<null>({ url: '/auth/logout', method: 'POST' })
 }
