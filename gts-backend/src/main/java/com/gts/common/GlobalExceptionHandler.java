@@ -41,6 +41,13 @@ public class GlobalExceptionHandler {
                 .body(Api.Result.fail(Api.Codes.PARAM_INVALID, "请求体格式不正确"));
     }
 
+    /** 路径不存在：返回 404，不要伪装成 500 */
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<Api.Result<Void>> onNoResource(Exception ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Api.Result.fail(Api.Codes.ENDPOINT_NOT_FOUND, "接口不存在"));
+    }
+
     /** 唯一约束冲突：说明业务层的幂等/防重逻辑没走到，这里兜底并记录下来 */
     @ExceptionHandler(DuplicateKeyException.class)
     public ResponseEntity<Api.Result<Void>> onDuplicate(DuplicateKeyException ex) {
