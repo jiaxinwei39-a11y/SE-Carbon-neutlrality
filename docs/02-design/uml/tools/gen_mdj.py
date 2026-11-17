@@ -392,7 +392,7 @@ def main(out_path, seq_path=None):
                          'source': {'$ref': ll[s]['_id']},
                          'target': {'$ref': ll[t]['_id']}})
 
-        H = 120 + len(msgs) * 56 + 80
+        H = 120 + len(msgs) * 50 + 80
         LW, LT = 96, 40
         lifeline_views = []
         x = 40
@@ -416,7 +416,7 @@ def main(out_path, seq_path=None):
         centers = [v['left'] + v['width'] // 2 for v in lifeline_views]
         views = list(lifeline_views)
         for k, m in enumerate(msgs):
-            y = 130 + k * 56
+            y = 130 + k * 50
             s, t, text = messages[k]
             mx = centers[s]
             nx = centers[t]

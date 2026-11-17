@@ -1,77 +1,75 @@
 # 实验二 UML 设计模型（#8）
 
-> 负责：郭浚文　　生成日期：2026-11-17
-> 生成器：`tools/gen_mdj.py`（读 `docs/02-design/key-design.md` 与实际代码生成 `.mdj`）
+> 负责：郭浚文　　更新：2026-11-17
+> 生成器：`tools/gen_mdj.py`（结构图/活动图）、`tools/make_seq.py`（序列图，基于已验证模板改内容）
 
 ## 1. 文件清单
 
-| 文件 | 内容 | 说明 |
+| 文件 | 内容 | 状态 |
 |---|---|---|
-| `gts-design.mdj` | **8 张图**：包图、部署图、设计类图、5 张活动图 | 主工程，StarUML 直接打开 |
-| `gts-seq-sample.mdj` | **1 张序列图**：上报行程与积分发放 | 按组长要求先交的独立样例 |
-| `tools/gen_mdj.py` | 生成器 | 改内容后重新生成，不用手拖 |
-
-两份工程都是纯 JSON（StarUML Project 格式），已通过结构自检：
-元素 id 唯一、所有 `$ref` 可解析、无空引用。
+| `gts-design.mdj` | 包图、部署图、设计类图、5 张活动图 | 已验证可打开 |
+| `gts-seq-sample.mdj` | 序列图：上报行程与积分发放（11 条消息） | 已验证可打开 |
+| `gts-seq-redeem.mdj` | 序列图：积分商品兑换 | 待验收 |
+| `gts-seq-order-admin.mdj` | 序列图：订单履约与取消 | 待验收 |
+| `gts-seq-rule.mdj` | 序列图：核算规则版本切换 | 待验收 |
+| `gts-seq-recon.mdj` | 序列图：只读一致性对账 | 待验收 |
+| `images/seq-sample.png` | 上报行程序列图预览（StarUML 截图） | — |
 
 ## 2. 图与核对项对应
 
 | 图 | 对应 DR | 内容 |
 |---|---|---|
-| 包图 | DR-02 | 接口层 boundary / 应用层 control / 领域层 entity / 基础设施 infra，4 条依赖 |
-| 部署图 | DR-02 | 用户 PC（前端静态包）→ 应用服务器（`gts-backend.jar`）→ 数据库服务器（MySQL gts），HTTPS/JSON 与 JDBC 3306 |
-| 设计类图 | DR-03 | 16 个类分三组：4 个 boundary Controller、5 个 control Service、7 个 entity 领域类（含属性） |
-| 活动图：上报行程与积分发放 | DR-04 | 校验 → 匹配规则 → BigDecimal 核算 → 同事务写行程/流水/余额 |
-| 活动图：积分商品兑换 | DR-04 | 锁账户→锁商品 → 当前读复查幂等 → 校验库存余额 → 原子扣减建单 |
-| 活动图：订单取消冲正 | DR-04 | 无锁读标识 → 按序加锁 → 重读终态 → 返还与冲正 |
-| 活动图：核算规则版本切换 | DR-04 | 锁 `t_rule_mode_lock` → 锁内取时间禁止追溯 → 区间校验 → 截断旧区间插新版本 |
-| 活动图：只读一致性对账 | DR-04 | REPEATABLE READ 只读事务 → 9 项核对 → 只报差异不修账 |
-| 序列图：上报行程与积分发放 | DR-03 | 6 条生命线、11 条消息，顺序与 `TripService.create` 实际代码一致 |
+| 包图 | DR-02 | 接口层 boundary / 应用层 control / 领域层 entity / 基础设施 infra |
+| 部署图 | DR-02 | PC（前端）→ 应用服务器（`gts-backend.jar`）→ MySQL |
+| 设计类图 | DR-03 | 16 类：4 boundary / 5 control / 7 entity（含属性） |
+| 活动图 ×5 | DR-04 | 上报发分、兑换、取消冲正、规则切换、只读对账 |
+| 序列图 ×5 | DR-03 | 上报、兑换、订单处理、规则切换、对账 |
 
-## 3. 序列图样例的消息顺序（对照代码）
+## 3. 序列图内容（对照后端代码）
+
+### 3.1 上报行程与积分发放（`gts-seq-sample.mdj`）
+
+对应 `TripService.java:124-158`：
 
 | # | 消息 | 代码位置 |
 |---|---|---|
 | 1 | `POST /trips` | `TripController.create` |
 | 2 | `create()` | `TripService.create` |
-| 3 | 按幂等键查重 | `TripRepository.findByClientTripId` |
-| 4 | 匹配核算规则 | `TripRepository.findRule` |
-| 5 | `SELECT 规则` | 同上 |
-| 6 | `applyTrip()` | `PointsRepository.applyTrip` |
-| 7 | `UPDATE 账户`（行锁） | `PointsRepository.applyTrip` |
-| 8 | `INSERT 行程` | `TripRepository.insert` |
-| 9 | `INSERT 流水` | `PointsRepository.insertLedger` |
-| 10 | `TripDetail` | `TripService.create` |
-| 11 | `200 OK` | `GlobalExceptionHandler`/Controller |
+| 3 | 查重（命中即返回原结果） | `findByClientTripId` |
+| 4 | 匹配核算规则 | `trips.findRule` |
+| 5 | `SELECT 规则` | — |
+| 6 | 核算减排量与积分（FLOOR） | `TripService:136-141` |
+| 7 | `INSERT 行程+因子快照（1/3）` | `trips.insert` |
+| 8 | `applyTrip()（2/3）` | `PointsRepository:67` |
+| 9 | `UPDATE 账户 last_seq+1（仅积分>0）` | `PointsRepository:68-71` |
+| 10 | `INSERT 流水（3/3，仅积分>0）` | `TripService:153-158` |
+| 11 | `TripDetail（200 OK）` | — |
 
-## 4. 鲁棒图/序列图覆盖清单（DR-03）
+三项写入（行程 / 账户 / 流水）在**同一事务**内，任一步失败整体回滚。
+零积分行程仍保存并计入行程统计，但**不写流水、不递增 `last_seq`**；查重命中同样不再入账。
 
-指导书要求"按用例覆盖"，17 个用例全画 17 对图不现实，按**业务闭环**分组覆盖：
+## 4. 画序列图的踩坑记录（后续维护必读）
 
-| 用例 | 鲁棒图 | 序列图 | 对应设计类 |
-|---|---|---|---|
-| UC-04 上报行程（含 UC-05/06 查询） | 待补 | ✅ 样例 | TripController / TripService / TripRepository / PointsRepository |
-| UC-10 兑换商品（含 UC-09/11） | 待补 | 待补 | MallController / MallService / MallRepository / OrderRepository |
-| UC-13 处理订单（履约/取消，含 UC-12） | 待补 | 待补 | AdminController / OrderService / AuditRepository |
-| UC-16 配置核算规则 | 待补 | 待补 | AdminController / RuleService / AdminRepository |
-| UC-17 核对积分账目 | 待补 | 待补 | AdminController / ReconcileService |
-| UC-01/02/03/15 账户与权限 | 合并为 1 张 | 合并为 1 张 | AuthController / AuthService / UserRepository |
-| UC-07/08 积分查询 | 并入 UC-04 序列 | 并入 UC-04 序列 | PointsController / PointsService |
-| UC-14 运营统计 | 不单独出图（只读聚合，属 #17） | — | AdminService.dashboard |
+这些是本轮反复返工后确认的规则，照着做才不会白屏或错位：
 
-说明：查询类用例（UC-05/06/07/08/11）没有独立业务分支，并入写路径的序列图里体现；
-`UC-14` 属 P1（#17），本轮不出图。
+1. **不要克隆视图**。StarUML 对克隆出来的 `UMLSeqMessageView` 一律不渲染（即使补 `_parent`、坐标合法）。
+   新图只能在模板文件的原生视图上改内容，**不能增删视图数量**。
+2. **不要给 `EdgeLabelView` 加未支持的属性**（如 `horizontalAlignment`）——整张画布会变空白。
+3. `EdgeLabelView` 的 `left/top` 会被 StarUML 忽略，真正决定位置的是：
+   - `edgePosition`：`1` = 贴箭头起点，`2` = 末端，`0` = 中点
+   - `distance`：相对线的法向偏移
+4. 行距 55、激活条高 30、文字 `top=y-18`、`edgePosition=1`，是当前不遮挡的参数组合。
+5. 导出 PNG 会带 `UNREGISTERED` 水印（StarUML 未注册限制），预览图**用截图代替**。
 
 ## 5. 复现
 
 ```bash
-python tools/gen_mdj.py gts-design.mdj gts-seq-sample.mdj
+python tools/gen_mdj.py gts-design.mdj
+python tools/make_seq.py 模板.mdj gts-seq-xxx.mdj
 ```
 
-生成后建议在 StarUML 里 `File → Save` 一次再提交，避免版本差异。
+## 6. 待补
 
-## 6. 待补（下一轮）
-
-- 鲁棒图 5 张（boundary/control/entity 构造型，参照 `第四讲作业/餐饮管理系统.mdj` 的 profile 写法）
-- 其余 4 张序列图（兑换、订单处理、规则切换、对账）
-- `docs/02-design/key-design.md` 里的"示意"替换为正式图引用
+- 鲁棒图 5 张（`「boundary」「control」「entity」` 构造型；参照 `第四讲作业/餐饮管理系统.mdj` 的 profile 写法）
+- 其余序列图的预览截图
+- Boundary / Control / Entity 类清单（可直接引用设计类图 + README 表格）

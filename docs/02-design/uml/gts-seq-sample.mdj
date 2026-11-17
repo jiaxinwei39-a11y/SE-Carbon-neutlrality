@@ -55,7 +55,9 @@
              },
              "visible": false,
              "font": "Arial;13;0",
-             "height": 13
+             "height": 13,
+             "left": 42,
+             "width": 92
             },
             {
              "_type": "LabelView",
@@ -64,9 +66,9 @@
               "$ref": "AAAAGTS000000000000000783"
              },
              "font": "Arial;13;1",
-             "left": 45,
+             "left": 42,
              "top": 47,
-             "width": 86,
+             "width": 92,
              "height": 13,
              "text": "用户（浏览器）"
             },
@@ -78,8 +80,9 @@
              },
              "visible": false,
              "font": "Arial;13;0",
-             "width": 86,
-             "height": 13
+             "width": 92,
+             "height": 13,
+             "left": 42
             },
             {
              "_type": "LabelView",
@@ -90,7 +93,9 @@
              "visible": false,
              "font": "Arial;13;0",
              "height": 13,
-             "horizontalAlignment": 1
+             "horizontalAlignment": 1,
+             "left": 42,
+             "width": 92
             }
            ],
            "font": "Arial;13;0",
@@ -125,7 +130,7 @@
            "left": 88,
            "top": 81,
            "width": 1,
-           "height": 735
+           "height": 674
           }
          ],
          "font": "Arial;13;0",
@@ -133,7 +138,7 @@
          "left": 40,
          "top": 40,
          "width": 96,
-         "height": 776,
+         "height": 715,
          "nameCompartment": {
           "$ref": "AAAAGTS000000000000000783"
          },
@@ -169,7 +174,9 @@
              },
              "visible": false,
              "font": "Arial;13;0",
-             "height": 13
+             "height": 13,
+             "left": 292,
+             "width": 92
             },
             {
              "_type": "LabelView",
@@ -178,9 +185,9 @@
               "$ref": "AAAAGTS000000000000000790"
              },
              "font": "Arial;13;1",
-             "left": 255,
+             "left": 292,
              "top": 47,
-             "width": 86,
+             "width": 92,
              "height": 13,
              "text": "TripController"
             },
@@ -192,8 +199,9 @@
              },
              "visible": false,
              "font": "Arial;13;0",
-             "width": 86,
-             "height": 13
+             "width": 92,
+             "height": 13,
+             "left": 292
             },
             {
              "_type": "LabelView",
@@ -204,11 +212,13 @@
              "visible": false,
              "font": "Arial;13;0",
              "height": 13,
-             "horizontalAlignment": 1
+             "horizontalAlignment": 1,
+             "left": 292,
+             "width": 92
             }
            ],
            "font": "Arial;13;0",
-           "left": 250,
+           "left": 290,
            "top": 40,
            "width": 96,
            "height": 25,
@@ -236,18 +246,18 @@
            },
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 298,
+           "left": 338,
            "top": 81,
            "width": 1,
-           "height": 735
+           "height": 674
           }
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
-         "left": 250,
+         "left": 290,
          "top": 40,
          "width": 96,
-         "height": 776,
+         "height": 715,
          "nameCompartment": {
           "$ref": "AAAAGTS000000000000000790"
          },
@@ -283,7 +293,9 @@
              },
              "visible": false,
              "font": "Arial;13;0",
-             "height": 13
+             "height": 13,
+             "left": 542,
+             "width": 92
             },
             {
              "_type": "LabelView",
@@ -292,9 +304,9 @@
               "$ref": "AAAAGTS000000000000000797"
              },
              "font": "Arial;13;1",
-             "left": 465,
+             "left": 542,
              "top": 47,
-             "width": 86,
+             "width": 92,
              "height": 13,
              "text": "TripService"
             },
@@ -306,8 +318,9 @@
              },
              "visible": false,
              "font": "Arial;13;0",
-             "width": 86,
-             "height": 13
+             "width": 92,
+             "height": 13,
+             "left": 542
             },
             {
              "_type": "LabelView",
@@ -318,11 +331,13 @@
              "visible": false,
              "font": "Arial;13;0",
              "height": 13,
-             "horizontalAlignment": 1
+             "horizontalAlignment": 1,
+             "left": 542,
+             "width": 92
             }
            ],
            "font": "Arial;13;0",
-           "left": 460,
+           "left": 540,
            "top": 40,
            "width": 96,
            "height": 25,
@@ -350,18 +365,18 @@
            },
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 508,
+           "left": 588,
            "top": 81,
            "width": 1,
-           "height": 735
+           "height": 674
           }
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
-         "left": 460,
+         "left": 540,
          "top": 40,
          "width": 96,
-         "height": 776,
+         "height": 715,
          "nameCompartment": {
           "$ref": "AAAAGTS000000000000000797"
          },
@@ -397,7 +412,9 @@
              },
              "visible": false,
              "font": "Arial;13;0",
-             "height": 13
+             "height": 13,
+             "left": 792,
+             "width": 92
             },
             {
              "_type": "LabelView",
@@ -406,9 +423,9 @@
               "$ref": "AAAAGTS000000000000000804"
              },
              "font": "Arial;13;1",
-             "left": 675,
+             "left": 792,
              "top": 47,
-             "width": 86,
+             "width": 92,
              "height": 13,
              "text": "TripRepository"
             },
@@ -420,8 +437,9 @@
              },
              "visible": false,
              "font": "Arial;13;0",
-             "width": 86,
-             "height": 13
+             "width": 92,
+             "height": 13,
+             "left": 792
             },
             {
              "_type": "LabelView",
@@ -432,11 +450,13 @@
              "visible": false,
              "font": "Arial;13;0",
              "height": 13,
-             "horizontalAlignment": 1
+             "horizontalAlignment": 1,
+             "left": 792,
+             "width": 92
             }
            ],
            "font": "Arial;13;0",
-           "left": 670,
+           "left": 790,
            "top": 40,
            "width": 96,
            "height": 25,
@@ -464,18 +484,18 @@
            },
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 718,
+           "left": 838,
            "top": 81,
            "width": 1,
-           "height": 735
+           "height": 674
           }
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
-         "left": 670,
+         "left": 790,
          "top": 40,
          "width": 96,
-         "height": 776,
+         "height": 715,
          "nameCompartment": {
           "$ref": "AAAAGTS000000000000000804"
          },
@@ -511,7 +531,9 @@
              },
              "visible": false,
              "font": "Arial;13;0",
-             "height": 13
+             "height": 13,
+             "left": 1042,
+             "width": 92
             },
             {
              "_type": "LabelView",
@@ -520,9 +542,9 @@
               "$ref": "AAAAGTS000000000000000811"
              },
              "font": "Arial;13;1",
-             "left": 885,
+             "left": 1042,
              "top": 47,
-             "width": 86,
+             "width": 92,
              "height": 13,
              "text": "PointsRepository"
             },
@@ -534,8 +556,9 @@
              },
              "visible": false,
              "font": "Arial;13;0",
-             "width": 86,
-             "height": 13
+             "width": 92,
+             "height": 13,
+             "left": 1042
             },
             {
              "_type": "LabelView",
@@ -546,11 +569,13 @@
              "visible": false,
              "font": "Arial;13;0",
              "height": 13,
-             "horizontalAlignment": 1
+             "horizontalAlignment": 1,
+             "left": 1042,
+             "width": 92
             }
            ],
            "font": "Arial;13;0",
-           "left": 880,
+           "left": 1040,
            "top": 40,
            "width": 96,
            "height": 25,
@@ -578,18 +603,18 @@
            },
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 928,
+           "left": 1088,
            "top": 81,
            "width": 1,
-           "height": 735
+           "height": 674
           }
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
-         "left": 880,
+         "left": 1040,
          "top": 40,
          "width": 96,
-         "height": 776,
+         "height": 715,
          "nameCompartment": {
           "$ref": "AAAAGTS000000000000000811"
          },
@@ -625,7 +650,9 @@
              },
              "visible": false,
              "font": "Arial;13;0",
-             "height": 13
+             "height": 13,
+             "left": 1292,
+             "width": 92
             },
             {
              "_type": "LabelView",
@@ -634,9 +661,9 @@
               "$ref": "AAAAGTS000000000000000818"
              },
              "font": "Arial;13;1",
-             "left": 1095,
+             "left": 1292,
              "top": 47,
-             "width": 86,
+             "width": 92,
              "height": 13,
              "text": "MySQL"
             },
@@ -648,8 +675,9 @@
              },
              "visible": false,
              "font": "Arial;13;0",
-             "width": 86,
-             "height": 13
+             "width": 92,
+             "height": 13,
+             "left": 1292
             },
             {
              "_type": "LabelView",
@@ -660,11 +688,13 @@
              "visible": false,
              "font": "Arial;13;0",
              "height": 13,
-             "horizontalAlignment": 1
+             "horizontalAlignment": 1,
+             "left": 1292,
+             "width": 92
             }
            ],
            "font": "Arial;13;0",
-           "left": 1090,
+           "left": 1290,
            "top": 40,
            "width": 96,
            "height": 25,
@@ -692,18 +722,18 @@
            },
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 1138,
+           "left": 1338,
            "top": 81,
            "width": 1,
-           "height": 735
+           "height": 674
           }
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
-         "left": 1090,
+         "left": 1290,
          "top": 40,
          "width": 96,
-         "height": 776,
+         "height": 715,
          "nameCompartment": {
           "$ref": "AAAAGTS000000000000000818"
          },
@@ -718,7 +748,7 @@
           "$ref": "AAAAGTS000000000000000857"
          },
          "model": {
-          "$ref": 193
+          "$ref": "AAAAGTS000000000000000771"
          },
          "subViews": [
           {
@@ -729,13 +759,13 @@
            },
            "visible": true,
            "font": "Arial;13;0",
-           "left": 136,
-           "top": 110,
-           "width": 115,
+           "left": 96,
+           "top": 77,
+           "width": 77,
            "height": 13,
-           "alpha": 0.0,
+           "alpha": 1.5708,
            "distance": 12,
-           "edgePosition": 0,
+           "edgePosition": 1,
            "text": "POST /trips"
           },
           {
@@ -750,10 +780,10 @@
            "visible": true,
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 291,
-           "top": 130,
+           "left": 331,
+           "top": 89,
            "width": 14,
-           "height": 40
+           "height": 30
           }
          ],
          "font": "Arial;13;0",
@@ -764,7 +794,7 @@
          "tail": {
           "$ref": "AAAAGTS000000000000000788"
          },
-         "points": "88:130;298:130",
+         "points": "88:95;338:95",
          "nameLabel": {
           "$ref": "AAAAGTS000000000000000825"
          },
@@ -779,7 +809,7 @@
           "$ref": "AAAAGTS000000000000000857"
          },
          "model": {
-          "$ref": 403
+          "$ref": "AAAAGTS000000000000000772"
          },
          "subViews": [
           {
@@ -791,12 +821,12 @@
            "visible": true,
            "font": "Arial;13;0",
            "left": 346,
-           "top": 166,
-           "width": 115,
+           "top": 132,
+           "width": 60,
            "height": 13,
-           "alpha": 0.0,
+           "alpha": 1.5708,
            "distance": 12,
-           "edgePosition": 0,
+           "edgePosition": 1,
            "text": "create()"
           },
           {
@@ -811,10 +841,10 @@
            "visible": true,
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 501,
-           "top": 186,
+           "left": 581,
+           "top": 144,
            "width": 14,
-           "height": 40
+           "height": 30
           }
          ],
          "font": "Arial;13;0",
@@ -825,7 +855,7 @@
          "tail": {
           "$ref": "AAAAGTS000000000000000795"
          },
-         "points": "298:186;508:186",
+         "points": "338:150;588:150",
          "nameLabel": {
           "$ref": "AAAAGTS000000000000000828"
          },
@@ -840,7 +870,7 @@
           "$ref": "AAAAGTS000000000000000857"
          },
          "model": {
-          "$ref": 613
+          "$ref": "AAAAGTS000000000000000773"
          },
          "subViews": [
           {
@@ -851,14 +881,14 @@
            },
            "visible": true,
            "font": "Arial;13;0",
-           "left": 556,
-           "top": 222,
-           "width": 115,
+           "left": 635,
+           "top": 187,
+           "width": 156,
            "height": 13,
-           "alpha": 0.0,
+           "alpha": 1.5708,
            "distance": 12,
-           "edgePosition": 0,
-           "text": "按幂等键查重"
+           "edgePosition": 1,
+           "text": "查重（命中即返回原结果）"
           },
           {
            "_type": "UMLActivationView",
@@ -872,10 +902,10 @@
            "visible": true,
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 711,
-           "top": 242,
+           "left": 831,
+           "top": 199,
            "width": 14,
-           "height": 40
+           "height": 30
           }
          ],
          "font": "Arial;13;0",
@@ -886,7 +916,7 @@
          "tail": {
           "$ref": "AAAAGTS000000000000000802"
          },
-         "points": "508:242;718:242",
+         "points": "588:205;838:205",
          "nameLabel": {
           "$ref": "AAAAGTS000000000000000831"
          },
@@ -901,7 +931,7 @@
           "$ref": "AAAAGTS000000000000000857"
          },
          "model": {
-          "$ref": 613
+          "$ref": "AAAAGTS000000000000000774"
          },
          "subViews": [
           {
@@ -912,13 +942,13 @@
            },
            "visible": true,
            "font": "Arial;13;0",
-           "left": 556,
-           "top": 278,
-           "width": 115,
+           "left": 596,
+           "top": 242,
+           "width": 78,
            "height": 13,
-           "alpha": 0.0,
+           "alpha": 1.5708,
            "distance": 12,
-           "edgePosition": 0,
+           "edgePosition": 1,
            "text": "匹配核算规则"
           },
           {
@@ -933,10 +963,10 @@
            "visible": true,
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 711,
-           "top": 298,
+           "left": 831,
+           "top": 254,
            "width": 14,
-           "height": 40
+           "height": 30
           }
          ],
          "font": "Arial;13;0",
@@ -947,7 +977,7 @@
          "tail": {
           "$ref": "AAAAGTS000000000000000802"
          },
-         "points": "508:298;718:298",
+         "points": "588:260;838:260",
          "nameLabel": {
           "$ref": "AAAAGTS000000000000000834"
          },
@@ -962,7 +992,7 @@
           "$ref": "AAAAGTS000000000000000857"
          },
          "model": {
-          "$ref": 928
+          "$ref": "AAAAGTS000000000000000775"
          },
          "subViews": [
           {
@@ -973,13 +1003,13 @@
            },
            "visible": true,
            "font": "Arial;13;0",
-           "left": 813,
-           "top": 334,
-           "width": 231,
+           "left": 846,
+           "top": 297,
+           "width": 75,
            "height": 13,
-           "alpha": 0.0,
+           "alpha": 1.5708,
            "distance": 12,
-           "edgePosition": 0,
+           "edgePosition": 1,
            "text": "SELECT 规则"
           },
           {
@@ -994,10 +1024,10 @@
            "visible": true,
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 1131,
-           "top": 354,
+           "left": 1331,
+           "top": 309,
            "width": 14,
-           "height": 40
+           "height": 30
           }
          ],
          "font": "Arial;13;0",
@@ -1008,7 +1038,7 @@
          "tail": {
           "$ref": "AAAAGTS000000000000000809"
          },
-         "points": "718:354;1138:354",
+         "points": "838:315;1338:315",
          "nameLabel": {
           "$ref": "AAAAGTS000000000000000837"
          },
@@ -1023,7 +1053,7 @@
           "$ref": "AAAAGTS000000000000000857"
          },
          "model": {
-          "$ref": 718
+          "$ref": "AAAAGTS000000000000000776"
          },
          "subViews": [
           {
@@ -1034,14 +1064,14 @@
            },
            "visible": true,
            "font": "Arial;13;0",
-           "left": 603,
-           "top": 390,
-           "width": 231,
+           "left": 598,
+           "top": 376,
+           "width": 165,
            "height": 13,
-           "alpha": 0.0,
+           "alpha": 1.5708,
            "distance": 12,
-           "edgePosition": 0,
-           "text": "applyTrip()"
+           "edgePosition": 1,
+           "text": "核算减排量与积分（FLOOR）"
           },
           {
            "_type": "UMLActivationView",
@@ -1055,21 +1085,21 @@
            "visible": true,
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 921,
-           "top": 410,
+           "left": 661,
+           "top": 364,
            "width": 14,
-           "height": 40
+           "height": 26
           }
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
          "head": {
-          "$ref": "AAAAGTS000000000000000816"
+          "$ref": "AAAAGTS000000000000000802"
          },
          "tail": {
           "$ref": "AAAAGTS000000000000000802"
          },
-         "points": "508:410;928:410",
+         "points": "588:370;668:370;668:398;588:398",
          "nameLabel": {
           "$ref": "AAAAGTS000000000000000840"
          },
@@ -1084,7 +1114,7 @@
           "$ref": "AAAAGTS000000000000000857"
          },
          "model": {
-          "$ref": 1033
+          "$ref": "AAAAGTS000000000000000777"
          },
          "subViews": [
           {
@@ -1095,14 +1125,14 @@
            },
            "visible": true,
            "font": "Arial;13;0",
-           "left": 976,
-           "top": 446,
-           "width": 115,
+           "left": 623,
+           "top": 407,
+           "width": 181,
            "height": 13,
-           "alpha": 0.0,
+           "alpha": 1.5708,
            "distance": 12,
-           "edgePosition": 0,
-           "text": "UPDATE 账户"
+           "edgePosition": 1,
+           "text": "INSERT 行程+因子快照（1/3）"
           },
           {
            "_type": "UMLActivationView",
@@ -1116,21 +1146,21 @@
            "visible": true,
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 1131,
-           "top": 466,
+           "left": 831,
+           "top": 419,
            "width": 14,
-           "height": 40
+           "height": 30
           }
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
          "head": {
-          "$ref": "AAAAGTS000000000000000823"
+          "$ref": "AAAAGTS000000000000000809"
          },
          "tail": {
-          "$ref": "AAAAGTS000000000000000816"
+          "$ref": "AAAAGTS000000000000000802"
          },
-         "points": "928:466;1138:466",
+         "points": "588:425;838:425",
          "nameLabel": {
           "$ref": "AAAAGTS000000000000000843"
          },
@@ -1145,7 +1175,7 @@
           "$ref": "AAAAGTS000000000000000857"
          },
          "model": {
-          "$ref": 613
+          "$ref": "AAAAGTS000000000000000778"
          },
          "subViews": [
           {
@@ -1156,14 +1186,14 @@
            },
            "visible": true,
            "font": "Arial;13;0",
-           "left": 556,
-           "top": 502,
-           "width": 115,
+           "left": 596,
+           "top": 462,
+           "width": 124,
            "height": 13,
-           "alpha": 0.0,
+           "alpha": 1.5708,
            "distance": 12,
-           "edgePosition": 0,
-           "text": "INSERT 行程"
+           "edgePosition": 1,
+           "text": "applyTrip()（2/3）"
           },
           {
            "_type": "UMLActivationView",
@@ -1177,21 +1207,21 @@
            "visible": true,
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 711,
-           "top": 522,
+           "left": 1081,
+           "top": 474,
            "width": 14,
-           "height": 40
+           "height": 30
           }
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
          "head": {
-          "$ref": "AAAAGTS000000000000000809"
+          "$ref": "AAAAGTS000000000000000816"
          },
          "tail": {
           "$ref": "AAAAGTS000000000000000802"
          },
-         "points": "508:522;718:522",
+         "points": "588:480;1088:480",
          "nameLabel": {
           "$ref": "AAAAGTS000000000000000846"
          },
@@ -1206,7 +1236,7 @@
           "$ref": "AAAAGTS000000000000000857"
          },
          "model": {
-          "$ref": 1033
+          "$ref": "AAAAGTS000000000000000779"
          },
          "subViews": [
           {
@@ -1217,14 +1247,14 @@
            },
            "visible": true,
            "font": "Arial;13;0",
-           "left": 976,
-           "top": 558,
-           "width": 115,
+           "left": 1098,
+           "top": 517,
+           "width": 200.0,
            "height": 13,
-           "alpha": 0.0,
+           "alpha": 1.5708,
            "distance": 12,
-           "edgePosition": 0,
-           "text": "INSERT 流水"
+           "edgePosition": 1,
+           "text": "UPDATE 账户 last_seq+1（仅积分>0）"
           },
           {
            "_type": "UMLActivationView",
@@ -1238,10 +1268,10 @@
            "visible": true,
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 1131,
-           "top": 578,
+           "left": 1331,
+           "top": 529,
            "width": 14,
-           "height": 40
+           "height": 30
           }
          ],
          "font": "Arial;13;0",
@@ -1252,7 +1282,7 @@
          "tail": {
           "$ref": "AAAAGTS000000000000000816"
          },
-         "points": "928:578;1138:578",
+         "points": "1088:535;1338:535",
          "nameLabel": {
           "$ref": "AAAAGTS000000000000000849"
          },
@@ -1267,7 +1297,7 @@
           "$ref": "AAAAGTS000000000000000857"
          },
          "model": {
-          "$ref": 403
+          "$ref": "AAAAGTS000000000000000780"
          },
          "subViews": [
           {
@@ -1278,14 +1308,14 @@
            },
            "visible": true,
            "font": "Arial;13;0",
-           "left": 346,
-           "top": 614,
-           "width": 115,
+           "left": 1119,
+           "top": 572,
+           "width": 188,
            "height": 13,
-           "alpha": 0.0,
+           "alpha": 1.5708,
            "distance": 12,
-           "edgePosition": 0,
-           "text": "TripDetail"
+           "edgePosition": 1,
+           "text": "INSERT 流水（3/3，仅积分>0）"
           },
           {
            "_type": "UMLActivationView",
@@ -1299,21 +1329,21 @@
            "visible": true,
            "font": "Arial;13;0",
            "parentStyle": false,
-           "left": 291,
-           "top": 634,
+           "left": 1331,
+           "top": 584,
            "width": 14,
-           "height": 40
+           "height": 30
           }
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
          "head": {
-          "$ref": "AAAAGTS000000000000000795"
+          "$ref": "AAAAGTS000000000000000823"
          },
          "tail": {
-          "$ref": "AAAAGTS000000000000000802"
+          "$ref": "AAAAGTS000000000000000816"
          },
-         "points": "508:634;298:634",
+         "points": "1088:590;1338:590",
          "nameLabel": {
           "$ref": "AAAAGTS000000000000000852"
          },
@@ -1328,7 +1358,7 @@
           "$ref": "AAAAGTS000000000000000857"
          },
          "model": {
-          "$ref": 193
+          "$ref": "AAAAGTS000000000000000781"
          },
          "subViews": [
           {
@@ -1339,14 +1369,14 @@
            },
            "visible": true,
            "font": "Arial;13;0",
-           "left": 136,
-           "top": 670,
-           "width": 115,
+           "left": 394,
+           "top": 627,
+           "width": 138,
            "height": 13,
-           "alpha": 0.0,
+           "alpha": 1.5708,
            "distance": 12,
-           "edgePosition": 0,
-           "text": "200 OK"
+           "edgePosition": 1,
+           "text": "TripDetail（200 OK）"
           },
           {
            "_type": "UMLActivationView",
@@ -1357,11 +1387,11 @@
            "model": {
             "$ref": "AAAAGTS000000000000000781"
            },
-           "visible": true,
+           "visible": false,
            "font": "Arial;13;0",
            "parentStyle": false,
            "left": 81,
-           "top": 690,
+           "top": 630,
            "width": 14,
            "height": 40
           }
@@ -1369,12 +1399,12 @@
          "font": "Arial;13;0",
          "parentStyle": false,
          "head": {
-          "$ref": "AAAAGTS000000000000000788"
-         },
-         "tail": {
           "$ref": "AAAAGTS000000000000000795"
          },
-         "points": "298:690;88:690",
+         "tail": {
+          "$ref": "AAAAGTS000000000000000802"
+         },
+         "points": "588:645;338:645",
          "nameLabel": {
           "$ref": "AAAAGTS000000000000000855"
          },
@@ -1422,7 +1452,7 @@
        "_parent": {
         "$ref": "AAAAGTS000000000000000764"
        },
-       "name": "按幂等键查重",
+       "name": "查重（命中即返回原结果）",
        "source": {
         "$ref": "AAAAGTS000000000000000767"
        },
@@ -1464,12 +1494,12 @@
        "_parent": {
         "$ref": "AAAAGTS000000000000000764"
        },
-       "name": "applyTrip()",
+       "name": "核算减排量与积分（FLOOR）",
        "source": {
         "$ref": "AAAAGTS000000000000000767"
        },
        "target": {
-        "$ref": "AAAAGTS000000000000000769"
+        "$ref": "AAAAGTS000000000000000767"
        }
       },
       {
@@ -1478,21 +1508,7 @@
        "_parent": {
         "$ref": "AAAAGTS000000000000000764"
        },
-       "name": "UPDATE 账户",
-       "source": {
-        "$ref": "AAAAGTS000000000000000769"
-       },
-       "target": {
-        "$ref": "AAAAGTS000000000000000770"
-       }
-      },
-      {
-       "_type": "UMLMessage",
-       "_id": "AAAAGTS000000000000000778",
-       "_parent": {
-        "$ref": "AAAAGTS000000000000000764"
-       },
-       "name": "INSERT 行程",
+       "name": "INSERT 行程+因子快照（1/3）",
        "source": {
         "$ref": "AAAAGTS000000000000000767"
        },
@@ -1502,11 +1518,25 @@
       },
       {
        "_type": "UMLMessage",
+       "_id": "AAAAGTS000000000000000778",
+       "_parent": {
+        "$ref": "AAAAGTS000000000000000764"
+       },
+       "name": "applyTrip()（2/3）",
+       "source": {
+        "$ref": "AAAAGTS000000000000000767"
+       },
+       "target": {
+        "$ref": "AAAAGTS000000000000000769"
+       }
+      },
+      {
+       "_type": "UMLMessage",
        "_id": "AAAAGTS000000000000000779",
        "_parent": {
         "$ref": "AAAAGTS000000000000000764"
        },
-       "name": "INSERT 流水",
+       "name": "UPDATE 账户 last_seq+1（仅积分>0）",
        "source": {
         "$ref": "AAAAGTS000000000000000769"
        },
@@ -1520,12 +1550,12 @@
        "_parent": {
         "$ref": "AAAAGTS000000000000000764"
        },
-       "name": "TripDetail",
+       "name": "INSERT 流水（3/3，仅积分>0）",
        "source": {
-        "$ref": "AAAAGTS000000000000000767"
+        "$ref": "AAAAGTS000000000000000769"
        },
        "target": {
-        "$ref": "AAAAGTS000000000000000766"
+        "$ref": "AAAAGTS000000000000000770"
        }
       },
       {
@@ -1534,12 +1564,12 @@
        "_parent": {
         "$ref": "AAAAGTS000000000000000764"
        },
-       "name": "200 OK",
+       "name": "TripDetail（200 OK）",
        "source": {
-        "$ref": "AAAAGTS000000000000000766"
+        "$ref": "AAAAGTS000000000000000767"
        },
        "target": {
-        "$ref": "AAAAGTS000000000000000765"
+        "$ref": "AAAAGTS000000000000000766"
        }
       }
      ],
