@@ -474,6 +474,8 @@ check('差异项含行程级', /行程/.test(allReconText))
 check('差异项含订单级', /订单/.test(allReconText))
 // 账户级差异：objectType=ACCOUNT（以前类型只允许 TRIP|ORDER，这条会被迫塞进 ORDER，语义就错了）
 check('差异项含账户级（objectType=ACCOUNT）', /账户/.test(allReconText), allReconText.slice(0, 80))
+// 账户级的第二种粒度：流水逐笔，objectId 是 `userId#流水序号`（如 U001#7），不能假设是纯 userId
+check('差异项含流水逐笔（objectId=userId#序号）', /流水序号不连续/.test(allReconText) && /#\d+/.test(allReconText), allReconText.slice(-90))
 
 // 11.3 读取失败态：必须命中专用面板，且无差异/差异表都不出现
 await ev(`__t.click('读取失败')`)

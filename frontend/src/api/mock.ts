@@ -676,6 +676,16 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
               expected: 1437,
               actual: 1439,
             },
+            {
+              id: 'RC-004',
+              // 账户级的第二种粒度：流水逐笔，objectId 是 `userId#流水序号`（如 U001#7）。
+              // 前端原样展示、不假设 objectId 一定是纯 userId。
+              objectType: 'ACCOUNT',
+              objectId: `${state.user?.id ?? 'U001'}#7`,
+              checkName: '流水序号不连续（应无断号）',
+              expected: 7,
+              actual: 8,
+            },
           ]
         : []
     return ok({ checkedAt: new Date().toISOString(), items }) as unknown as T
