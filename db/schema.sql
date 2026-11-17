@@ -1,5 +1,5 @@
 -- =============================================================================
---  城市绿色出行碳减排积分系统 —— 数据库初始化脚本（结构版本 V2）
+--  城市绿色出行碳减排积分系统 —— 数据库初始化脚本（结构版本 V3）
 --  项目：软件工程实验 项目14        负责：郭浚文（#9）
 --  目标库：MySQL 8.0.16+（本机为 MySQL 8.4）  字符集：utf8mb4
 --
@@ -269,7 +269,7 @@ CREATE TABLE IF NOT EXISTS t_product (
   product_id  VARCHAR(64) NOT NULL                COMMENT '对外商品编号',
   merchant_id BIGINT      NOT NULL                COMMENT '所属商户，t_merchant.id',
   name        VARCHAR(128) NOT NULL               COMMENT '商品名称',
-  icon        VARCHAR(64) NOT NULL DEFAULT '🎁'   COMMENT '商品图标（emoji，前端直接显示）',
+  icon        VARCHAR(255) NOT NULL DEFAULT '🎁'  COMMENT '商品图标：字符串（emoji 或图片 URL，前端只渲染字符串）',
   points      BIGINT      NOT NULL                COMMENT '兑换所需积分（单价）',
   stock       INT         NOT NULL DEFAULT 0      COMMENT '可兑换库存，不得为负',
   status      VARCHAR(16) NOT NULL DEFAULT 'ON'   COMMENT '状态：ON 上架 / OFF 下架',
@@ -347,6 +347,7 @@ CREATE TABLE IF NOT EXISTS t_audit_log (
 -- -----------------------------------------------------------------------------
 -- 12. 记录本次安装的结构版本
 -- -----------------------------------------------------------------------------
-INSERT INTO t_schema_version (version, description)
-VALUES ('V2', '基于 V1 增加账户流水序号 last_seq/account_seq、规则串行化锁表与结构版本表')
-ON DUPLICATE KEY UPDATE description = VALUES(description);
+INSERT IGNORE INTO t_schema_version (version, description) VALUES
+  ('V1', '首版结构：10 张业务表'),
+  ('V2', '增加账户流水序号 last_seq/account_seq、规则串行化锁表与区间约束'),
+  ('V3', 't_product.icon 放宽到 VARCHAR(255)，支持未来的图片 URL');

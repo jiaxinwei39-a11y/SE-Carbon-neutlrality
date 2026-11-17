@@ -104,12 +104,80 @@ public class AdminService {
         });
     }
 
+    /**
+     * 商品部分更新（v1 规范接口，与前端 PATCH 对齐）。
+     *
+     * 为什么用 PATCH 而不是三个独立端点：改价、改库存、上下架是同一资源的部分更新，
+     * 一个请求提交多个字段时只产生一条审计记录，也不会出现"改价成功、改库存失败"的半截状态。
+     * 先锁商品行，避免两个管理员并发修改时后写覆盖先写。
+     */
+    public MallDto.ProductVo patchProduct(LoginUser adminUser, String productId,
+                                          AdminDto.ProductPatchRequest req) {
+        if (req.points() == null && req.stock() == null && req.status() == null) {
+            throw new Api.BizException(Api.Codes.PARAM_INVALID, 400, "请至少提交一个待修改字段");
+        }
+        return tx.execute(status -> {
+            AdminRepository.AdminProductRow before = admin.findProductForUpdate(productId)
+                    .orElseThrow(() -> new Api.BizException(Api.Codes.PRODUCT_NOT_FOUND, 404, "商品不存在"));
+
+            // 按前端契约的专用错误码校验：points→40041，stock→40042
+            if (req.points() != null && req.points() < 1) {
+                throw new Api.BizException(Api.Codes.PRODUCT_POINTS_INVALID, 400, "商品积分单价须为正整数");
+            }
+            if (req.stock() != null && req.stock() < 0) {
+                throw new Api.BizException(Api.Codes.PRODUCT_STOCK_INVALID, 400, "库存须为不小于 0 的整数");
+            }
+
+            if (req.points() != null) {
+                admin.updateProductPoints(productId, req.points());
+            }
+            if (req.stock() != null) {
+                admin.updateProductStock(productId, req.stock());
+            }
+            if (req.status() != null) {
+                admin.updateProductStatus(productId, req.status());
+            }
+
+            audit.record("PRODUCT_STOCK", productId, "UPDATE",
+                    "{\"points\":" + before.points() + ",\"stock\":" + before.stock()
+                            + ",\"status\":\"" + before.status() + "\"}",
+                    "{\"points\":" + (req.points() == null ? before.points() : req.points())
+                            + ",\"stock\":" + (req.stock() == null ? before.stock() : req.stock())
+                            + ",\"status\":\"" + (req.status() == null ? before.status() : req.status()) + "\"}",
+                    adminUser.id(), "商品部分更新");
+
+            return toVo(productId);
+        });
+    }
+
     public Api.Page<OrderDto.OrderVo> listOrders(int page, int size) {
         int p = page < 1 ? 1 : page;
         int s = size < 1 ? 10 : Math.min(size, 100);
         List<OrderDto.OrderVo> items = orders.listAll(p, s).stream()
                 .map(OrderMapper::toVo).toList();
         return new Api.Page<>(items, orders.countAll(), p, s);
+    }
+
+    /** 用户列表（只读）。完整的用户启停属于 #17，本次先满足管理端页面 */
+    public Api.Page<com.gts.auth.AuthDto.UserVo> listUsers(int page, int size) {
+        int p = page < 1 ? 1 : page;
+        int s = size < 1 ? 10 : Math.min(size, 100);
+        List<com.gts.auth.AuthDto.UserVo> items = admin.listUsers(p, s).stream()
+                .map(u -> new com.gts.auth.AuthDto.UserVo(
+                        u.userId(), u.nickname(), u.phone(), u.role(), u.avatarText(), u.points()))
+                .toList();
+        return new Api.Page<>(items, admin.countUsers(), p, s);
+    }
+
+    /** 管理端概览（只读聚合）。完整的运营统计属 #17，这里先保证页面可用 */
+    public AdminDto.DashboardVo dashboard() {
+        return new AdminDto.DashboardVo(
+                admin.countUsersByRole("USER"),
+                admin.countTrips(),
+                admin.sumReduction(),
+                admin.sumEarnedPoints(),
+                admin.modeDistribution(),
+                admin.dailyTrend());
     }
 
     /* ------------------------------------------------------------------ */
