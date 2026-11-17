@@ -737,15 +737,32 @@
            "distance": 12,
            "edgePosition": 0,
            "text": "POST /trips（Idempotency-Key）"
+          },
+          {
+           "_type": "UMLActivationView",
+           "_id": "AAAAGTS000000000000000824",
+           "_parent": {
+            "$ref": "AAAAGTS000000000000000826"
+           },
+           "model": {
+            "$ref": "AAAAGTS000000000000000771"
+           },
+           "visible": true,
+           "font": "Arial;13;0",
+           "parentStyle": false,
+           "left": 251,
+           "top": 130,
+           "width": 14,
+           "height": 40
           }
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
          "head": {
-          "$ref": "AAAAGTS000000000000000789"
+          "$ref": "AAAAGTS000000000000000795"
          },
          "tail": {
-          "$ref": "AAAAGTS000000000000000782"
+          "$ref": "AAAAGTS000000000000000788"
          },
          "points": "88:130;258:130",
          "nameLabel": {
@@ -754,23 +771,6 @@
          "activation": {
           "$ref": "AAAAGTS000000000000000824"
          }
-        },
-        {
-         "_type": "UMLActivationView",
-         "_id": "AAAAGTS000000000000000824",
-         "_parent": {
-          "$ref": "AAAAGTS000000000000000857"
-         },
-         "model": {
-          "$ref": "AAAAGTS000000000000000771"
-         },
-         "visible": true,
-         "font": "Arial;13;0",
-         "parentStyle": false,
-         "left": 251,
-         "top": 130,
-         "width": 14,
-         "height": 40
         },
         {
          "_type": "UMLSeqMessageView",
@@ -798,15 +798,32 @@
            "distance": 12,
            "edgePosition": 0,
            "text": "create(user, key, req)"
+          },
+          {
+           "_type": "UMLActivationView",
+           "_id": "AAAAGTS000000000000000827",
+           "_parent": {
+            "$ref": "AAAAGTS000000000000000829"
+           },
+           "model": {
+            "$ref": "AAAAGTS000000000000000772"
+           },
+           "visible": true,
+           "font": "Arial;13;0",
+           "parentStyle": false,
+           "left": 421,
+           "top": 180,
+           "width": 14,
+           "height": 40
           }
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
          "head": {
-          "$ref": "AAAAGTS000000000000000796"
+          "$ref": "AAAAGTS000000000000000802"
          },
          "tail": {
-          "$ref": "AAAAGTS000000000000000789"
+          "$ref": "AAAAGTS000000000000000795"
          },
          "points": "258:180;428:180",
          "nameLabel": {
@@ -815,23 +832,6 @@
          "activation": {
           "$ref": "AAAAGTS000000000000000827"
          }
-        },
-        {
-         "_type": "UMLActivationView",
-         "_id": "AAAAGTS000000000000000827",
-         "_parent": {
-          "$ref": "AAAAGTS000000000000000857"
-         },
-         "model": {
-          "$ref": "AAAAGTS000000000000000772"
-         },
-         "visible": true,
-         "font": "Arial;13;0",
-         "parentStyle": false,
-         "left": 421,
-         "top": 180,
-         "width": 14,
-         "height": 40
         },
         {
          "_type": "UMLSeqMessageView",
@@ -859,15 +859,32 @@
            "distance": 12,
            "edgePosition": 0,
            "text": "按 userId+clientTripId 查重"
+          },
+          {
+           "_type": "UMLActivationView",
+           "_id": "AAAAGTS000000000000000830",
+           "_parent": {
+            "$ref": "AAAAGTS000000000000000832"
+           },
+           "model": {
+            "$ref": "AAAAGTS000000000000000773"
+           },
+           "visible": true,
+           "font": "Arial;13;0",
+           "parentStyle": false,
+           "left": 591,
+           "top": 230,
+           "width": 14,
+           "height": 40
           }
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
          "head": {
-          "$ref": "AAAAGTS000000000000000803"
+          "$ref": "AAAAGTS000000000000000809"
          },
          "tail": {
-          "$ref": "AAAAGTS000000000000000796"
+          "$ref": "AAAAGTS000000000000000802"
          },
          "points": "428:230;598:230",
          "nameLabel": {
@@ -876,23 +893,6 @@
          "activation": {
           "$ref": "AAAAGTS000000000000000830"
          }
-        },
-        {
-         "_type": "UMLActivationView",
-         "_id": "AAAAGTS000000000000000830",
-         "_parent": {
-          "$ref": "AAAAGTS000000000000000857"
-         },
-         "model": {
-          "$ref": "AAAAGTS000000000000000773"
-         },
-         "visible": true,
-         "font": "Arial;13;0",
-         "parentStyle": false,
-         "left": 591,
-         "top": 230,
-         "width": 14,
-         "height": 40
         },
         {
          "_type": "UMLSeqMessageView",
@@ -920,15 +920,32 @@
            "distance": 12,
            "edgePosition": 0,
            "text": "按结束时间匹配核算规则"
+          },
+          {
+           "_type": "UMLActivationView",
+           "_id": "AAAAGTS000000000000000833",
+           "_parent": {
+            "$ref": "AAAAGTS000000000000000835"
+           },
+           "model": {
+            "$ref": "AAAAGTS000000000000000774"
+           },
+           "visible": true,
+           "font": "Arial;13;0",
+           "parentStyle": false,
+           "left": 591,
+           "top": 280,
+           "width": 14,
+           "height": 40
           }
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
          "head": {
-          "$ref": "AAAAGTS000000000000000803"
+          "$ref": "AAAAGTS000000000000000809"
          },
          "tail": {
-          "$ref": "AAAAGTS000000000000000796"
+          "$ref": "AAAAGTS000000000000000802"
          },
          "points": "428:280;598:280",
          "nameLabel": {
@@ -937,23 +954,6 @@
          "activation": {
           "$ref": "AAAAGTS000000000000000833"
          }
-        },
-        {
-         "_type": "UMLActivationView",
-         "_id": "AAAAGTS000000000000000833",
-         "_parent": {
-          "$ref": "AAAAGTS000000000000000857"
-         },
-         "model": {
-          "$ref": "AAAAGTS000000000000000774"
-         },
-         "visible": true,
-         "font": "Arial;13;0",
-         "parentStyle": false,
-         "left": 591,
-         "top": 280,
-         "width": 14,
-         "height": 40
         },
         {
          "_type": "UMLSeqMessageView",
@@ -981,15 +981,32 @@
            "distance": 12,
            "edgePosition": 0,
            "text": "SELECT 规则（因子/系数）"
+          },
+          {
+           "_type": "UMLActivationView",
+           "_id": "AAAAGTS000000000000000836",
+           "_parent": {
+            "$ref": "AAAAGTS000000000000000838"
+           },
+           "model": {
+            "$ref": "AAAAGTS000000000000000775"
+           },
+           "visible": true,
+           "font": "Arial;13;0",
+           "parentStyle": false,
+           "left": 931,
+           "top": 330,
+           "width": 14,
+           "height": 40
           }
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
          "head": {
-          "$ref": "AAAAGTS000000000000000817"
+          "$ref": "AAAAGTS000000000000000823"
          },
          "tail": {
-          "$ref": "AAAAGTS000000000000000803"
+          "$ref": "AAAAGTS000000000000000809"
          },
          "points": "598:330;938:330",
          "nameLabel": {
@@ -998,23 +1015,6 @@
          "activation": {
           "$ref": "AAAAGTS000000000000000836"
          }
-        },
-        {
-         "_type": "UMLActivationView",
-         "_id": "AAAAGTS000000000000000836",
-         "_parent": {
-          "$ref": "AAAAGTS000000000000000857"
-         },
-         "model": {
-          "$ref": "AAAAGTS000000000000000775"
-         },
-         "visible": true,
-         "font": "Arial;13;0",
-         "parentStyle": false,
-         "left": 931,
-         "top": 330,
-         "width": 14,
-         "height": 40
         },
         {
          "_type": "UMLSeqMessageView",
@@ -1042,15 +1042,32 @@
            "distance": 12,
            "edgePosition": 0,
            "text": "applyTrip(points, reduction)"
+          },
+          {
+           "_type": "UMLActivationView",
+           "_id": "AAAAGTS000000000000000839",
+           "_parent": {
+            "$ref": "AAAAGTS000000000000000841"
+           },
+           "model": {
+            "$ref": "AAAAGTS000000000000000776"
+           },
+           "visible": true,
+           "font": "Arial;13;0",
+           "parentStyle": false,
+           "left": 761,
+           "top": 380,
+           "width": 14,
+           "height": 40
           }
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
          "head": {
-          "$ref": "AAAAGTS000000000000000810"
+          "$ref": "AAAAGTS000000000000000816"
          },
          "tail": {
-          "$ref": "AAAAGTS000000000000000796"
+          "$ref": "AAAAGTS000000000000000802"
          },
          "points": "428:380;768:380",
          "nameLabel": {
@@ -1059,23 +1076,6 @@
          "activation": {
           "$ref": "AAAAGTS000000000000000839"
          }
-        },
-        {
-         "_type": "UMLActivationView",
-         "_id": "AAAAGTS000000000000000839",
-         "_parent": {
-          "$ref": "AAAAGTS000000000000000857"
-         },
-         "model": {
-          "$ref": "AAAAGTS000000000000000776"
-         },
-         "visible": true,
-         "font": "Arial;13;0",
-         "parentStyle": false,
-         "left": 761,
-         "top": 380,
-         "width": 14,
-         "height": 40
         },
         {
          "_type": "UMLSeqMessageView",
@@ -1103,15 +1103,32 @@
            "distance": 12,
            "edgePosition": 0,
            "text": "UPDATE 账户 last_seq+1（行锁）"
+          },
+          {
+           "_type": "UMLActivationView",
+           "_id": "AAAAGTS000000000000000842",
+           "_parent": {
+            "$ref": "AAAAGTS000000000000000844"
+           },
+           "model": {
+            "$ref": "AAAAGTS000000000000000777"
+           },
+           "visible": true,
+           "font": "Arial;13;0",
+           "parentStyle": false,
+           "left": 931,
+           "top": 430,
+           "width": 14,
+           "height": 40
           }
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
          "head": {
-          "$ref": "AAAAGTS000000000000000817"
+          "$ref": "AAAAGTS000000000000000823"
          },
          "tail": {
-          "$ref": "AAAAGTS000000000000000810"
+          "$ref": "AAAAGTS000000000000000816"
          },
          "points": "768:430;938:430",
          "nameLabel": {
@@ -1120,23 +1137,6 @@
          "activation": {
           "$ref": "AAAAGTS000000000000000842"
          }
-        },
-        {
-         "_type": "UMLActivationView",
-         "_id": "AAAAGTS000000000000000842",
-         "_parent": {
-          "$ref": "AAAAGTS000000000000000857"
-         },
-         "model": {
-          "$ref": "AAAAGTS000000000000000777"
-         },
-         "visible": true,
-         "font": "Arial;13;0",
-         "parentStyle": false,
-         "left": 931,
-         "top": 430,
-         "width": 14,
-         "height": 40
         },
         {
          "_type": "UMLSeqMessageView",
@@ -1164,15 +1164,32 @@
            "distance": 12,
            "edgePosition": 0,
            "text": "INSERT 行程 + 因子快照"
+          },
+          {
+           "_type": "UMLActivationView",
+           "_id": "AAAAGTS000000000000000845",
+           "_parent": {
+            "$ref": "AAAAGTS000000000000000847"
+           },
+           "model": {
+            "$ref": "AAAAGTS000000000000000778"
+           },
+           "visible": true,
+           "font": "Arial;13;0",
+           "parentStyle": false,
+           "left": 591,
+           "top": 480,
+           "width": 14,
+           "height": 40
           }
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
          "head": {
-          "$ref": "AAAAGTS000000000000000803"
+          "$ref": "AAAAGTS000000000000000809"
          },
          "tail": {
-          "$ref": "AAAAGTS000000000000000796"
+          "$ref": "AAAAGTS000000000000000802"
          },
          "points": "428:480;598:480",
          "nameLabel": {
@@ -1181,23 +1198,6 @@
          "activation": {
           "$ref": "AAAAGTS000000000000000845"
          }
-        },
-        {
-         "_type": "UMLActivationView",
-         "_id": "AAAAGTS000000000000000845",
-         "_parent": {
-          "$ref": "AAAAGTS000000000000000857"
-         },
-         "model": {
-          "$ref": "AAAAGTS000000000000000778"
-         },
-         "visible": true,
-         "font": "Arial;13;0",
-         "parentStyle": false,
-         "left": 591,
-         "top": 480,
-         "width": 14,
-         "height": 40
         },
         {
          "_type": "UMLSeqMessageView",
@@ -1225,15 +1225,32 @@
            "distance": 12,
            "edgePosition": 0,
            "text": "INSERT 流水 account_seq"
+          },
+          {
+           "_type": "UMLActivationView",
+           "_id": "AAAAGTS000000000000000848",
+           "_parent": {
+            "$ref": "AAAAGTS000000000000000850"
+           },
+           "model": {
+            "$ref": "AAAAGTS000000000000000779"
+           },
+           "visible": true,
+           "font": "Arial;13;0",
+           "parentStyle": false,
+           "left": 931,
+           "top": 530,
+           "width": 14,
+           "height": 40
           }
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
          "head": {
-          "$ref": "AAAAGTS000000000000000817"
+          "$ref": "AAAAGTS000000000000000823"
          },
          "tail": {
-          "$ref": "AAAAGTS000000000000000810"
+          "$ref": "AAAAGTS000000000000000816"
          },
          "points": "768:530;938:530",
          "nameLabel": {
@@ -1242,23 +1259,6 @@
          "activation": {
           "$ref": "AAAAGTS000000000000000848"
          }
-        },
-        {
-         "_type": "UMLActivationView",
-         "_id": "AAAAGTS000000000000000848",
-         "_parent": {
-          "$ref": "AAAAGTS000000000000000857"
-         },
-         "model": {
-          "$ref": "AAAAGTS000000000000000779"
-         },
-         "visible": true,
-         "font": "Arial;13;0",
-         "parentStyle": false,
-         "left": 931,
-         "top": 530,
-         "width": 14,
-         "height": 40
         },
         {
          "_type": "UMLSeqMessageView",
@@ -1286,15 +1286,32 @@
            "distance": 12,
            "edgePosition": 0,
            "text": "返回 TripDetail"
+          },
+          {
+           "_type": "UMLActivationView",
+           "_id": "AAAAGTS000000000000000851",
+           "_parent": {
+            "$ref": "AAAAGTS000000000000000853"
+           },
+           "model": {
+            "$ref": "AAAAGTS000000000000000780"
+           },
+           "visible": true,
+           "font": "Arial;13;0",
+           "parentStyle": false,
+           "left": 251,
+           "top": 580,
+           "width": 14,
+           "height": 40
           }
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
          "head": {
-          "$ref": "AAAAGTS000000000000000789"
+          "$ref": "AAAAGTS000000000000000795"
          },
          "tail": {
-          "$ref": "AAAAGTS000000000000000796"
+          "$ref": "AAAAGTS000000000000000802"
          },
          "points": "428:580;258:580",
          "nameLabel": {
@@ -1303,23 +1320,6 @@
          "activation": {
           "$ref": "AAAAGTS000000000000000851"
          }
-        },
-        {
-         "_type": "UMLActivationView",
-         "_id": "AAAAGTS000000000000000851",
-         "_parent": {
-          "$ref": "AAAAGTS000000000000000857"
-         },
-         "model": {
-          "$ref": "AAAAGTS000000000000000780"
-         },
-         "visible": true,
-         "font": "Arial;13;0",
-         "parentStyle": false,
-         "left": 251,
-         "top": 580,
-         "width": 14,
-         "height": 40
         },
         {
          "_type": "UMLSeqMessageView",
@@ -1347,15 +1347,32 @@
            "distance": 12,
            "edgePosition": 0,
            "text": "200 {code:0, data}"
+          },
+          {
+           "_type": "UMLActivationView",
+           "_id": "AAAAGTS000000000000000854",
+           "_parent": {
+            "$ref": "AAAAGTS000000000000000856"
+           },
+           "model": {
+            "$ref": "AAAAGTS000000000000000781"
+           },
+           "visible": true,
+           "font": "Arial;13;0",
+           "parentStyle": false,
+           "left": 81,
+           "top": 630,
+           "width": 14,
+           "height": 40
           }
          ],
          "font": "Arial;13;0",
          "parentStyle": false,
          "head": {
-          "$ref": "AAAAGTS000000000000000782"
+          "$ref": "AAAAGTS000000000000000788"
          },
          "tail": {
-          "$ref": "AAAAGTS000000000000000789"
+          "$ref": "AAAAGTS000000000000000795"
          },
          "points": "258:630;88:630",
          "nameLabel": {
@@ -1364,23 +1381,6 @@
          "activation": {
           "$ref": "AAAAGTS000000000000000854"
          }
-        },
-        {
-         "_type": "UMLActivationView",
-         "_id": "AAAAGTS000000000000000854",
-         "_parent": {
-          "$ref": "AAAAGTS000000000000000857"
-         },
-         "model": {
-          "$ref": "AAAAGTS000000000000000781"
-         },
-         "visible": true,
-         "font": "Arial;13;0",
-         "parentStyle": false,
-         "left": 81,
-         "top": 630,
-         "width": 14,
-         "height": 40
         }
        ],
        "showSequenceNumber": true,

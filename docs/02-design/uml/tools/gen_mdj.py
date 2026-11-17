@@ -411,6 +411,8 @@ def main(out_path, seq_path=None):
             lifeline_views.append(view)
             x += 170
 
+        # 消息的 tail/head 必须指向生命线内部的 linePart 视图，不是生命线视图本身
+        line_parts = [v['linePart'] for v in lifeline_views]
         centers = [v['left'] + v['width'] // 2 for v in lifeline_views]
         views = list(lifeline_views)
         for k, m in enumerate(msgs):
@@ -426,16 +428,18 @@ def main(out_path, seq_path=None):
                      'visible': True, 'font': FONT, 'left': min(mx, nx) + 5, 'top': y - 18,
                      'width': 200, 'height': 13, 'alpha': 0.0, 'distance': 12,
                      'edgePosition': 0, 'text': text}
-            mview = {'_type': 'UMLSeqMessageView', '_id': uid(), '_parent': {'$ref': ''},
-                     'model': {'$ref': mid}, 'subViews': [label], 'font': FONT,
+            mvid = uid()
+            act['_id'] = act['_id']
+            act['_parent'] = {'$ref': mvid}
+            mview = {'_type': 'UMLSeqMessageView', '_id': mvid, '_parent': {'$ref': ''},
+                     'model': {'$ref': mid}, 'subViews': [label, act], 'font': FONT,
                      'parentStyle': False,
-                     'head': {'$ref': lifeline_views[t]['_id']},
-                     'tail': {'$ref': lifeline_views[s]['_id']},
+                     'head': {'$ref': line_parts[t]['$ref']},
+                     'tail': {'$ref': line_parts[s]['$ref']},
                      'points': '%d:%d;%d:%d' % (mx, y, nx, y),
                      'nameLabel': {'$ref': label['_id']},
                      'activation': {'$ref': act['_id']}}
             views.append(mview)
-            views.append(act)
 
         diagram = {'_type': 'UMLSequenceDiagram', '_id': uid(), '_parent': {'$ref': inter_id},
                    'name': name, 'ownedViews': views,
