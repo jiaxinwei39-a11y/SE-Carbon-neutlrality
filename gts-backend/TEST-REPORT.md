@@ -236,3 +236,20 @@ powershell -ExecutionPolicy Bypass -File gts-backend/scripts/acceptance-test.ps1
 | `{"points":1.9,"status":"OFF"}` | `40041`，状态也没变 |
 | `{"points":2.0}` | 接受，存为 2 |
 | `{"points":1000001}` | `40041`（超出上限） |
+### 9.3 schema.sql 在旧库上会"假升级"
+
+**问题**：`schema.sql` 用 `CREATE TABLE IF NOT EXISTS`，在已存在的旧库上所有建表都会跳过
+（列宽仍是旧的），但脚本末尾无条件写入 V1–V4 版本号。结果：
+版本表显示已到 V4、实际列还是 `VARCHAR(64)`，而 V3/V4 迁移看到版本号已存在就拒绝执行——
+**旧库再也升不上来，而且版本表在撒谎**。
+
+**修复**：`schema.sql` 开头加安装闸门——检测到 `t_schema_version` 表已存在就 `SIGNAL` 中止，
+提示改用 `db/migrations` 逐版本升级。`schema.sql` 从此只用于空库。
+
+| 场景 | 结果 |
+|---|---|
+| 空库执行 schema.sql | 成功，版本 V1–V4，两个图标字段 `varchar(255)`，seed 正常 |
+| V2 旧库执行 schema.sql | `ERROR 1644 检测到已有结构：请用 db/migrations 逐版本升级` |
+| 拦截后检查 | 版本仍 V1,V2；icon 仍 64；数据 3/3/42 未变 |
+| V2 旧库执行 V3 → V4 | 成功，版本 V1–V4，两个图标字段 255，数据 3/3/42 保留 |
+| 重复执行 V4 | 被拒（"请勿重复执行"） |

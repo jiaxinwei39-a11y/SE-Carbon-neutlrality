@@ -155,8 +155,10 @@
 
 ```bash
 # 后端（需先建库）
-mysql -uroot -p < db/schema.sql
+#   ⚠️ schema.sql 只能在**空库**执行；检测到已有结构会直接中止。
+mysql -uroot -p < db/schema.sql          # 全新空库
 mysql -uroot -p gts < db/seed.sql
+#  已有库升级：按 db/migrations/README.md 逐版本执行 V1→V2→V3→V4，不要跑 schema.sql
 cd gts-backend
 export GTS_DB_PASSWORD=你的密码      # Windows: $env:GTS_DB_PASSWORD="..."
 mvn spring-boot:run
