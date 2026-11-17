@@ -26,7 +26,8 @@ import type {
 /* -------------------------------------------------- 种子数据 */
 
 const BASE_FACTOR = 0.2
-const MODE_FACTOR: Record<TripMode, number> = { BUS: 0.05, SUBWAY: 0.04, BIKE: 0, WALK: 0 }
+// 地铁方式因子按 docs/00-product/decisions.md 的已确认口径取 0.030（旧口径 0.04 只存在于归档版本里）
+const MODE_FACTOR: Record<TripMode, number> = { BUS: 0.05, SUBWAY: 0.03, BIKE: 0, WALK: 0 }
 const POINTS_RATIO = 10
 
 const daysAgo = (n: number, hour = 8, minute = 30) => {
@@ -230,7 +231,7 @@ const state: MockState = {
   ],
   rules: [
     { ruleId: 'R-2026-11-BUS', version: 'R-2026-11', mode: 'BUS', baseFactor: 0.2, modeFactor: 0.05, pointsRatio: 10, effectiveFrom: '2026-11-01', status: 'ACTIVE' },
-    { ruleId: 'R-2026-11-SUBWAY', version: 'R-2026-11', mode: 'SUBWAY', baseFactor: 0.2, modeFactor: 0.04, pointsRatio: 10, effectiveFrom: '2026-11-01', status: 'ACTIVE' },
+    { ruleId: 'R-2026-11-SUBWAY', version: 'R-2026-11', mode: 'SUBWAY', baseFactor: 0.2, modeFactor: 0.03, pointsRatio: 10, effectiveFrom: '2026-11-01', status: 'ACTIVE' },
     { ruleId: 'R-2026-11-BIKE', version: 'R-2026-11', mode: 'BIKE', baseFactor: 0.2, modeFactor: 0, pointsRatio: 10, effectiveFrom: '2026-11-01', status: 'ACTIVE' },
     { ruleId: 'R-2026-11-WALK', version: 'R-2026-11', mode: 'WALK', baseFactor: 0.2, modeFactor: 0, pointsRatio: 10, effectiveFrom: '2026-11-01', status: 'ACTIVE' },
     { ruleId: 'R-2026-09-BUS', version: 'R-2026-09', mode: 'BUS', baseFactor: 0.2, modeFactor: 0.06, pointsRatio: 10, effectiveFrom: '2026-09-01', status: 'ARCHIVED' },
@@ -243,7 +244,105 @@ const state: MockState = {
   ],
 }
 
-seed()
+/* -------------------------------------------------- 本地持久化（演示用）
+ * 目的：让演示时刷新页面不丢数据。
+ * 注意：这不是"后端"，只是一个 localStorage 快照；接真后端时这段和 mock 一起删。
+ */
+
+const STORAGE_KEY = 'carbon_mock_state_v1'
+const SNAPSHOT_VERSION = 1
+/** 快照超过 7 天就重新播种：种子数据是按"最近 N 天"算的，放太久日期会显得很怪 */
+const SNAPSHOT_TTL_MS = 7 * 24 * 60 * 60 * 1000
+
+interface Snapshot {
+  v: number
+  savedAt: number
+  trips: TripDetail[]
+  flows: PointsFlow[]
+  orders: Order[]
+  tripIdByClientId: Array<[string, string]>
+  orderIdByRequestKey: Array<[string, string]>
+  account: PointsAccount
+  products: Product[]
+  rules: CarbonRule[]
+  users: User[]
+}
+
+function storage(): Storage | null {
+  try {
+    return typeof window !== 'undefined' ? window.localStorage : null
+  } catch {
+    // 浏览器禁用存储时访问 localStorage 会直接抛错
+    return null
+  }
+}
+
+/** 写快照。隐私模式、配额满、序列化失败都静默降级成纯内存，不影响任何功能 */
+function persist(): void {
+  const store = storage()
+  if (!store) return
+  try {
+    const snapshot: Snapshot = {
+      v: SNAPSHOT_VERSION,
+      savedAt: Date.now(),
+      trips,
+      flows,
+      orders,
+      tripIdByClientId: [...tripIdByClientId],
+      orderIdByRequestKey: [...orderIdByRequestKey],
+      account: state.account,
+      products: state.products,
+      rules: state.rules,
+      users: state.users,
+    }
+    store.setItem(STORAGE_KEY, JSON.stringify(snapshot))
+  } catch {
+    /* 存不进去就只留内存，不打扰用户 */
+  }
+}
+
+/** 读快照；版本不符或过期都当作没有，交给 seed() 重新播种 */
+function restore(): boolean {
+  const store = storage()
+  if (!store) return false
+  try {
+    const raw = store.getItem(STORAGE_KEY)
+    if (!raw) return false
+    const snap = JSON.parse(raw) as Snapshot
+    if (snap?.v !== SNAPSHOT_VERSION || Date.now() - snap.savedAt > SNAPSHOT_TTL_MS) {
+      store.removeItem(STORAGE_KEY)
+      return false
+    }
+    trips = Array.isArray(snap.trips) ? snap.trips : []
+    flows = Array.isArray(snap.flows) ? snap.flows : []
+    orders = Array.isArray(snap.orders) ? snap.orders : []
+    tripIdByClientId.clear()
+    for (const [k, v] of snap.tripIdByClientId ?? []) tripIdByClientId.set(k, v)
+    orderIdByRequestKey.clear()
+    for (const [k, v] of snap.orderIdByRequestKey ?? []) orderIdByRequestKey.set(k, v)
+    if (snap.account) state.account = snap.account
+    if (snap.products?.length) state.products = snap.products
+    if (snap.rules?.length) state.rules = snap.rules
+    if (snap.users?.length) state.users = snap.users
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** 清掉快照并回到种子数据（`GET /_debug/reset` 用，e2e 和演示复位都靠它） */
+function resetToSeed(): void {
+  storage()?.removeItem(STORAGE_KEY)
+  trips = []
+  flows = []
+  orders = []
+  tripIdByClientId.clear()
+  orderIdByRequestKey.clear()
+  seed()
+  persist()
+}
+
+if (!restore()) seed()
 
 /* -------------------------------------------------- 工具 */
 
@@ -303,7 +402,7 @@ export interface MockRequestInit {
   headers?: Record<string, string>
 }
 
-export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
+async function handleMockRequest<T>(req: MockRequestInit): Promise<T> {
   // 延迟是为了让骨架屏真的有机会出现；真实网络只会更慢
   await sleep(280 + Math.random() * 220)
   const { method } = req
@@ -341,6 +440,13 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
     const mode = String((req.query ?? {}).mode ?? 'http')
     await sleep(Number.isFinite(ms) && ms >= 0 ? ms : 1200)
     throw new ApiError('登录已过期，请重新登录', 40100, mode === 'biz' ? 200 : 401)
+  }
+
+  /* ---------- 演示复位：清掉本地快照，回到种子数据（演示前想重来一遍时用） ---------- */
+  if (url === '/_debug/reset') {
+    resetToSeed()
+    state.user = null
+    return ok(null) as unknown as T
   }
 
   /* ---------- 行程 ---------- */
@@ -744,4 +850,14 @@ export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
   }
 
   throw new ApiError(`mock 未实现的接口：${method} ${url}`, 40400, 404)
+}
+
+/**
+ * 对外入口：写请求成功后把内存状态落到 localStorage，刷新页面不丢演示数据。
+ * 只认非 GET —— 读请求不产生变化，没必要每次都序列化整份快照。
+ */
+export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
+  const result = await handleMockRequest<T>(req)
+  if (req.method !== 'GET' && !req.url.startsWith('/_debug/')) persist()
+  return result
 }
