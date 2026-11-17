@@ -63,12 +63,16 @@ public class RuleService {
 
     private AdminDto.CarbonRuleVo createInTx(LoginUser operator, AdminDto.RuleCreateRequest req,
                                              String mode, LocalDateTime from, LocalDateTime to) {
-        // 0) 禁止追溯生效（BR-01 / TC-06）。
-        //    新规则只能从现在或将来开始，否则会把旧规则截断到过去，
-        //    历史补录的行程就会按新系数算分，与原记录口径不一致。
-        //    允许 5 秒容差吸收客户端时钟与传输延迟，不能用来"回到过去"。
+        // 1) 先锁该方式的串行化闸门。
+        //    追溯校验必须放在拿锁之后：如果先校验再等锁，请求可能在锁上等好几秒，
+        //    等它真正执行时"未来"的起点已经变成过去（评审实测等待 9 秒后仍放行）。
+        admin.lockMode(mode);
+
+        // 2) 拿到锁之后重新取服务端当前时间，做禁止追溯校验（BR-01 / TC-06）。
+        //    不设容差：生效时间必须不早于此刻。客户端若要"立即生效"，
+        //    应提交略晚于当前时刻的时间，而不是让服务端容忍一段历史。
         LocalDateTime now = LocalDateTime.now(TimeUtil.ZONE);
-        if (from.isBefore(now.minusSeconds(5))) {
+        if (from.isBefore(now)) {
             throw new Api.BizException(Api.Codes.RULE_RETROACTIVE, 409,
                     "规则不能追溯生效：生效时间必须不早于当前时间（服务端当前为 "
                             + TimeUtil.toIso(now) + "）");
@@ -77,10 +81,7 @@ public class RuleService {
             throw new Api.BizException(Api.Codes.PARAM_INVALID, 400, "失效时间必须晚于生效时间");
         }
 
-        // 1) 锁该方式的串行化闸门
-        admin.lockMode(mode);
-
-        // 2) 加锁读该方式全部规则（当前读，能看到并发对手刚提交的行）
+        // 3) 加锁读该方式全部规则（当前读，能看到并发对手刚提交的行）
         List<AdminRepository.RuleRow> existing = admin.listRulesByModeForUpdate(mode);
 
         // 3) 区间判定：
