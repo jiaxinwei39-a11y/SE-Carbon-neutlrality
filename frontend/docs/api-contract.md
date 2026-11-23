@@ -3,6 +3,7 @@
 > 这份文档是**前端已经写死的约定**，后端按它实现即可直接联调。
 > 所有字段名、错误码、分页参数都来自前端 `src/api/*.ts` 与 `src/api/mock.ts`（mock 就是按真实契约写的）。
 > 版本：v1（2026-11-15）｜维护：前端 ｜ 对接：后端
+> 配套：数据库字段对照见 `docs/database-design.md`；机器可读版本 `docs/openapi.yaml`。
 
 ---
 
@@ -81,8 +82,8 @@ Idempotency-Key: <客户端生成的唯一串>
 
 ### 1.6 错误码表
 
-> 图例：**✅ 已在后端主分支实现**（`gts-backend/src/main/java/com/gts/common/Api.java`，2026-11-17 核对）；
-> **🟡 待联调契约**（与后端确认过、但还没落在合并分支里，Mock 已按 🟡 实现）。
+> 图例：**✅ 已在后端主分支实现**（`gts-backend/src/main/java/com/gts/common/Api.java`，`upstream/main@1c718ff` 核对，2026-11-17）；
+> **🟡 待联调契约**（与后端确认过、但还没落在合并分支里）。
 > 前端判定只认 `code`，`message` 仅兜底展示；业务错误用 HTTP 200~499 + 非 0 code，`5xx` 只表示服务端异常。
 
 | code | HTTP | 含义 | 状态 |
@@ -97,9 +98,9 @@ Idempotency-Key: <客户端生成的唯一串>
 | `40013` | 400 | 手机号格式非法 | ✅ `PHONE_INVALID` |
 | `40030` | 400 | 积分不足 | ✅ `POINTS_SHORT` |
 | `40040` | 400 | 取消原因为空 | ✅ `CANCEL_REASON_REQUIRED` |
-| `40041` | 400 | 商品积分单价非法（须为正整数） | 🟡 约定 `PRODUCT_POINTS_INVALID` |
-| `40042` | 400 | 商品库存非法（须为 ≥0 的整数） | 🟡 约定 `PRODUCT_STOCK_INVALID` |
-| `40043` | 400 | 商品状态非法（只能是 `ON` / `OFF`） | 🟡 约定 `PRODUCT_STATUS_INVALID` |
+| `40041` | 400 | 商品积分单价非法（须为正整数） | ✅ `PRODUCT_POINTS_INVALID` |
+| `40042` | 400 | 商品库存非法（须为 ≥0 的整数） | ✅ `PRODUCT_STOCK_INVALID` |
+| `40043` | 400 | 商品状态非法（只能是 `ON` / `OFF`） | ✅ `PRODUCT_STATUS_INVALID` |
 | `40100` | 401 | 未登录 / 登录已过期 | ✅ `UNAUTHORIZED` |
 | `40101` | 401 | 账号或密码错误 | ✅ `BAD_CREDENTIALS` |
 | `40301` | 403 | 非管理员调用管理端接口 | ✅ `FORBIDDEN` |
@@ -116,46 +117,49 @@ Idempotency-Key: <客户端生成的唯一串>
 | `40908` | 409 | 商品已下架（兑换时） | ✅ `PRODUCT_OFF_SHELF` |
 | `40909` | 409 | 规则不可追溯生效：`effectiveFrom` **早于服务端当前时间** | ✅ `RULE_RETROACTIVE` |
 | `50000` | 500 | 服务端异常（兜底） | ✅ `SERVER_ERROR` |
-| `50001` | 500 | **对账接口专用**：核对结果读取失败 | 🟡 后端 PR #31 返回 |
+| `50001` | 500 | **对账接口专用**：核对结果读取失败 | ✅ `RECONCILE_UNAVAILABLE` |
 
-> **关于 🟡 三个商品码**：前端要把红字挂到具体输入框，靠中文 `message` 匹配会在后端改文案时静默失效，
-> 所以议定用独立码。**在后端把 `40041/40042/40043` 加进 `Api.java` 之前，真实后端仍会返回 `40000`**：
-> 前端逻辑写成"优先按独立码定位字段，收到 `40000` 时回退到通用提示"，两种都能跑。
+> **关于 🟡 与商品码的现状**：`40041/40042/40043` 已随 #31 进入后端主分支 `Api.java`
+> （`PRODUCT_POINTS_INVALID` / `PRODUCT_STOCK_INVALID` / `PRODUCT_STATUS_INVALID`），
+> 后端用 `BigDecimal` 接 `points`/`stock` 以识别小数并返回对应码，**前后端已一致**；
+> 前端逻辑仍是"优先按独立码定位输入框，收到 `40000` 回退通用提示"（兼容旧后端，不影响现在联调）。
 > 注意 `40010` 是里程非法（`DISTANCE_INVALID`），不能拿来当商品状态码——文档早前写错，已更正。
 
-> **关于 `50001`**：对账读取失败是**专用码**，不要并进 `50000`。前端页面对账的三态靠它区分：
+> **关于 `50001`**：对账读取失败是**专用码**（后端 `RECONCILE_UNAVAILABLE`），不要并进 `50000`。前端页面对账的三态靠它区分：
 > `50001`/任意 5xx → 显示「核对结果读取失败（无法判断是否存在差异）」，**绝不能显示成"无差异"**。
 
-## 2. 接口清单（22 个）
+## 2. 接口清单（23 个）
 
 | # | 方法 | 路径 | 用途 | 鉴权 |
 |---|---|---|---|---|
 | 1 | POST | `/auth/login` | 登录 | 否 |
-| 2 | GET | `/auth/me` | 取当前用户 | 是 |
-| 3 | POST | `/auth/logout` | 退出 | 是 |
-| 4 | GET | `/trips` | 行程列表（分页） | 是 |
-| 5 | POST | `/trips` | 上报行程 | 是 |
-| 6 | GET | `/trips/{tripId}` | 行程详情（含核算明细） | 是 |
-| 7 | GET | `/points/account` | 积分账户 | 是 |
-| 8 | GET | `/points/flows` | 积分流水（分页） | 是 |
-| 9 | GET | `/mall/products` | 商品列表（分页） | 是 |
-| 10 | GET | `/mall/products/{productId}` | 商品详情 | 是 |
-| 11 | POST | `/mall/orders` | 兑换下单 | 是 |
-| 12 | GET | `/orders` | 我的订单（分页） | 是 |
-| 13 | GET | `/orders/{orderId}` | 订单详情 | 是 |
-| 14 | POST | `/admin/orders/{orderId}/cancel` | 取消订单（**管理员**，用户端无此能力） | 管理员 |
-| 15 | GET | `/admin/dashboard` | 数据概览 | 管理员 |
-| 16 | GET | `/admin/rules` | 核算规则列表 | 管理员 |
-| 17 | GET | `/admin/products` | 商品管理（分页，含下架） | 管理员 |
-| 18 | **PATCH** | **`/admin/products/{productId}`** | **商品维护（改价/改库存/上下架）** | 管理员 |
-| 19 | GET | `/admin/orders` | 订单管理（分页，全量） | 管理员 |
-| 20 | **POST** | **`/admin/orders/{orderId}/fulfill`** | **订单履约（发放）** | 管理员 |
-| 21 | GET | `/admin/users` | 用户管理（分页） | 管理员 |
-| 22 | GET | `/admin/reconciliation` | 积分对账 | 管理员 |
+| 2 | **POST** | **`/auth/register`** | **注册（成功即登录，返回 token）** | 否 |
+| 3 | GET | `/auth/me` | 取当前用户 | 是 |
+| 4 | POST | `/auth/logout` | 退出 | 是 |
+| 5 | GET | `/trips` | 行程列表（分页） | 是 |
+| 6 | POST | `/trips` | 上报行程 | 是 |
+| 7 | GET | `/trips/{tripId}` | 行程详情（含核算明细） | 是 |
+| 8 | GET | `/points/account` | 积分账户 | 是 |
+| 9 | GET | `/points/flows` | 积分流水（分页） | 是 |
+| 10 | GET | `/mall/products` | 商品列表（分页） | 是 |
+| 11 | GET | `/mall/products/{productId}` | 商品详情 | 是 |
+| 12 | POST | `/mall/orders` | 兑换下单 | 是 |
+| 13 | GET | `/orders` | 我的订单（分页） | 是 |
+| 14 | GET | `/orders/{orderId}` | 订单详情 | 是 |
+| 15 | POST | `/admin/orders/{orderId}/cancel` | 取消订单（**管理员**，用户端无此能力） | 管理员 |
+| 16 | GET | `/admin/dashboard` | 数据概览 | 管理员 |
+| 17 | GET | `/admin/rules` | 核算规则列表 | 管理员 |
+| 18 | GET | `/admin/products` | 商品管理（分页，含下架） | 管理员 |
+| 19 | **PATCH** | **`/admin/products/{productId}`** | **商品维护（改价/改库存/上下架）** | 管理员 |
+| 20 | GET | `/admin/orders` | 订单管理（分页，全量） | 管理员 |
+| 21 | **POST** | **`/admin/orders/{orderId}/fulfill`** | **订单履约（发放）** | 管理员 |
+| 22 | GET | `/admin/users` | 用户管理（分页） | 管理员 |
+| 23 | GET | `/admin/reconciliation` | 积分对账 | 管理员 |
 
 > 管理端目前做**两个写操作**（订单履约、商品维护最小版）+ 一个取消动作。
 > **修订（2026-11-15，评审 #23）**：取消订单从用户端挪到管理端，接口路径改为 `/admin/orders/{orderId}/cancel`；用户端不再提供任何取消入口。
-> **未完成的 P0 仍然计入 P0**：注册、商品维护（当前只有改价/改库存/上下架，缺新增与图文）、规则管理。口径要缩减须先走「产品范围变更确认」，不能只改文档。
+> **未完成的 P0 仍然计入 P0**：商品维护（当前只有改价/改库存/上下架，缺新增与图文）、规则管理。口径要缩减须先走「产品范围变更确认」，不能只改文档。
+> **修订（2026-11-17，#11 注册）**：注册接口 `POST /auth/register` 已实现并接入前端（见 §3.1.1），从"P0 未完成"清单移除。
 
 ---
 
@@ -190,6 +194,40 @@ POST /auth/login
 ```
 
 失败：`40001`（缺参数）、`40101`（账号或密码错误）。
+
+### 3.1.1 注册（2026-11-17 新增，P0 #11）
+
+```
+POST /auth/register
+```
+
+与后端 `AuthController.register` 对齐，**成功即登录**（返回的 `LoginResult` 和登录接口同构，前端不必再发一次登录）。
+
+请求：
+
+```json
+{ "phone": "13900001111", "password": "abc123456", "nickname": "新同学" }
+```
+
+| 字段 | 必填 | 规则 |
+|---|---|---|
+| `phone` | 是 | `^1\d{10}$`，不匹配 → `40013` |
+| `password` | 是 | 长度 6–32，越界 → `40012` |
+| `nickname` | 否 | `maxLength=20`，超长 → `40000`；为空时后端用手机号生成（如 `138****6621`） |
+
+响应（201/200，业务码 0）：
+
+```json
+{ "code": 0, "message": "ok", "data": {
+    "token": "eyJhbGciOi...",
+    "user": { "id": "U3F2A91C", "nickname": "新同学", "phone": "13900001111",
+              "role": "USER", "avatarText": "新", "points": 0 }
+} }
+```
+
+失败：`40001`（缺参数）、`40012`（密码长度非法）、`40013`（手机号格式非法）、`40906`（手机号已注册）、`40000`（昵称为空串以外的其它非法输入）。
+
+前端行为（`src/views/auth/RegisterView.vue`）：格式先本地校验 → 成功后 `useUserStore().register()` 写 token 与用户 → toast 并 `router.replace({name:'home'})`；失败直接展示后端 `message`（四类错误都有中文提示，不吞错、不假装成功）。
 
 > `account` 既可能是手机号，也可能是 `admin` 这类管理员账号，后端自行区分。
 
@@ -302,7 +340,7 @@ Idempotency-Key: trip-1794582371070-u5qfir
 | 出行方式 | modeFactor |
 |---|---|
 | BUS 公交 | 0.05 |
-| SUBWAY 地铁 | 0.04 |
+| SUBWAY 地铁 | 0.03 |
 | BIKE 骑行 | 0.00 |
 | WALK 步行 | 0.00 |
 
@@ -450,6 +488,11 @@ GET /admin/orders?page&size   → Page<Order>（全量）
 GET /admin/users?page&size    → Page<User>
 ```
 
+> `User` 形状与登录/注册返回的 `user` **完全一致**：`{ id, nickname, phone, role, avatarText, points }`
+> （后端 `AuthDto.UserVo`）。用户编号的键名是 **`id`**，值是对外业务编号（如 `U001`，由 `t_user.user_id` 映射而来）；
+> **不要写成 `userId`** —— 前端类型 `User.id`、页面渲染都按 `id` 取值。
+> `points` 来自 `t_point_account.balance`；`status`（启用/停用）目前不在 `UserVo` 里，属 P1。
+
 `CarbonRule`：
 
 ```json
@@ -495,9 +538,17 @@ GET /admin/reconciliation
 > 切不出来就整体显示，不能报错。`tripId` / `orderId` 同样当**不透明字符串**处理（上表示例只说明形状，
 > 实际由服务端生成，前端不做前缀解析）。
 
+> ⚠️ **目标契约 vs 主分支实际响应（2026-11-17 核对，尚未统一）**
+> 上表是**目标契约**：`ACCOUNT` 的 `objectId` 用对外业务编号 `U001` / `U001#7`。
+> 但主分支 `ReconcileService` 现在取的是 `t_point_account.user_id`（`BIGINT`，即 `t_user.id` 内部主键）
+> 再拼 `account_seq`，**实际返回的是 `4` / `4#7` 这种内部 id**。
+> 影响：前端不做解析，展示层不会崩，但对账页上运营看到的是数字而非 `U00x`，无法直接拿去查用户。
+> **待后端改为对外业务编号**（`t_user.user_id`），改完后本表口径才算真正落地；
+> 在那之前，联调时以接口实际返回为准，不要按 `U001` 形状写死断言。
+
 - `items` 为空数组 = **无差异**；非空 = 有差异（前端渲染差异表）。
 - 差异值由前端按 `actual - expected` 计算展示，**后端不用再单独算一列**。
-- **服务端出错必须返回 5xx**（对账专用错误码 `50001`，后端 PR #31 已返回），**不能返回空数组** ——
+- **服务端出错必须返回 5xx**（对账专用错误码 `50001` / `RECONCILE_UNAVAILABLE`，已随 #31 进主分支），**不能返回空数组** ——
   前端把「读取失败」和「无差异」分成两个界面，混了就是漏报。
 - 只读：不提供自动修复、不提供导出。
 
@@ -508,10 +559,10 @@ GET /admin/reconciliation
 > 拆成多个动作接口会让"改价 + 改库存"无法放进同一个事务。
 > 新增商品（`POST /admin/products`）与改名称/图文排在 v1.1。
 
-> **实现对齐（2026-11-17，与后端确认选 A）**：后端现有 `PUT /admin/products/{id}` 是**全量必填**
-> （`name`/`points`/`status`/`stock`），前端发 `PATCH` 会 405。请后端补一个 `@PatchMapping`
-> 指向同一处理逻辑、只校验传了的字段，校验全部通过后再落盘（失败不得改动任何字段）。
-> 后端已有的 `/status`、`/stock` 可以留着，但**不作为前端契约**。
+> **实现现状（2026-11-17 核对 `upstream/main@1c718ff`）**：后端已按方案 A 补上
+> `@PatchMapping("/products/{productId}")`（`AdminController`），注释写明"v1 规范接口，前端只需调这一个"；
+> 原有 `PUT /admin/products/{id}` 与 `/status`、`/stock` 三个端点保留为兼容入口，**不作为前端契约**。
+> 校验用 `BigDecimal` 接 `points`/`stock`（避免 `1.9` 被静默截断成 `1`），全部通过后才落盘，失败不改任何字段。
 
 ```
 PATCH /admin/products/{productId}
@@ -572,7 +623,9 @@ Authorization: Bearer <admin token>
 写接口（上报行程、兑换下单、履约、取消）都必须满足：
 
 1. **按「用户 + 业务键」隔离**：幂等键只在**同一个用户**内有效，不能跨用户命中别人的结果。
-   行程用 `Idempotency-Key` 头，兑换用 `requestId`，取消/履约用资源 id 本身（订单只能取消一次）。
+   键**一律走 `Idempotency-Key` 请求头**（不是请求体里的 JSON 字段）：行程、兑换下单都是如此；
+   后端 `MallController` 就是 `@RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey`。
+   取消/履约不用幂等键，用资源 id 本身（订单只能取消一次，重复调用按下面的规则重放）。
 2. **同键同输入 → 重放原结果**：返回 200 + 上一次的结果，**不产生第二笔积分、第二笔扣减**。
 3. **同键不同输入 → 拒绝**：返回 `409`（建议 `40904 幂等键已被不同内容使用`），不要静默覆盖。
    **"内容"指请求体的全部业务字段，不是其中几个**——行程要连 `startPlace`/`endPlace` 一起比，
@@ -589,7 +642,8 @@ Authorization: Bearer <admin token>
      `orders(user_id, request_id)` 这类唯一索引，数据库层面就写不进第二条。
    - 清理只允许发生在业务已终结且归档之后，且清理后重放应查业务表返回原结果，而不是重新记账。
 
-前端对应做法（已实现）：`clientTripId` 在页面打开时生成、成功后重建；`requestId` 在打开兑换确认框时生成、失败复用；
+前端对应做法（已实现）：`clientTripId` 在页面打开时生成、成功后重建、失败复用；
+兑换的幂等键 `requestId` 在打开兑换确认框时生成、失败复用，提交时放进 `Idempotency-Key` 头；
 超时提示「结果尚未确认」，**不当成失败自动换号重试**。
 
 ---
@@ -679,7 +733,7 @@ interface CarbonRule {
   effectiveFrom: string; status: 'ACTIVE' | 'ARCHIVED'
 }
 
-interface ReconcileItem { id: string; objectType: 'TRIP' | 'ORDER'; objectId: string; checkName: string; expected: number; actual: number }
+interface ReconcileItem { id: string; objectType: 'TRIP' | 'ORDER' | 'ACCOUNT'; objectId: string; checkName: string; expected: number; actual: number }
 
 interface ApiResult<T> { code: number; message: string; data: T }
 interface Page<T> { items: T[]; total: number; page: number; size: number }

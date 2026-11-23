@@ -62,4 +62,10 @@ app.mount('#app')
   /** 直接走管理员取消接口 */
   cancelOrder: (orderId: string, reason: string) =>
     request({ url: `/admin/orders/${orderId}/cancel`, method: 'POST', body: { reason } }),
+  /**
+   * 清库重来：删掉 mock 的持久化快照并重新播种。
+   * e2e 每轮开始都调一次，否则上一轮注册的账号、上报的行程会留下来影响断言。
+   * 真后端（api 模式）下不可用，e2e 会先看 dataSource。
+   */
+  resetDb: () => request({ url: '/_debug/reset', method: 'POST' }),
 }

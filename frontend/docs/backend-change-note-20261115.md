@@ -105,21 +105,22 @@ Authorization: Bearer <admin token>
 | `POST /admin/products/{id}/stock` | 后端已有；契约仍以 `PATCH /admin/products/{id}` 为准 |
 | `POST /admin/rules`（新增规则版本） | **后端已实现**，前端页面排期 v1.1 |
 | `POST /admin/users/{id}/status`（用户启停） | **P1 后续**，不在本阶段 P0 范围，不阻塞验收 |
-| `POST /auth/register`（注册） | **后端已实现**，前端页面未做（P0 未完成） |
+| `POST /auth/register`（注册） | **前后端均已实现**（2026-11-17 前端接入完成，见契约 §3.1.1） |
 
 > **口径提醒（2026-11-17）**：上面"前端页面排期 v1.1"指的是**前端页面**没做，
 > 不是后端没实现——后端在 `gts-backend` 里已经有 `POST /admin/products`、`POST /admin/rules`、`POST /auth/register`。
 > 评审/组会时别把"前端未做页面"误读成"实现了不该做的功能"。
 
-> **商品更新以 `PATCH` 为准（2026-11-17 与后端确认选 A）**：契约只保留
+> **商品更新以 `PATCH` 为准（2026-11-17 与后端确认选 A，已随 #31 落地）**：契约只保留
 > `PATCH /admin/products/{productId}` 局部更新（`{points?, stock?, status?}`）。
-> 后端现有 `PUT /admin/products/{id}` 是全量必填（name/points/status/stock），
-> 前端发 PATCH 会 405 —— 需后端补一个 `@PatchMapping`，只校验传了的字段、全部通过后再落盘。
-> `POST /{id}/status`、`POST /{id}/stock` 后端保留无妨，但不作为前端契约。
+> 后端 `AdminController` 已有 `@PatchMapping("/products/{productId}")`（注释标"v1 规范接口"），
+> 前端不再发 `PUT`；原有 `PUT` 与 `POST /{id}/status`、`POST /{id}/stock` 保留为兼容入口，不作为前端契约。
 
-> **商品三类校验用独立错误码（2026-11-17 确认）**：`40041` 积分单价非法、`40042` 库存非法、
-> `40043` 状态非法，请加进 `Api.java`（`PRODUCT_POINTS_INVALID` / `PRODUCT_STOCK_INVALID` / `PRODUCT_STATUS_INVALID`）。
-> 不要复用 `40000`：前端要把红字挂到具体输入框，靠中文文案匹配会在后端改文案时静默失效。
+> **商品三类校验用独立错误码（2026-11-17 确认，已随 #31 进主分支）**：`40041` 积分单价非法、`40042` 库存非法、
+> `40043` 状态非法，`Api.java` 里对应 `PRODUCT_POINTS_INVALID` / `PRODUCT_STOCK_INVALID` / `PRODUCT_STATUS_INVALID`，
+> `ProductPatchRequest` 用 `BigDecimal` 接收以便识别小数。
+> 不要复用 `40000`：前端要把红字挂到具体输入框，靠中文文案匹配会在后端改文案时静默失效
+> （前端仍保留"收到 40000 回退通用提示"的兜底）。
 > 注意 `40010` 是里程非法（`DISTANCE_INVALID`），文档早前把它当商品状态码用是错的，已更正。
 
 ---
@@ -165,7 +166,7 @@ VITE_DATA_SOURCE=api
 VITE_API_BASE_URL=http://localhost:8080/api
 ```
 
-切完我会重跑 `npm run e2e`（72 条断言），后端只要按本文实现，断言应全绿。
+切完我会重跑 `npm run e2e`（93 条断言），后端只要按本文实现，断言应全绿。
 
 ---
 

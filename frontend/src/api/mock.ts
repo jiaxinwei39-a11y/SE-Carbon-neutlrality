@@ -26,7 +26,7 @@ import type {
 /* -------------------------------------------------- 种子数据 */
 
 const BASE_FACTOR = 0.2
-// 地铁方式因子按 docs/00-product/decisions.md 的已确认口径取 0.030（旧口径 0.04 只存在于归档版本里）
+// 地铁因子按 docs/00-product/decisions.md 的已确认口径取 0.030000（2026-11-17 产品经理确认；0.04 是旧口径）
 const MODE_FACTOR: Record<TripMode, number> = { BUS: 0.05, SUBWAY: 0.03, BIKE: 0, WALK: 0 }
 const POINTS_RATIO = 10
 
@@ -50,7 +50,295 @@ const tripIdByClientId = new Map<string, string>()
 /** 幂等表：兑换 requestId（Idempotency-Key）→ orderId。防止连点/重试重复扣分 */
 const orderIdByRequestKey = new Map<string, string>()
 
+/* -------------------------------------------------- 持久化：退出重登 / 刷新都不丢数据
+ *
+ * 评审 #38 的要求：演示账号产生的数据，在「退出再登录」和「刷新页面」之后必须还在。
+ * 真后端靠数据库，mock 用 localStorage 存一份快照（key 带版本号，结构一变就重新播种）。
+ * 存储不可用（file:// 某些策略、隐私模式）时自动退化为纯内存，功能不受影响。
+ */
+const DB_KEY = 'carbon_mock_db_v3'
+
+interface MockAccount {
+  /** 明文只因为这是 mock；真后端是 PBKDF2 哈希（见 AuthService） */
+  password: string
+  /** 完整手机号，登录时用来查账号（展示用的是打码后的 phone） */
+  loginPhone: string
+  user: User
+}
+
+interface MockBucket {
+  trips: TripDetail[]
+  flows: PointsFlow[]
+  orders: Order[]
+  account: PointsAccount
+  tripIdByClientId: Array<[string, string]>
+  orderIdByRequestKey: Array<[string, string]>
+}
+
+/** userId → 账号（含密码、登录手机号） */
+const accounts = new Map<string, MockAccount>()
+/** userId → 该用户自己的业务数据（行程/流水/订单/账户/幂等表） */
+const buckets = new Map<string, MockBucket>()
+/** token → userId：有了它，刷新页面后 /auth/me 还认得出你是谁 */
+const tokens = new Map<string, string>()
+
+function emptyAccount(): PointsAccount {
+  return { balance: 0, totalEarned: 0, totalSpent: 0, tripCount: 0, totalReductionKg: 0 }
+}
+
+function emptyBucket(): MockBucket {
+  return {
+    trips: [],
+    flows: [],
+    orders: [],
+    account: emptyAccount(),
+    tripIdByClientId: [],
+    orderIdByRequestKey: [],
+  }
+}
+
+/** 把"当前正在操作用的那几个变量"打包成可持久化的快照 */
+function snapshotBucket(): MockBucket {
+  return {
+    trips,
+    flows,
+    orders,
+    account: { ...state.account },
+    tripIdByClientId: [...tripIdByClientId.entries()],
+    orderIdByRequestKey: [...orderIdByRequestKey.entries()],
+  }
+}
+
+/** 反向操作：把某个用户的数据装载成"当前数据" */
+function applyBucket(b: MockBucket): void {
+  trips = b.trips ?? []
+  flows = b.flows ?? []
+  orders = b.orders ?? []
+  state.account = { ...(b.account ?? emptyAccount()) }
+  tripIdByClientId.clear()
+  for (const [k, v] of b.tripIdByClientId ?? []) tripIdByClientId.set(k, v)
+  orderIdByRequestKey.clear()
+  for (const [k, v] of b.orderIdByRequestKey ?? []) orderIdByRequestKey.set(k, v)
+}
+
+/**
+ * 切换当前登录用户：先把自己这份存回去，再装对方那份。
+ * 这样 A 的行程和积分不会出现在 B 的页面上（真后端是 WHERE user_id = ?）。
+ */
+function switchUser(userId: string): void {
+  const acct = accounts.get(userId)
+  if (!acct) return
+  if (state.user && accounts.has(state.user.id)) {
+    buckets.set(state.user.id, snapshotBucket())
+  }
+  state.user = { ...acct.user }
+  applyBucket(buckets.get(userId) ?? emptyBucket())
+}
+
+/**
+ * 管理端视角：把所有用户的数据摊平。
+ * 真后端是 `SELECT ... ` 不带 user_id 过滤；mock 里每个人一个 bucket，所以要合并。
+ * 当前用户那份额外取一次实时快照，避免 map 里存的还是登录时的旧数据。
+ */
+function allOwners(): Array<{ id: string; bucket: MockBucket }> {
+  const list: Array<{ id: string; bucket: MockBucket }> = []
+  for (const [id, bucket] of buckets) {
+    list.push({ id, bucket: state.user?.id === id ? snapshotBucket() : bucket })
+  }
+  if (state.user && !buckets.has(state.user.id)) {
+    list.push({ id: state.user.id, bucket: snapshotBucket() })
+  }
+  return list
+}
+
+/** 生成订单号：O + yyyyMMdd + 4 位序号，与后端口径一致 */
+function nextOrderId(): string {
+  const d = new Date()
+  const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`
+  let seq = orders.length + 1
+  let id = `O${stamp}${String(seq).padStart(4, '0')}`
+  while (orders.some((o) => o.orderId === id)) {
+    seq += 1
+    id = `O${stamp}${String(seq).padStart(4, '0')}`
+  }
+  return id
+}
+
+/** 按订单号跨用户找订单（管理端履约/取消要用） */
+function findOrderAnyOwner(orderId: string): { id: string; owner: MockBucket; order: Order } | null {
+  for (const { id, bucket } of allOwners()) {
+    const order = bucket.orders.find((x) => x.orderId === orderId)
+    if (order) return { id, owner: bucket, order }
+  }
+  return null
+}
+
+/** 把改过的某个用户数据写回去；改的是当前用户就同步到实时状态 */
+function commitOwner(owner: { id: string; owner: MockBucket }): void {
+  buckets.set(owner.id, owner.owner)
+  if (state.user?.id === owner.id) applyBucket(owner.owner)
+}
+
+function storage(): Storage | null {
+  try {
+    const ls = window.localStorage
+    ls.getItem(DB_KEY)
+    return ls
+  } catch {
+    return null
+  }
+}
+
+function persist(): void {
+  const ls = storage()
+  if (!ls) return
+  // 落盘前把当前用户的最新积分同步回账号，管理端用户列表才看得到变化
+  if (state.user && accounts.has(state.user.id)) {
+    const snap = snapshotBucket()
+    buckets.set(state.user.id, snap)
+    const acct = accounts.get(state.user.id)
+    if (acct) {
+      acct.user = { ...acct.user, points: snap.account.balance }
+    }
+  }
+  const payload = {
+    v: 3,
+    accounts: [...accounts.entries()],
+    buckets: [...buckets.entries()],
+    products: state.products,
+    rules: state.rules,
+    users: state.users,
+    tokens: [...tokens.entries()],
+  }
+  try {
+    ls.setItem(DB_KEY, JSON.stringify(payload))
+  } catch {
+    /* 配额满 / 隐私模式：忽略，内存里照样能演示 */
+  }
+}
+
+function loadDb(): boolean {
+  const ls = storage()
+  if (!ls) return false
+  const raw = ls.getItem(DB_KEY)
+  if (!raw) return false
+  try {
+    const db = JSON.parse(raw) as {
+      v?: number
+      accounts?: Array<[string, MockAccount]>
+      buckets?: Array<[string, MockBucket]>
+      products?: Product[]
+      rules?: CarbonRule[]
+      users?: User[]
+      tokens?: Array<[string, string]>
+    }
+    // 版本不匹配就当作没有：宁可重新播种，也不要拿旧结构硬跑
+    if (db.v !== 3 || !db.accounts?.length) return false
+    accounts.clear()
+    for (const [id, acct] of db.accounts) accounts.set(id, acct)
+    buckets.clear()
+    for (const [id, b] of db.buckets ?? []) buckets.set(id, b)
+    tokens.clear()
+    for (const [t, id] of db.tokens ?? []) tokens.set(t, id)
+    if (db.products?.length) state.products = db.products
+    if (db.rules?.length) state.rules = db.rules
+    if (db.users?.length) state.users = db.users
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** 首次运行：把种子数据挂到演示账号上，并给每个演示账号设置密码 */
+function seedAccounts(): void {
+  accounts.clear()
+  buckets.clear()
+  tokens.clear()
+  // state.users[0] 是演示用户张生阳，seed() 刚造的那份数据就是他的
+  const demo = state.users[0]
+  accounts.set(demo.id, { password: '123456', loginPhone: '13800138000', user: { ...demo } })
+  buckets.set(demo.id, snapshotBucket())
+  for (const u of state.users.slice(1)) {
+    accounts.set(u.id, {
+      password: '123456',
+      // 其余演示账号（含管理员）用占位手机号，密码同样是 123456
+      loginPhone: `1390000${u.id.slice(1).padStart(4, '0')}`,
+      user: { ...u },
+    })
+    buckets.set(u.id, emptyBucket())
+  }
+  state.user = null
+}
+
+/** 清库重来（e2e 用；界面上也有"重置演示数据"的入口价值） */
+function resetDb(): void {
+  try {
+    storage()?.removeItem(DB_KEY)
+  } catch {
+    /* 忽略 */
+  }
+  accounts.clear()
+  buckets.clear()
+  tokens.clear()
+  state.user = null
+  state.products = DEFAULT_PRODUCTS.map((p) => ({ ...p }))
+  state.rules = DEFAULT_RULES.map((r) => ({ ...r }))
+  state.users = DEFAULT_USERS.map((u) => ({ ...u }))
+  trips = []
+  flows = []
+  orders = []
+  state.account = emptyAccount()
+  seed()
+  seedAccounts()
+  persist()
+}
+
+/**
+ * 用请求头里的 token 恢复会话：刷新页面后内存里的 state.user 是空的，
+ * 但 token 还在，靠这里把人和他的数据一起装回来（真后端是查 session 表）。
+ */
+function restoreSession(headers?: Record<string, string>): void {
+  const raw = headers?.Authorization ?? headers?.authorization ?? ''
+  const token = raw.replace(/^Bearer\s+/i, '').trim()
+  if (!token) return
+  const uid = tokens.get(token)
+  if (!uid) return
+  if (state.user?.id === uid) return
+  switchUser(uid)
+}
+
+const DEFAULT_PRODUCTS: Product[] = [
+  { productId: 'G01', name: '定制环保帆布袋', icon: '👜', points: 600, stock: 24, status: 'ON', desc: '加厚棉布，可装 A4 文件' },
+  { productId: 'G02', name: '咖啡券（中杯）', icon: '☕', points: 300, stock: 58, status: 'ON', desc: '校内咖啡店通用，有效期 30 天' },
+  { productId: 'G03', name: '公交纪念卡', icon: '🎫', points: 800, stock: 12, status: 'ON', desc: '限量版，含 50 元余额' },
+  { productId: 'G04', name: '校园文创笔记本', icon: '📓', points: 450, stock: 31, status: 'ON' },
+  { productId: 'G05', name: '减碳徽章套装', icon: '🏅', points: 200, stock: 66, status: 'ON' },
+  { productId: 'G06', name: '共享单车月卡', icon: '🚲', points: 1200, stock: 0, status: 'ON' },
+  { productId: 'G07', name: '运动水杯', icon: '🥤', points: 900, stock: 9, status: 'ON' },
+  { productId: 'G08', name: '公益植树证书', icon: '🌳', points: 1500, stock: 5, status: 'ON', desc: '以你名义在库布其种一棵树' },
+]
+
+const DEFAULT_RULES: CarbonRule[] = [
+  { ruleId: 'R-2026-11-BUS', version: 'R-2026-11', mode: 'BUS', baseFactor: 0.2, modeFactor: 0.05, pointsRatio: 10, effectiveFrom: '2026-11-01', status: 'ACTIVE' },
+  { ruleId: 'DEMO-SUBWAY-01', version: 'DEMO-2026-11', mode: 'SUBWAY', baseFactor: 0.2, modeFactor: 0.03, pointsRatio: 10, effectiveFrom: '2026-11-17', status: 'ACTIVE' },
+  { ruleId: 'R-2026-11-BIKE', version: 'R-2026-11', mode: 'BIKE', baseFactor: 0.2, modeFactor: 0, pointsRatio: 10, effectiveFrom: '2026-11-01', status: 'ACTIVE' },
+  { ruleId: 'R-2026-11-WALK', version: 'R-2026-11', mode: 'WALK', baseFactor: 0.2, modeFactor: 0, pointsRatio: 10, effectiveFrom: '2026-11-01', status: 'ACTIVE' },
+  { ruleId: 'R-2026-09-BUS', version: 'R-2026-09', mode: 'BUS', baseFactor: 0.2, modeFactor: 0.06, pointsRatio: 10, effectiveFrom: '2026-09-01', status: 'ARCHIVED' },
+]
+
+const DEFAULT_USERS: User[] = [
+  { id: 'U001', nickname: '张生阳', phone: '138****6621', role: 'USER', avatarText: '张', points: 1280 },
+  { id: 'U002', nickname: '李明', phone: '139****1180', role: 'USER', avatarText: '李', points: 860 },
+  { id: 'U003', nickname: '王雨', phone: '137****4432', role: 'USER', avatarText: '王', points: 2405 },
+  { id: 'U004', nickname: '系统管理员', phone: '130****0001', role: 'ADMIN', avatarText: '管', points: 0 },
+]
+
 function seed(): void {
+  // 重新播种时把幂等表一起清掉：它们是"上次会话"的产物，
+  // 留着会让新的 clientTripId 撞上旧 tripId（真后端换库/重置数据时同理）。
+  tripIdByClientId.clear()
+  orderIdByRequestKey.clear()
+
   const plan: Array<[TripMode, number, number, string, string, number]> = [
     ['BUS', 10, 0, '软件园东门', '地铁二号线站', 8],
     ['SUBWAY', 12.5, 1, '地铁二号线站', '市民中心', 9],
@@ -216,186 +504,43 @@ interface MockState {
   users: User[]
 }
 
-/**
- * 全部可变状态的初始值。
- *
- * 复位（`/_debug/reset`）必须走这里重建，而不是只清 trips/flows/orders ——
- * `products.stock` 和 `users` 也是可变的：兑换会扣库存，改商品会改单价，
- * 如果复位只重播行程，就会出现「积分、订单回到初始，但库存还是被扣过的」，
- * 紧接着 persist() 还会把这个不一致状态存进快照。
- */
-function initialState(): MockState {
-  return {
-    user: null,
-    account: { balance: 0, totalEarned: 0, totalSpent: 0, tripCount: 0, totalReductionKg: 0 },
-    products: [
-      { productId: 'G01', name: '定制环保帆布袋', icon: '👜', points: 600, stock: 24, status: 'ON', desc: '加厚棉布，可装 A4 文件' },
-      { productId: 'G02', name: '咖啡券（中杯）', icon: '☕', points: 300, stock: 58, status: 'ON', desc: '校内咖啡店通用，有效期 30 天' },
-      { productId: 'G03', name: '公交纪念卡', icon: '🎫', points: 800, stock: 12, status: 'ON', desc: '限量版，含 50 元余额' },
-      { productId: 'G04', name: '校园文创笔记本', icon: '📓', points: 450, stock: 31, status: 'ON' },
-      { productId: 'G05', name: '减碳徽章套装', icon: '🏅', points: 200, stock: 66, status: 'ON' },
-      { productId: 'G06', name: '共享单车月卡', icon: '🚲', points: 1200, stock: 0, status: 'ON' },
-      { productId: 'G07', name: '运动水杯', icon: '🥤', points: 900, stock: 9, status: 'ON' },
-      { productId: 'G08', name: '公益植树证书', icon: '🌳', points: 1500, stock: 5, status: 'ON', desc: '以你名义在库布其种一棵树' },
-    ],
-    rules: [
-      { ruleId: 'R-2026-11-BUS', version: 'R-2026-11', mode: 'BUS', baseFactor: 0.2, modeFactor: 0.05, pointsRatio: 10, effectiveFrom: '2026-11-01', status: 'ACTIVE' },
-      { ruleId: 'R-2026-11-SUBWAY', version: 'R-2026-11', mode: 'SUBWAY', baseFactor: 0.2, modeFactor: 0.03, pointsRatio: 10, effectiveFrom: '2026-11-01', status: 'ACTIVE' },
-      { ruleId: 'R-2026-11-BIKE', version: 'R-2026-11', mode: 'BIKE', baseFactor: 0.2, modeFactor: 0, pointsRatio: 10, effectiveFrom: '2026-11-01', status: 'ACTIVE' },
-      { ruleId: 'R-2026-11-WALK', version: 'R-2026-11', mode: 'WALK', baseFactor: 0.2, modeFactor: 0, pointsRatio: 10, effectiveFrom: '2026-11-01', status: 'ACTIVE' },
-      { ruleId: 'R-2026-09-BUS', version: 'R-2026-09', mode: 'BUS', baseFactor: 0.2, modeFactor: 0.06, pointsRatio: 10, effectiveFrom: '2026-09-01', status: 'ARCHIVED' },
-    ],
-    users: [
-      { id: 'U001', nickname: '张生阳', phone: '138****6621', role: 'USER', avatarText: '张', points: 1280 },
-      { id: 'U002', nickname: '李明', phone: '139****1180', role: 'USER', avatarText: '李', points: 860 },
-      { id: 'U003', nickname: '王雨', phone: '137****4432', role: 'USER', avatarText: '王', points: 2405 },
-      { id: 'U004', nickname: '系统管理员', phone: '130****0001', role: 'ADMIN', avatarText: '管', points: 0 },
-    ],
-  }
+const state: MockState = {
+  user: null,
+  account: emptyAccount(),
+  products: DEFAULT_PRODUCTS.map((p) => ({ ...p })),
+  rules: DEFAULT_RULES.map((r) => ({ ...r })),
+  users: DEFAULT_USERS.map((u) => ({ ...u })),
 }
 
-const state: MockState = initialState()
-
-/* -------------------------------------------------- 本地持久化（演示用）
- * 目的：让演示时刷新页面不丢数据。
- * 注意：这不是"后端"，只是一个 localStorage 快照；接真后端时这段和 mock 一起删。
- */
-
-const STORAGE_KEY = 'carbon_mock_state_v1'
-const SNAPSHOT_VERSION = 1
-/** 快照超过 7 天就重新播种：种子数据是按"最近 N 天"算的，放太久日期会显得很怪 */
-const SNAPSHOT_TTL_MS = 7 * 24 * 60 * 60 * 1000
-
-interface Snapshot {
-  v: number
-  savedAt: number
-  trips: TripDetail[]
-  flows: PointsFlow[]
-  orders: Order[]
-  tripIdByClientId: Array<[string, string]>
-  orderIdByRequestKey: Array<[string, string]>
-  account: PointsAccount
-  products: Product[]
-  rules: CarbonRule[]
-  users: User[]
-}
-
-function storage(): Storage | null {
-  try {
-    return typeof window !== 'undefined' ? window.localStorage : null
-  } catch {
-    // 浏览器禁用存储时访问 localStorage 会直接抛错
-    return null
-  }
-}
-
-/** 写快照。隐私模式、配额满、序列化失败都静默降级成纯内存，不影响任何功能 */
-function persist(): void {
-  const store = storage()
-  if (!store) return
-  try {
-    const snapshot: Snapshot = {
-      v: SNAPSHOT_VERSION,
-      savedAt: Date.now(),
-      trips,
-      flows,
-      orders,
-      tripIdByClientId: [...tripIdByClientId],
-      orderIdByRequestKey: [...orderIdByRequestKey],
-      account: state.account,
-      products: state.products,
-      rules: state.rules,
-      users: state.users,
-    }
-    store.setItem(STORAGE_KEY, JSON.stringify(snapshot))
-  } catch {
-    /* 存不进去就只留内存，不打扰用户 */
-  }
-}
-
-/** 读快照；版本不符或过期都当作没有，交给 seed() 重新播种 */
-function restore(): boolean {
-  const store = storage()
-  if (!store) return false
-  try {
-    const raw = store.getItem(STORAGE_KEY)
-    if (!raw) return false
-    const snap = JSON.parse(raw) as Snapshot
-    if (snap?.v !== SNAPSHOT_VERSION || Date.now() - snap.savedAt > SNAPSHOT_TTL_MS) {
-      store.removeItem(STORAGE_KEY)
-      return false
-    }
-    trips = Array.isArray(snap.trips) ? snap.trips : []
-    flows = Array.isArray(snap.flows) ? snap.flows : []
-    orders = Array.isArray(snap.orders) ? snap.orders : []
-    tripIdByClientId.clear()
-    for (const [k, v] of snap.tripIdByClientId ?? []) tripIdByClientId.set(k, v)
-    orderIdByRequestKey.clear()
-    for (const [k, v] of snap.orderIdByRequestKey ?? []) orderIdByRequestKey.set(k, v)
-    if (snap.account) state.account = snap.account
-    if (snap.products?.length) state.products = snap.products
-    if (snap.rules?.length) state.rules = snap.rules
-    if (snap.users?.length) state.users = snap.users
-    return true
-  } catch {
-    return false
-  }
-}
-
-/** 清快照。存储被禁用时 removeItem 会抛错，这里必须吞掉，否则复位在隐私模式下直接失败 */
-function clearSnapshot(): void {
-  try {
-    storage()?.removeItem(STORAGE_KEY)
-  } catch {
-    /* 存储不可用：本来就没有快照可清 */
-  }
-}
-
-/**
- * 清掉快照并回到种子数据（`GET /_debug/reset` 用，e2e 和演示复位都靠它）。
- *
- * 顺序很关键：先把**所有**可变状态重建 (含 products 库存、rules、users 余额)，
- * 再 seed() 重播行程/流水/订单并重算账户，最后才 persist() —— 不能把一个
- * 「只清了一半」的状态写进快照。
- */
-function resetToSeed(): void {
-  clearSnapshot()
-
-  trips = []
-  flows = []
-  orders = []
-  tripIdByClientId.clear()
-  orderIdByRequestKey.clear()
-
-  // state 是 const，只换里面的字段：stock / points / users 都是会被业务改动的
-  Object.assign(state, initialState())
-
+// 首次运行（或换了存储版本）：播种 + 建演示账号；否则直接用 localStorage 里的那份
+if (!loadDb()) {
   seed()
+  seedAccounts()
   persist()
 }
 
-if (!restore()) seed()
-
 /* -------------------------------------------------- 工具 */
 
-const MOCK_USER: User = {
-  id: 'U001',
-  nickname: '张生阳',
-  phone: '138****6621',
-  role: 'USER',
-  avatarText: '张',
-  points: 0,
-}
-const MOCK_ADMIN: User = {
-  id: 'U004',
-  nickname: '系统管理员',
-  phone: '130****0001',
-  role: 'ADMIN',
-  avatarText: '管',
-  points: 0,
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+function maskPhone(phone: string): string {
+  return phone.length === 11 ? `${phone.slice(0, 3)}****${phone.slice(7)}` : phone
 }
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+/**
+ * 每次登录/注册都签发一个「新」token（真实 JWT 的 iat/jti 也会变）。
+ * 前端靠"发请求时的 token ≠ 当前 token"识别"旧会话的迟到响应"；
+ * 如果每次都是同一个字符串，客户端就没法区分新旧会话，迟到 401 会误杀新会话。
+ */
+function issueToken(user: User): string {
+  return `mock-token-${user.id}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+/** 已注册手机号：等价于数据库上的 UNIQUE(phone)，账号表就是 accounts */
+function phoneTaken(phone: string): boolean {
+  for (const a of accounts.values()) if (a.loginPhone === phone) return true
+  return false
+}
 
 function paginate<T>(list: T[], query?: PageQuery | Record<string, unknown>): Page<T> {
   const page = Number(query?.page ?? 1)
@@ -434,24 +579,73 @@ export interface MockRequestInit {
   headers?: Record<string, string>
 }
 
-async function handleMockRequest<T>(req: MockRequestInit): Promise<T> {
+async function handleRequest<T>(req: MockRequestInit): Promise<T> {
   // 延迟是为了让骨架屏真的有机会出现；真实网络只会更慢
   await sleep(280 + Math.random() * 220)
   const { method } = req
   const url = req.url.split('?')[0]
 
+  // 刷新页面后内存里没有当前用户，但请求头里还有 token —— 先把人和他的数据装回来
+  restoreSession(req.headers)
+
   /* ---------- 认证 ---------- */
   if (url === '/auth/login' && method === 'POST') {
     const body = req.body as { account?: string; password?: string } | undefined
     if (!body?.account || !body?.password) throw new ApiError('请输入账号和密码', 40001, 400)
-    if (body.password !== '123456') throw new ApiError('账号或密码错误', 40101, 401)
-    const isAdmin = body.account.toLowerCase() === 'admin'
-    const user = isAdmin ? { ...MOCK_ADMIN } : { ...MOCK_USER }
-    state.user = user
-    // 每次登录都签发一个「新」token（真实 JWT 也是这样：iat/jti 变了，字符串就变了）。
-    // 这一点很重要：前端靠"发请求时的 token ≠ 当前 token"来识别"旧会话的迟到响应"，
-    // 如果 token 每次登录都一样，客户端就无法区分新旧会话，迟到 401 会误杀新会话。
-    return ok({ token: `mock-token-${user.id}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`, user }) as unknown as T
+
+    // 按账号表查人：手机号 / 用户编号 / admin 别名都能登（真后端查 t_user）
+    const raw = body.account.trim()
+    let acct: MockAccount | undefined
+    if (raw.toLowerCase() === 'admin') {
+      for (const a of accounts.values()) if (a.user.role === 'ADMIN') { acct = a; break }
+    } else {
+      for (const a of accounts.values()) {
+        if (a.loginPhone === raw || a.user.phone === raw || a.user.id === raw) { acct = a; break }
+      }
+    }
+    // 账号不存在和密码错误返回同一个错误，避免被枚举出手机号
+    if (!acct || acct.password !== body.password) throw new ApiError('账号或密码错误', 40101, 401)
+
+    switchUser(acct.user.id)
+    const user = { ...acct.user }
+    const token = issueToken(user)
+    tokens.set(token, user.id)
+    // 这里不再 seed()：登录是"打开这个人的数据"，不是"重置演示数据"
+    return ok({ token, user }) as unknown as T
+  }
+
+  /* 注册：与后端 AuthController#register 对齐
+     —— 手机号格式 40013、密码长度 40012、手机号占用 40906，成功直接返回 { token, user } */
+  if (url === '/auth/register' && method === 'POST') {
+    const body = req.body as { phone?: string; password?: string; nickname?: string } | undefined
+    const phone = str(body?.phone).trim()
+    const password = str(body?.password)
+    const nickname = str(body?.nickname).trim()
+    if (!phone || !password) throw new ApiError('请输入手机号和密码', 40001, 400)
+    if (!/^1\d{10}$/.test(phone)) throw new ApiError('手机号格式不正确', 40013, 400)
+    if (password.length < 6 || password.length > 32)
+      throw new ApiError('密码长度需为 6-32 位', 40012, 400)
+    if (nickname.length > 20) throw new ApiError('昵称最长 20 个字', 40000, 400)
+    if (phoneTaken(phone)) throw new ApiError('该手机号已注册，请直接登录', 40906, 409)
+
+    const fallbackName = maskPhone(phone)
+    const user: User = {
+      // 真后端是 U + 8 位大写；这里同样给出不透明编号
+      id: `U${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
+      nickname: nickname || fallbackName,
+      phone: fallbackName,
+      role: 'USER',
+      avatarText: (nickname || '绿').slice(0, 1),
+      points: 0,
+    }
+    // 新账号从零开始：独立的一份 bucket，不碰演示账号的数据
+    accounts.set(user.id, { password, loginPhone: phone, user: { ...user } })
+    buckets.set(user.id, emptyBucket())
+    state.users = [...state.users.filter((u) => u.id !== user.id), { ...user }]
+    switchUser(user.id)
+    const token = issueToken(user)
+    tokens.set(token, user.id)
+    return ok({ token, user }) as unknown as T
   }
 
   if (url === '/auth/me' && method === 'GET') {
@@ -460,11 +654,21 @@ async function handleMockRequest<T>(req: MockRequestInit): Promise<T> {
   }
 
   if (url === '/auth/logout') {
+    // 退出只注销当前 token，不动任何业务数据（下次登录原样回来）
+    const raw = req.headers?.Authorization ?? req.headers?.authorization ?? ''
+    const token = raw.replace(/^Bearer\s+/i, '').trim()
+    if (token) tokens.delete(token)
     state.user = null
     return ok(null) as unknown as T
   }
 
   /* ---------- 演示调试钩子（只在 mock 模式存在，供 e2e 验证边界行为） ---------- */
+  if (url === '/_debug/reset' && (method === 'POST' || method === 'GET')) {
+    // 清库重来：删掉持久化快照并重新播种（e2e 每轮开始都调用，避免上一轮数据影响断言）
+    resetDb()
+    return ok(true) as unknown as T
+  }
+
   if (url === '/_debug/slow401' && method === 'GET') {
     // 故意先等一段时间再返回 401，用来复现"旧会话的迟到 401"
     // mode=http → HTTP 401；mode=biz → HTTP 200 但业务码 40100（评审要求的第二条真实路径）
@@ -472,13 +676,6 @@ async function handleMockRequest<T>(req: MockRequestInit): Promise<T> {
     const mode = String((req.query ?? {}).mode ?? 'http')
     await sleep(Number.isFinite(ms) && ms >= 0 ? ms : 1200)
     throw new ApiError('登录已过期，请重新登录', 40100, mode === 'biz' ? 200 : 401)
-  }
-
-  /* ---------- 演示复位：清掉本地快照，回到种子数据（演示前想重来一遍时用） ---------- */
-  if (url === '/_debug/reset') {
-    resetToSeed()
-    state.user = null
-    return ok(null) as unknown as T
   }
 
   /* ---------- 行程 ---------- */
@@ -667,7 +864,9 @@ async function handleMockRequest<T>(req: MockRequestInit): Promise<T> {
       throw new ApiError(`积分不足，还差 ${totalPoints - state.account.balance} 分`, 40030, 400)
     }
     const order: Order = {
-      orderId: `O${Date.now()}`,
+      // 订单号与后端保持同一形状：O + yyyyMMdd + 4 位序号（如 O202611230001），
+      // 不要用 Date.now()——长度对不上，前端与文档里的示例都是 12 位。
+      orderId: nextOrderId(),
       productId: product.productId,
       productName: product.name,
       productIcon: product.icon,
@@ -715,8 +914,10 @@ async function handleMockRequest<T>(req: MockRequestInit): Promise<T> {
   const adminCancelM = match(url, '/admin/orders/:id/cancel')
   if (adminCancelM && method === 'POST') {
     requireAdmin()
-    const o = orders.find((x) => x.orderId === adminCancelM[1])
-    if (!o) throw new ApiError('订单不存在', 40403, 404)
+    const target = findOrderAnyOwner(adminCancelM[1])
+    if (!target) throw new ApiError('订单不存在', 40403, 404)
+    const owner = target.owner
+    const o = target.order
     const body = req.body as { reason?: string } | undefined
     if (!body?.reason || !body.reason.trim()) throw new ApiError('请填写取消原因', 40040, 400)
 
@@ -727,35 +928,39 @@ async function handleMockRequest<T>(req: MockRequestInit): Promise<T> {
 
     o.status = 'CANCELLED'
     o.cancelReason = body.reason.trim()
-    // 返还原额、原数量（J052）
-    state.account.balance += o.totalPoints
-    state.account.totalSpent -= o.totalPoints
+    // 返还原额、原数量（J052）——退给"下单人"，不是退给当前管理员
+    owner.account.balance += o.totalPoints
+    owner.account.totalSpent -= o.totalPoints
     const product = state.products.find((p) => p.productId === o.productId)
     if (product) product.stock += o.quantity
-    flows = [
+    owner.flows = [
       {
         id: `F${Date.now()}`,
         type: 'REVERSE',
         title: `订单取消冲正 · ${o.productName}`,
         amount: o.totalPoints,
-        balanceAfter: state.account.balance,
+        balanceAfter: owner.account.balance,
         createdAt: new Date().toISOString(),
         refId: o.orderId,
       },
-      ...flows,
+      ...owner.flows,
     ]
+    commitOwner(target)
     return ok({ ...o }) as unknown as T
   }
 
   if (url === '/admin/dashboard' && method === 'GET') {
+    // 运营视角是"全站"，所以把所有用户的数据摊平后汇总（真后端就是不带 user_id 的聚合查询）
+    const owners = allOwners()
+    const allTrips = owners.flatMap((x) => x.bucket.trips)
     return ok({
       userCount: state.users.filter((u) => u.role === 'USER').length,
-      tripCount: trips.length,
-      totalReductionKg: trips.reduce((s, t) => s + t.reductionKg, 0),
-      totalPointsIssued: state.account.totalEarned,
+      tripCount: allTrips.length,
+      totalReductionKg: allTrips.reduce((s, t) => s + t.reductionKg, 0),
+      totalPointsIssued: owners.reduce((s, x) => s + x.bucket.account.totalEarned, 0),
       modeDistribution: (['BUS', 'SUBWAY', 'BIKE', 'WALK'] as TripMode[]).map((m) => ({
         mode: m,
-        count: trips.filter((t) => t.mode === m).length,
+        count: allTrips.filter((t) => t.mode === m).length,
       })),
       dailyTrend: [
         { date: '11-04', count: 3 },
@@ -775,7 +980,12 @@ async function handleMockRequest<T>(req: MockRequestInit): Promise<T> {
     return ok(paginate(state.products, req.query)) as unknown as T
   }
   if (url === '/admin/orders' && method === 'GET') {
-    return ok(paginate(orders, req.query)) as unknown as T
+    // 管理端看全站订单：合并所有用户后按下单时间倒序
+    const allOrders = allOwners()
+      .flatMap((x) => x.bucket.orders)
+      .slice()
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+    return ok(paginate(allOrders, req.query)) as unknown as T
   }
   if (url === '/admin/users' && method === 'GET') {
     return ok(paginate(state.users, req.query)) as unknown as T
@@ -785,13 +995,19 @@ async function handleMockRequest<T>(req: MockRequestInit): Promise<T> {
     // 这里用 query.diff=1 模拟"有差异"，diff=error 模拟"读取失败"，方便演示与验收。
     const mode = str(req.query?.diff)
     if (mode === 'error') throw new ApiError('对账服务暂时不可用，请稍后重试', 50001, 500)
+    // 对账是全站核对，样本从所有用户里取第一份有数据的
+    const owners = allOwners()
+    const sampleOwner = owners.find((x) => x.bucket.trips.length > 0) ?? owners[0]
+    const sampleTrip = sampleOwner?.bucket.trips[0]
+    const sampleOrder = owners.flatMap((x) => x.bucket.orders)[0]
+    const accountId = sampleOwner?.id ?? state.user?.id ?? 'U001'
     const items: ReconcileItem[] =
       mode === '1'
         ? [
             {
               id: 'RC-001',
               objectType: 'TRIP',
-              objectId: trips[2]?.tripId ?? 'T0002',
+              objectId: sampleTrip?.tripId ?? 'T0002',
               checkName: '积分应发未发（分）',
               expected: 64,
               actual: 0,
@@ -799,7 +1015,7 @@ async function handleMockRequest<T>(req: MockRequestInit): Promise<T> {
             {
               id: 'RC-002',
               objectType: 'ORDER',
-              objectId: orders[0]?.orderId ?? 'O0001',
+              objectId: sampleOrder?.orderId ?? 'O0001',
               checkName: '库存与订单不一致（件）',
               expected: 24,
               actual: 23,
@@ -809,7 +1025,7 @@ async function handleMockRequest<T>(req: MockRequestInit): Promise<T> {
               // 账户级差异：既不是行程也不是订单，objectType 用 ACCOUNT（objectId 是用户 id）。
               // 以前只能塞进 ORDER，语义是错的，所以放开了枚举。
               objectType: 'ACCOUNT',
-              objectId: state.user?.id ?? 'U001',
+              objectId: accountId,
               checkName: '账户余额与流水合计不符（分）',
               expected: 1437,
               actual: 1439,
@@ -819,7 +1035,7 @@ async function handleMockRequest<T>(req: MockRequestInit): Promise<T> {
               // 账户级的第二种粒度：流水逐笔，objectId 是 `userId#流水序号`（如 U001#7）。
               // 前端原样展示、不假设 objectId 一定是纯 userId。
               objectType: 'ACCOUNT',
-              objectId: `${state.user?.id ?? 'U001'}#7`,
+              objectId: `${accountId}#7`,
               checkName: '流水序号不连续（应无断号）',
               expected: 7,
               actual: 8,
@@ -833,11 +1049,13 @@ async function handleMockRequest<T>(req: MockRequestInit): Promise<T> {
   const fulfillM = match(url, '/admin/orders/:id/fulfill')
   if (fulfillM && method === 'POST') {
     requireAdmin()
-    const o = orders.find((x) => x.orderId === fulfillM[1])
-    if (!o) throw new ApiError('订单不存在', 40403, 404)
+    const target = findOrderAnyOwner(fulfillM[1])
+    if (!target) throw new ApiError('订单不存在', 40403, 404)
+    const o = target.order
     // 状态机门禁：只有「待发放」能履约；重复点不会重复发货
     if (o.status !== 'CREATED') throw new ApiError('当前订单状态不允许发放，请刷新后重试', 40903, 409)
     o.status = 'FULFILLED'
+    commitOwner(target)
     // 注意：兑换时库存与积分已经扣过，履约只改状态，绝不能再扣一次
     return ok({ ...o }) as unknown as T
   }
@@ -885,11 +1103,11 @@ async function handleMockRequest<T>(req: MockRequestInit): Promise<T> {
 }
 
 /**
- * 对外入口：写请求成功后把内存状态落到 localStorage，刷新页面不丢演示数据。
- * 只认非 GET —— 读请求不产生变化，没必要每次都序列化整份快照。
+ * 对外入口：每个请求结束后（写操作）把最新快照落盘。
+ * 只读请求（GET）不落盘，省得每次翻页都重写一遍 localStorage。
  */
 export async function mockRequest<T>(req: MockRequestInit): Promise<T> {
-  const result = await handleMockRequest<T>(req)
-  if (req.method !== 'GET' && !req.url.startsWith('/_debug/')) persist()
+  const result = await handleRequest<T>(req)
+  if (req.method !== 'GET') persist()
   return result
 }
