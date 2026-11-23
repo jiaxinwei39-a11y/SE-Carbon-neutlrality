@@ -107,10 +107,10 @@
 							],
 							"font": "Arial;13;0",
 							"containerChangeable": true,
-							"left": 200,
-							"top": 10,
-							"width": 210,
-							"height": 422,
+							"left": 252,
+							"top": 35,
+							"width": 404,
+							"height": 494,
 							"nameCompartment": {
 								"$ref": "AAAAAAG8MQIHFiI0b4fXXxr="
 							}
@@ -230,10 +230,10 @@
 							],
 							"font": "Arial;13;0",
 							"containerChangeable": true,
-							"left": 50,
-							"top": 88,
-							"width": 80,
-							"height": 90,
+							"left": 40,
+							"top": 244,
+							"width": 98,
+							"height": 75,
 							"nameCompartment": {
 								"$ref": "AAAAAAGuht+rbhK2995jYVH="
 							},
@@ -362,10 +362,10 @@
 							],
 							"font": "Arial;13;0",
 							"containerChangeable": true,
-							"left": 50,
-							"top": 295,
-							"width": 80,
-							"height": 90,
+							"left": 756,
+							"top": 244,
+							"width": 98,
+							"height": 75,
 							"nameCompartment": {
 								"$ref": "AAAAAAGKNiI7Ur37L6fYZY8="
 							},
@@ -466,14 +466,16 @@
 							],
 							"font": "Arial;13;0",
 							"containerChangeable": true,
-							"left": 240,
-							"top": 50,
-							"width": 130,
-							"height": 48,
+							"left": 329,
+							"top": 104,
+							"width": 250,
+							"height": 54,
 							"nameCompartment": {
 								"$ref": "AAAAAAGwXbfNxzNcPTArJ4T="
 							},
-							"wordWrap": true
+							"wordWrap": true,
+							"suppressAttributes": true,
+							"suppressOperations": true
 						},
 						{
 							"_type": "UMLUseCaseView",
@@ -562,14 +564,16 @@
 							],
 							"font": "Arial;13;0",
 							"containerChangeable": true,
-							"left": 240,
-							"top": 148,
-							"width": 130,
-							"height": 48,
+							"left": 329,
+							"top": 200,
+							"width": 250,
+							"height": 54,
 							"nameCompartment": {
 								"$ref": "AAAAAAGYBqFPZn2r37StUw1="
 							},
-							"wordWrap": true
+							"wordWrap": true,
+							"suppressAttributes": true,
+							"suppressOperations": true
 						},
 						{
 							"_type": "UMLUseCaseView",
@@ -658,14 +662,16 @@
 							],
 							"font": "Arial;13;0",
 							"containerChangeable": true,
-							"left": 240,
-							"top": 246,
-							"width": 130,
-							"height": 48,
+							"left": 329,
+							"top": 296,
+							"width": 250,
+							"height": 54,
 							"nameCompartment": {
 								"$ref": "AAAAAAGLjOjC+nvh4eF9yiA="
 							},
-							"wordWrap": true
+							"wordWrap": true,
+							"suppressAttributes": true,
+							"suppressOperations": true
 						},
 						{
 							"_type": "UMLUseCaseView",
@@ -754,14 +760,16 @@
 							],
 							"font": "Arial;13;0",
 							"containerChangeable": true,
-							"left": 240,
-							"top": 344,
-							"width": 130,
-							"height": 48,
+							"left": 329,
+							"top": 392,
+							"width": 250,
+							"height": 54,
 							"nameCompartment": {
 								"$ref": "AAAAAAGQ/Q8szygLS13fNtx="
 							},
-							"wordWrap": true
+							"wordWrap": true,
+							"suppressAttributes": true,
+							"suppressOperations": true
 						},
 						{
 							"_type": "UMLAssociationView",
@@ -986,8 +994,8 @@
 							"tail": {
 								"$ref": "AAAAAAGzNi4ZyGInTIL6Klp="
 							},
-							"lineStyle": 1,
-							"points": "130:108;185:74;240:74",
+							"lineStyle": 0,
+							"points": "89:281;181:281;181:131;454:131",
 							"showVisibility": true,
 							"nameLabel": {
 								"$ref": "AAAAAAG3+T0CfVBMblH09sf="
@@ -1246,8 +1254,8 @@
 							"tail": {
 								"$ref": "AAAAAAGzNi4ZyGInTIL6Klp="
 							},
-							"lineStyle": 1,
-							"points": "130:133;185:133;240:151",
+							"lineStyle": 0,
+							"points": "89:281;192:281;192:227;454:227",
 							"showVisibility": true,
 							"nameLabel": {
 								"$ref": "AAAAAAGi4tfk1MIjGUZ0KO3="
@@ -1506,8 +1514,8 @@
 							"tail": {
 								"$ref": "AAAAAAGzNi4ZyGInTIL6Klp="
 							},
-							"lineStyle": 1,
-							"points": "121:178;185:270;240:270",
+							"lineStyle": 0,
+							"points": "89:281;203:281;203:323;454:323",
 							"showVisibility": true,
 							"nameLabel": {
 								"$ref": "AAAAAAGT5ih2mE+xzlAvKcn="
@@ -1766,8 +1774,8 @@
 							"tail": {
 								"$ref": "AAAAAAGWtM6LDjQdlHTMw5P="
 							},
-							"lineStyle": 1,
-							"points": "123:295;185:211;240:193",
+							"lineStyle": 0,
+							"points": "805:281;708:281;708:227;454:227",
 							"showVisibility": true,
 							"nameLabel": {
 								"$ref": "AAAAAAGbokJL3iZvsQUoVJo="
@@ -2026,8 +2034,8 @@
 							"tail": {
 								"$ref": "AAAAAAGWtM6LDjQdlHTMw5P="
 							},
-							"lineStyle": 1,
-							"points": "130:352;185:368;240:368",
+							"lineStyle": 0,
+							"points": "805:281;686:281;686:419;454:419",
 							"showVisibility": true,
 							"nameLabel": {
 								"$ref": "AAAAAAGk7jfGcYElQev3wAU="
@@ -2108,7 +2116,7 @@
 								"reference": {
 									"$ref": "AAAAAAGpsI/LwGfnN452xpI="
 								},
-								"navigable": "navigable",
+								"navigable": "unspecified",
 								"aggregation": "none"
 							}
 						},
@@ -2139,7 +2147,7 @@
 								"reference": {
 									"$ref": "AAAAAAGIaHTcxtXKQvg9W3m="
 								},
-								"navigable": "navigable",
+								"navigable": "unspecified",
 								"aggregation": "none"
 							}
 						},
@@ -2170,7 +2178,7 @@
 								"reference": {
 									"$ref": "AAAAAAG5F94l6nfpIEzyICs="
 								},
-								"navigable": "navigable",
+								"navigable": "unspecified",
 								"aggregation": "none"
 							}
 						}
@@ -2211,7 +2219,7 @@
 								"reference": {
 									"$ref": "AAAAAAGIaHTcxtXKQvg9W3m="
 								},
-								"navigable": "navigable",
+								"navigable": "unspecified",
 								"aggregation": "none"
 							}
 						},
@@ -2242,7 +2250,7 @@
 								"reference": {
 									"$ref": "AAAAAAGR9VEWaw1KxKgbLiS="
 								},
-								"navigable": "navigable",
+								"navigable": "unspecified",
 								"aggregation": "none"
 							}
 						}
@@ -2254,7 +2262,7 @@
 					"_parent": {
 						"$ref": "AAAAAAGeKYLnyCdYM8Tq2iQ="
 					},
-					"name": "注册账号",
+					"name": "UC-01 注册账号",
 					"ownedElements": []
 				},
 				{
@@ -2263,7 +2271,7 @@
 					"_parent": {
 						"$ref": "AAAAAAGeKYLnyCdYM8Tq2iQ="
 					},
-					"name": "登录系统",
+					"name": "UC-02 登录系统",
 					"ownedElements": []
 				},
 				{
@@ -2272,7 +2280,7 @@
 					"_parent": {
 						"$ref": "AAAAAAGeKYLnyCdYM8Tq2iQ="
 					},
-					"name": "维护个人资料",
+					"name": "UC-03 维护个人资料",
 					"ownedElements": []
 				},
 				{
@@ -2281,7 +2289,7 @@
 					"_parent": {
 						"$ref": "AAAAAAGeKYLnyCdYM8Tq2iQ="
 					},
-					"name": "启用或停用用户",
+					"name": "UC-15 启用或停用用户",
 					"ownedElements": []
 				}
 			]

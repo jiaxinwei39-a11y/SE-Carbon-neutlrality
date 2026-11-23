@@ -107,10 +107,10 @@
 							],
 							"font": "Arial;13;0",
 							"containerChangeable": true,
-							"left": 200,
-							"top": 31,
-							"width": 450,
-							"height": 226,
+							"left": 252,
+							"top": 35,
+							"width": 404,
+							"height": 398,
 							"nameCompartment": {
 								"$ref": "AAAAAAGbfNer7CAH+irtAZl="
 							}
@@ -230,10 +230,10 @@
 							],
 							"font": "Arial;13;0",
 							"containerChangeable": true,
-							"left": 50,
-							"top": 50,
-							"width": 80,
-							"height": 90,
+							"left": 40,
+							"top": 203,
+							"width": 98,
+							"height": 75,
 							"nameCompartment": {
 								"$ref": "AAAAAAGqvxUZUxCJtU9xwVb="
 							},
@@ -334,14 +334,16 @@
 							],
 							"font": "Arial;13;0",
 							"containerChangeable": true,
-							"left": 240,
-							"top": 169,
-							"width": 130,
-							"height": 48,
+							"left": 329,
+							"top": 104,
+							"width": 250,
+							"height": 54,
 							"nameCompartment": {
 								"$ref": "AAAAAAG4HyUTbFAlKGzziFw="
 							},
-							"wordWrap": true
+							"wordWrap": true,
+							"suppressAttributes": true,
+							"suppressOperations": true
 						},
 						{
 							"_type": "UMLUseCaseView",
@@ -430,14 +432,16 @@
 							],
 							"font": "Arial;13;0",
 							"containerChangeable": true,
-							"left": 240,
-							"top": 71,
-							"width": 130,
-							"height": 48,
+							"left": 329,
+							"top": 200,
+							"width": 250,
+							"height": 54,
 							"nameCompartment": {
 								"$ref": "AAAAAAGhkIe6qDhmcFoliXS="
 							},
-							"wordWrap": true
+							"wordWrap": true,
+							"suppressAttributes": true,
+							"suppressOperations": true
 						},
 						{
 							"_type": "UMLUseCaseView",
@@ -526,14 +530,16 @@
 							],
 							"font": "Arial;13;0",
 							"containerChangeable": true,
-							"left": 480,
-							"top": 91,
-							"width": 130,
-							"height": 48,
+							"left": 329,
+							"top": 296,
+							"width": 250,
+							"height": 54,
 							"nameCompartment": {
 								"$ref": "AAAAAAGoZxkn8kcR6vikJ2k="
 							},
-							"wordWrap": true
+							"wordWrap": true,
+							"suppressAttributes": true,
+							"suppressOperations": true
 						},
 						{
 							"_type": "UMLAssociationView",
@@ -758,8 +764,8 @@
 							"tail": {
 								"$ref": "AAAAAAGgCductHsxM3tQrQF="
 							},
-							"lineStyle": 1,
-							"points": "130:136;185:193;240:193",
+							"lineStyle": 0,
+							"points": "89:240;181:240;181:131;454:131",
 							"showVisibility": true,
 							"nameLabel": {
 								"$ref": "AAAAAAGEDNsXCn3LaveclVe="
@@ -1018,8 +1024,8 @@
 							"tail": {
 								"$ref": "AAAAAAGgCductHsxM3tQrQF="
 							},
-							"lineStyle": 1,
-							"points": "130:95;185:95;240:95",
+							"lineStyle": 0,
+							"points": "89:240;192:240;192:227;454:227",
 							"showVisibility": true,
 							"nameLabel": {
 								"$ref": "AAAAAAG/vBh2e8U/65XSQ3f="
@@ -1278,8 +1284,8 @@
 							"tail": {
 								"$ref": "AAAAAAGgCductHsxM3tQrQF="
 							},
-							"lineStyle": 1,
-							"points": "130:70;185:36;305:36;425:36;508:91",
+							"lineStyle": 0,
+							"points": "89:240;203:240;203:323;454:323",
 							"showVisibility": true,
 							"nameLabel": {
 								"$ref": "AAAAAAGraYYS2WnE1tHQsrc="
@@ -1313,73 +1319,6 @@
 							},
 							"headQualifiersCompartment": {
 								"$ref": "AAAAAAGmS+8z/ztssQQuI2J="
-							}
-						},
-						{
-							"_type": "UMLIncludeView",
-							"_id": "AAAAAAGNLWHiJiFL0XvP+ma=",
-							"_parent": {
-								"$ref": "AAAAAAG0fACgKjJWm2zv/ud="
-							},
-							"model": {
-								"$ref": "AAAAAAGHLrzjs8+CtPVuPZw="
-							},
-							"subViews": [
-								{
-									"_type": "EdgeLabelView",
-									"_id": "AAAAAAGueWOb2SToLbAxQGa=",
-									"_parent": {
-										"$ref": "AAAAAAGNLWHiJiFL0XvP+ma="
-									},
-									"model": {
-										"$ref": "AAAAAAGHLrzjs8+CtPVuPZw="
-									},
-									"visible": false,
-									"font": "Arial;13;0",
-									"height": 13,
-									"alpha": 1.5707963267948966,
-									"distance": 15,
-									"hostEdge": {
-										"$ref": "AAAAAAGNLWHiJiFL0XvP+ma="
-									},
-									"edgePosition": 1
-								},
-								{
-									"_type": "EdgeLabelView",
-									"_id": "AAAAAAGcJzo8N8WT29oC7Fp=",
-									"_parent": {
-										"$ref": "AAAAAAGNLWHiJiFL0XvP+ma="
-									},
-									"model": {
-										"$ref": "AAAAAAGHLrzjs8+CtPVuPZw="
-									},
-									"visible": true,
-									"font": "Arial;13;0",
-									"height": 13,
-									"alpha": 1.5707963267948966,
-									"distance": 25,
-									"hostEdge": {
-										"$ref": "AAAAAAGNLWHiJiFL0XvP+ma="
-									},
-									"edgePosition": 1,
-									"text": "«include»"
-								}
-							],
-							"font": "Arial;13;0",
-							"lineColor": "#000000",
-							"head": {
-								"$ref": "AAAAAAGG1qWY+giEbHaVU6/="
-							},
-							"tail": {
-								"$ref": "AAAAAAGhJ1YZSm+4x+uT+Wr="
-							},
-							"lineStyle": 1,
-							"points": "370:193;425:193;508:139",
-							"nameLabel": {
-								"$ref": "AAAAAAGueWOb2SToLbAxQGa="
-							},
-							"stereotypeLabel": {
-								"$ref": "AAAAAAGcJzo8N8WT29oC7Fp="
 							}
 						}
 					]
@@ -1427,7 +1366,7 @@
 								"reference": {
 									"$ref": "AAAAAAG5z/DhAjKR37VK6tm="
 								},
-								"navigable": "navigable",
+								"navigable": "unspecified",
 								"aggregation": "none"
 							}
 						},
@@ -1458,7 +1397,7 @@
 								"reference": {
 									"$ref": "AAAAAAGy+4A5yUjzaQLQhkq="
 								},
-								"navigable": "navigable",
+								"navigable": "unspecified",
 								"aggregation": "none"
 							}
 						},
@@ -1489,7 +1428,7 @@
 								"reference": {
 									"$ref": "AAAAAAGcpY86JGp25UbPdNk="
 								},
-								"navigable": "navigable",
+								"navigable": "unspecified",
 								"aggregation": "none"
 							}
 						}
@@ -1501,22 +1440,8 @@
 					"_parent": {
 						"$ref": "AAAAAAGgRefzqlGDG87/B3K="
 					},
-					"name": "上报模拟行程",
-					"ownedElements": [
-						{
-							"_type": "UMLInclude",
-							"_id": "AAAAAAGHLrzjs8+CtPVuPZw=",
-							"_parent": {
-								"$ref": "AAAAAAG5z/DhAjKR37VK6tm="
-							},
-							"source": {
-								"$ref": "AAAAAAG5z/DhAjKR37VK6tm="
-							},
-							"target": {
-								"$ref": "AAAAAAGcpY86JGp25UbPdNk="
-							}
-						}
-					]
+					"name": "UC-04 上报模拟行程",
+					"ownedElements": []
 				},
 				{
 					"_type": "UMLUseCase",
@@ -1524,7 +1449,7 @@
 					"_parent": {
 						"$ref": "AAAAAAGgRefzqlGDG87/B3K="
 					},
-					"name": "查询行程记录",
+					"name": "UC-05 查询行程记录",
 					"ownedElements": []
 				},
 				{
@@ -1533,7 +1458,7 @@
 					"_parent": {
 						"$ref": "AAAAAAGgRefzqlGDG87/B3K="
 					},
-					"name": "查看碳减排结果",
+					"name": "UC-06 查看碳减排结果",
 					"ownedElements": []
 				}
 			]
