@@ -151,26 +151,77 @@ function allOwners(): Array<{ id: string; bucket: MockBucket }> {
   return list
 }
 
-/** 生成订单号：O + yyyyMMdd + 4 位序号，与后端口径一致 */
-function nextOrderId(): string {
+/**
+ * 全局序号游标（行程号/订单号共用一套策略）。
+ *
+ * 为什么不能像原来那样用 `orders.length + 1`：
+ * mock 里每个账号一个 bucket，`orders` 只是**当前账号**的订单。两个新用户当天各自
+ * 首次兑换都会算出 `...0001`，于是出现跨账号重复的订单号；管理端按订单号取消/履约时
+ * 只能命中"第一个匹配到的用户"，就会拿 B 的单给 A 退款。真后端是全局自增主键 +
+ * 唯一索引，mock 必须等价：序号全站唯一、并随快照一起持久化。
+ */
+const seqCounters = { trip: 0, order: 0 }
+
+function todayStamp(): string {
   const d = new Date()
-  const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`
-  let seq = orders.length + 1
-  let id = `O${stamp}${String(seq).padStart(4, '0')}`
-  while (orders.some((o) => o.orderId === id)) {
-    seq += 1
-    id = `O${stamp}${String(seq).padStart(4, '0')}`
+  return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`
+}
+
+/** 从已有编号里扫出最大的序号，用于老快照（没有 seq 字段）时的兜底 */
+function scanMaxSeq(prefix: string, ids: Iterable<string>): number {
+  const re = new RegExp(`^${prefix}\\d{8}(\\d{4,})$`)
+  let max = 0
+  for (const id of ids) {
+    const m = re.exec(id)
+    if (m) max = Math.max(max, Number(m[1]))
   }
+  return max
+}
+
+/** 全站所有已用编号（跨账号），既用于去重也用于兜底扫描 */
+function allIssuedIds(): Set<string> {
+  const set = new Set<string>()
+  for (const { bucket } of allOwners()) {
+    for (const t of bucket.trips) set.add(t.tripId)
+    for (const o of bucket.orders) set.add(o.orderId)
+  }
+  return set
+}
+
+/** 生成全站唯一的业务编号：T/O + yyyyMMdd + 4 位以上序号 */
+function nextGlobalId(kind: 'trip' | 'order'): string {
+  const prefix = kind === 'trip' ? 'T' : 'O'
+  const stamp = todayStamp()
+  const used = allIssuedIds()
+  let n = Math.max(seqCounters[kind], scanMaxSeq(prefix, used)) + 1
+  let id = `${prefix}${stamp}${String(n).padStart(4, '0')}`
+  while (used.has(id)) {
+    n += 1
+    id = `${prefix}${stamp}${String(n).padStart(4, '0')}`
+  }
+  seqCounters[kind] = n
   return id
 }
 
-/** 按订单号跨用户找订单（管理端履约/取消要用） */
+function nextOrderId(): string {
+  return nextGlobalId('order')
+}
+
+/**
+ * 按订单号跨用户找订单（管理端履约/取消要用）。
+ * 订单号全站唯一是本函数的前提；万一真的撞号（历史脏数据），宁可报错也不要
+ * 随便挑一个用户去退款 —— 那会把 B 的单退给 A。
+ */
 function findOrderAnyOwner(orderId: string): { id: string; owner: MockBucket; order: Order } | null {
+  const hits: Array<{ id: string; owner: MockBucket; order: Order }> = []
   for (const { id, bucket } of allOwners()) {
     const order = bucket.orders.find((x) => x.orderId === orderId)
-    if (order) return { id, owner: bucket, order }
+    if (order) hits.push({ id, owner: bucket, order })
   }
-  return null
+  if (hits.length > 1) {
+    throw new ApiError('订单号重复，为避免退错账户已拒绝操作，请联系管理员核对数据', 50000, 500)
+  }
+  return hits[0] ?? null
 }
 
 /** 把改过的某个用户数据写回去；改的是当前用户就同步到实时状态 */
@@ -209,6 +260,8 @@ function persist(): void {
     rules: state.rules,
     users: state.users,
     tokens: [...tokens.entries()],
+    // 全局序号游标要一起存，否则刷新后重新从 1 开始又会撞号
+    seq: { ...seqCounters },
   }
   try {
     ls.setItem(DB_KEY, JSON.stringify(payload))
@@ -231,6 +284,7 @@ function loadDb(): boolean {
       rules?: CarbonRule[]
       users?: User[]
       tokens?: Array<[string, string]>
+      seq?: { trip?: number; order?: number }
     }
     // 版本不匹配就当作没有：宁可重新播种，也不要拿旧结构硬跑
     if (db.v !== 3 || !db.accounts?.length) return false
@@ -243,6 +297,9 @@ function loadDb(): boolean {
     if (db.products?.length) state.products = db.products
     if (db.rules?.length) state.rules = db.rules
     if (db.users?.length) state.users = db.users
+    // 老快照没有 seq 字段：先把游标置 0，第一次取号时会用全站已有编号兜底扫描
+    seqCounters.trip = Number(db.seq?.trip ?? 0)
+    seqCounters.order = Number(db.seq?.order ?? 0)
     return true
   } catch {
     return false
@@ -288,6 +345,8 @@ function resetDb(): void {
   flows = []
   orders = []
   state.account = emptyAccount()
+  seqCounters.trip = 0
+  seqCounters.order = 0
   seed()
   seedAccounts()
   persist()
@@ -758,15 +817,9 @@ async function handleRequest<T>(req: MockRequestInit): Promise<T> {
     const reductionKg = calcReduction(distanceKm, body.mode)
     const awardedPoints = Math.max(0, Math.floor(reductionKg * POINTS_RATIO))
     // 业务主键由**服务端**生成，和前端传的 clientTripId 是两回事：
-    // clientTripId 只用于幂等去重，绝不能当成 tripId 用（否则详情页拿它去查会 404）
-    const d = new Date()
-    const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`
-    let seq = trips.length + 1
-    let tripId = `T${stamp}${String(seq).padStart(4, '0')}`
-    while (trips.some((t) => t.tripId === tripId)) {
-      seq += 1
-      tripId = `T${stamp}${String(seq).padStart(4, '0')}`
-    }
+    // clientTripId 只用于幂等去重，绝不能当成 tripId 用（否则详情页拿它去查会 404）。
+    // 也必须跨用户唯一：用 allOwners() 汇总全域编号 + 全局游标，而不是 trips.length
+    const tripId = nextGlobalId('trip')
     const trip: TripDetail = {
       tripId,
       mode: body.mode,
