@@ -126,7 +126,12 @@ export async function request<T, B = unknown>(options: RequestOptions<B>): Promi
         method,
         query: options.query,
         body: options.body,
-        headers: options.headers,
+        // 真后端由 axios 拦截器补 Authorization；mock 直连，这里必须自己带上，
+        // 否则刷新页面后 /auth/me 拿不到 token，mock 就认不出"已经登录过"。
+        headers: {
+          ...options.headers,
+          ...(tokenAtSend ? { Authorization: `Bearer ${tokenAtSend}` } : {}),
+        },
       })) as unknown as ApiResult<T>
       if (wrapped.code !== 0) {
         if (wrapped.code === 401 || wrapped.code === 40100) handleUnauthorized(tokenAtSend)

@@ -10,8 +10,10 @@ interface ImportMetaEnv {
   readonly VITE_APP_TITLE: string
   /** 数据来源：mock | api。桌面演示默认 mock，接后端时改成 api */
   readonly VITE_DATA_SOURCE: 'mock' | 'api'
-  /** 后端接口基地址，接后端时填写，例如 http://localhost:8080 */
+  /** 后端接口基地址，接后端时填写，例如 http://localhost:8080/api */
   readonly VITE_API_BASE_URL: string
+  /** 仅 dev server 用：/api 代理到哪台后端（vite.config.ts 读取，不进 bundle） */
+  readonly VITE_PROXY_TARGET?: string
 }
 
 interface ImportMeta {

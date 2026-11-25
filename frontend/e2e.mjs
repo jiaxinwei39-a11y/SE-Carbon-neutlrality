@@ -1,4 +1,4 @@
-// 端到端回归：把「答辩前要人工点一遍」的链路自动化
+﻿// 端到端回归：把「答辩前要人工点一遍」的链路自动化
 // 用法：先起无头 Chrome（带 --remote-debugging-port），再 `node e2e.mjs <port>`
 // 任一断言失败 → 进程退出码 1，可以直接接进 CI
 const PORT = Number(process.argv[2] || 9231)
@@ -36,6 +36,12 @@ await send('Runtime.enable')
 
 const ev = async (expression) => {
   const r = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true })
+  const ex = r.result?.exceptionDetails
+  if (ex) {
+    const msg = 'EVAL_ERR:' + String(ex.exception?.description || ex.text || '').slice(0, 240)
+    runtimeErrors.push(msg)
+    return msg
+  }
   return r.result?.result?.value
 }
 const wait = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -89,8 +95,12 @@ function check(name, ok, detail = '') {
   console.log(`${ok ? '  ✓' : '  ✗'} ${name}${detail ? '  → ' + detail : ''}`)
 }
 
-async function login(account) {
-  await ev(`sessionStorage.clear(); localStorage.clear(); location.reload()`)
+async function login(account, password = '123456', keepData = false) {
+  // keepData=true 时只清会话（相当于"退出登录"），保留 localStorage 里的 mock 库，
+  // 用来验证"退出重登 / 刷新页面后数据还在"（评审 #38）。
+  await ev(
+    `sessionStorage.clear(); ${keepData ? '' : 'localStorage.clear();'} location.reload()`,
+  )
   await wait(2400)
   await ev(`location.hash = '#/login'`)
   await wait(800)
@@ -99,7 +109,7 @@ async function login(account) {
     const inputs = [...document.querySelectorAll('input')];
     const s = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
     s.call(inputs[0], '${account}'); inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
-    s.call(inputs[1], '123456'); inputs[1].dispatchEvent(new Event('input', { bubbles: true }));
+    s.call(inputs[1], '${password}'); inputs[1].dispatchEvent(new Event('input', { bubbles: true }));
   })()`)
   await wait(300)
   await ev(`__t.click('登录')`)
@@ -397,20 +407,52 @@ const patchAfter = await ev(
 check('失败的商品 PATCH 没有改动任何字段', patchBefore === patchAfter, `${patchBefore} → ${patchAfter}`)
 
 console.log('\n=== 10. 管理员取消：只返还一次（BR-06 幂等） ===')
-// 注意：mock 数据在内存里，reload 会重置，所以余额前后对比必须在同一个会话里读接口，
-// 不能靠"退出再登录后看页面"来比。
-await login('admin')
-const balanceBeforeCancel = await ev(
-  `__carbonDebug.call({ url: '/points/account' }).then((a) => a.balance).catch((e) => 'ERR:' + e.message)`,
-)
+// 取消要把积分退给"下单人"，管理员账号本身没有这笔订单，
+// 所以操作在管理员端做、验证在下单人账号里做（这就是"退给谁"的语义检查）。
+const USER_ACCOUNT = '13800138000'
+const walletExpr = (orderId) => `(async () => {
+  const a = await __carbonDebug.call({ url: '/points/account' })
+  const f = await __carbonDebug.call({ url: '/points/flows', query: { page: 1, size: 50 } })
+  const items = (f && f.items) || []
+  const linked = items.filter((x) => x.refId === ${JSON.stringify(orderId)} && x.type === 'REVERSE')
+  return JSON.stringify({ balance: a.balance, linked: linked.length, amount: linked[0] ? linked[0].amount : 0 })
+})()`
+
+await login(USER_ACCOUNT, '123456', true)
+// 第 9 节已经把演示数据里唯一一单「待发放」履约掉了，所以这里自己下一单来测取消，
+// 避免用例之间互相吃数据（顺序一变就红）。
+const newOrderId = await ev(`(async () => {
+  try {
+    const acc = await __carbonDebug.call({ url: '/points/account' })
+    const page = await __carbonDebug.call({ url: '/mall/products', query: { page: 1, size: 50 } })
+    const list = (page && page.items) || []
+    const pick = list.find((p) => p.status === 'ON' && p.stock > 0 && p.points <= acc.balance)
+    if (!pick) return 'NO_PRODUCT(balance=' + acc.balance + ',count=' + list.length + ')'
+    const o = await __carbonDebug.call({
+      url: '/mall/orders',
+      method: 'POST',
+      body: { productId: pick.productId, quantity: 1 },
+      headers: { 'Idempotency-Key': 'e2e-cancel-' + Date.now() },
+    })
+    return o.orderId
+  } catch (e) {
+    return 'ERR:' + (e && (e.code || e.message))
+  }
+})()`)
+check('下单成功（用于取消用例）', /^O\d{12}$/.test(String(newOrderId)), String(newOrderId))
+const balBeforeRaw = await ev(`__carbonDebug.call({ url: '/points/account' }).then((a) => a.balance)`)
+const balBefore = Number(balBeforeRaw)
+
+await login('admin', '123456', true)
 await ev(`location.hash = '#/admin/orders'`)
 await wait(1800)
 await ev(PAGE_HELPERS)
-const adminOrderId = await ev(`(() => {
-  const tr = [...document.querySelectorAll('tbody tr')].find((t) => t.innerText.includes('待发放'));
-  return (tr?.innerText.match(/O\\d{12}/) || [''])[0];
-})()`)
-check('管理端能找到待发放订单', /^O\d{12}$/.test(String(adminOrderId)), String(adminOrderId))
+const adminOrderId = String(newOrderId)
+check(
+  '管理端能找到这单待发放订单',
+  (await ev('__t.rows()')).some((r) => r.includes('待发放')),
+  `orderId=${adminOrderId}`,
+)
 
 const cancelExpr = `__carbonDebug
   .cancelOrder('${adminOrderId}', '回归测试：运营取消')
@@ -437,16 +479,42 @@ await wait(1800)
 await ev(PAGE_HELPERS)
 check('管理端列表里该订单已取消', (await ev('__t.rows()')).some((r) => r.includes('已取消')))
 
-// 直接读接口，不要 reload（mock 数据在内存里，reload 会重置）
-const balanceAfterCancel = await ev(
-  `__carbonDebug.call({ url: '/points/account' }).then((a) => a.balance).catch((e) => 'ERR:' + e.message)`,
-)
+// 换回下单人账号看余额与冲正流水（mock 已落 localStorage，keepData=true 保留数据）
+await login(USER_ACCOUNT, '123456', true)
+let walletAfter = null
+try {
+  walletAfter = JSON.parse(String(await ev(walletExpr(adminOrderId))))
+} catch {
+  walletAfter = null
+}
+const orderPoints = firstParsed?.p ?? 0
 check(
-  '积分只返还一次（原额 + 订单积分）',
-  balanceAfterCancel === balanceBeforeCancel + (firstParsed?.p ?? 0),
-  `${balanceBeforeCancel} + ${firstParsed?.p ?? 0} = ${balanceAfterCancel}`,
+  '积分退给了下单人（不是当前操作的管理员）',
+  walletAfter?.balance === balBefore + orderPoints,
+  `${balBefore} + ${orderPoints} = ${walletAfter?.balance}`,
 )
+check('下单人只收到一条冲正流水', walletAfter?.linked === 1, `linked=${walletAfter?.linked}`)
+
+// 再取消一次，确认"只返还一次"：余额不动、流水不增加
+await login('admin', '123456', true)
+await ev(cancelExpr)
+await ev(cancelExpr)
+await login(USER_ACCOUNT, '123456', true)
+let walletFinal = null
+try {
+  walletFinal = JSON.parse(String(await ev(walletExpr(adminOrderId))))
+} catch {
+  walletFinal = null
+}
+check(
+  '重复取消不再返还原额',
+  walletFinal?.balance === walletAfter?.balance,
+  `第一次后 ${walletAfter?.balance} / 再取消两次后 ${walletFinal?.balance}`,
+)
+check('重复取消不再新增冲正流水', walletFinal?.linked === 1, `linked=${walletFinal?.linked}`)
 console.log('\n=== 11. 积分对账：三态 + 账户级差异 ===')
+// 对账是管理端页面，先确保是管理员会话（第 10 节结束时停在下单人账号）
+await login('admin', '123456', true)
 // 断言必须打在"结果面板"上，不能全页搜关键词：
 // 页面常驻的演示说明里就有"无法判断/读取失败"，按钮本身也叫"读取失败"，
 // 全页搜索会在"错误地显示成无差异"时依然通过（上一轮评审指出的问题）。
@@ -490,6 +558,264 @@ check('读取失败显示专用面板', failState?.error === true, JSON.stringif
 check('失败面板标题是"核对结果读取失败"', String(failState?.title).trim() === '核对结果读取失败', String(failState?.title))
 check('读取失败时不显示"无差异"面板', failState?.empty === false)
 check('读取失败时不显示差异表', failState?.diff === false)
+
+console.log('\n=== 12. 注册（P0 #11）===')
+// 12.1 重复手机号：演示账号 13800138000 已存在 → 40906
+await ev(`sessionStorage.clear(); localStorage.clear(); location.reload()`)
+await wait(2200)
+await ev(PAGE_HELPERS)
+await ev(`location.hash = '#/register'`)
+await wait(1200)
+await ev(PAGE_HELPERS)
+await ev(`__t.fill('#phone', '13800138000')`)
+await ev(`__t.fill('#pwd', '123456')`)
+await ev(`__t.fill('#pwd2', '123456')`)
+await ev(`__t.click('提交注册')`)
+await wait(1400)
+const dupText = await ev('__t.text()')
+check('重复手机号被拒（40906）', /已注册|该手机号已注册/.test(dupText), dupText.replace(/\n/g, ' ').slice(-120))
+check('注册失败后没进首页', !String(await ev('location.hash')).startsWith('#/app'), String(await ev('location.hash')))
+
+// 12.2 密码太短：前端先拦（不发请求），提示 6-32 位
+await ev(`__t.fill('#phone', '13900001111')`)
+await ev(`__t.fill('#pwd', '123')`)
+await ev(`__t.fill('#pwd2', '123')`)
+await ev(`__t.click('提交注册')`)
+await wait(600)
+check('弱密码被拦并提示长度', /6-32/.test(await ev('__t.text()')))
+
+// 12.3 正常注册：新手机号 + 昵称 → 直接进首页，且是空数据账号
+const regPhone = '1390000' + String(Date.now()).slice(-4)
+await ev(`__t.fill('#phone', '${regPhone}')`)
+await ev(`__t.fill('#nickname', '新同学')`)
+await ev(`__t.fill('#pwd', 'abc123456')`)
+await ev(`__t.fill('#pwd2', 'abc123456')`)
+await ev(`__t.click('提交注册')`)
+await wait(2600)
+const afterRegHash = String(await ev('location.hash'))
+check('注册成功后进入用户端', afterRegHash.startsWith('#/app'), afterRegHash)
+await ev(PAGE_HELPERS)
+const regText = await ev('__t.text()')
+check('注册后的账号昵称生效', /新同学/.test(regText))
+check('新账号积分从 0 开始', /当前可用积分[\s\S]{0,20}0\s*分|\b0\s*分/.test(regText), regText.replace(/\n/g, ' ').slice(0, 120))
+check('新账号行程为空态（不是演示数据）', /还没有|暂无|去上报/.test(regText), regText.replace(/\n/g, ' ').slice(0, 160))
+
+// 12.4 新账号能直接上报一条行程（注册→上报闭环）
+await ev(`location.hash = '#/app/trips/new'`)
+await wait(1500)
+await ev(PAGE_HELPERS)
+await ev(`__t.fillByPlaceholder('例如 8.6', '5')`)
+await ev(`__t.fillByPlaceholder('例如 软件园东门', '宿舍')`)
+await ev(`__t.fillByPlaceholder('例如 地铁二号线站', '教学楼')`)
+await wait(200)
+await ev(`__t.click('提交上报')`)
+await wait(2800)
+const newTripHash = String(await ev('location.hash'))
+check('新账号上报行程后跳详情', /^#\/app\/trips\/T/.test(newTripHash), newTripHash)
+await ev(PAGE_HELPERS)
+check('新账号拿到了真实 tripId（服务端生成）', /T\d{8}\d{4}/.test(await ev('__t.text()')))
+
+console.log('\n=== 13. 数据保留（评审 #38：退出重登 / 刷新都不丢）===')
+// 此刻是 12 节新注册的账号，已上报过 1 条行程
+
+// 13.1 刷新页面：token 还在 → 仍是登录态，数据没被重新播种
+await ev('location.reload()')
+await wait(2800)
+await ev(PAGE_HELPERS)
+const hashAfterReload = String(await ev('location.hash'))
+check('刷新页面后仍在业务页（不会掉回登录页）', hashAfterReload.startsWith('#/app'), hashAfterReload)
+await ev(`location.hash = '#/app/trips'`)
+await wait(1600)
+await ev(PAGE_HELPERS)
+const rowsAfterReload = (await ev('__t.rows()')) ?? []
+check('刷新后该账号的行程还在', rowsAfterReload.length >= 1, `rows=${rowsAfterReload.length}`)
+
+// 13.2 退出登录 → 用「注册时自己设的密码」重新登录 → 回到同一个账号
+await ev(`__carbonDebug.call({url:'/auth/logout', method:'POST'})`)
+await login(regPhone, 'abc123456', true)
+const backText = await ev('__t.text()')
+check('用注册时设的密码能登回原账号', /新同学/.test(backText), backText.replace(/\n/g, ' ').slice(0, 100))
+check('登回的是注册账号，不是演示账号', !/张生阳/.test(backText), backText.replace(/\n/g, ' ').slice(0, 100))
+
+// 13.3 演示账号：新上报一条 → 退出 → 重登 → 那条还在（登录不再重置数据）
+await login('13800138000', '123456', true)
+const demoBefore = await ev(
+  `__carbonDebug.call({url:'/trips', query:{page:1, size:50}}).then(p => p.total)`,
+)
+const keepKey = 'TR-E2E-KEEP-' + Date.now()
+const keepTripId = await ev(`(async () => {
+  const now = Date.now();
+  const r = await __carbonDebug.call({
+    url: '/trips', method: 'POST',
+    headers: { 'Idempotency-Key': '${keepKey}' },
+    body: {
+      clientTripId: '${keepKey}', mode: 'BUS', distanceKm: 6.6,
+      startTime: new Date(now - 3600000).toISOString(),
+      endTime: new Date(now - 60000).toISOString(),
+      startPlace: '图书馆', endPlace: '宿舍',
+    },
+  });
+  return r.tripId;
+})()`)
+check('演示账号能正常上报（拿到服务端 tripId）', /^T\d{8}\d{4}$/.test(String(keepTripId)), String(keepTripId))
+
+await ev(`__carbonDebug.call({url:'/auth/logout', method:'POST'})`)
+await login('13800138000', '123456', true)
+const demoAfter = await ev(
+  `__carbonDebug.call({url:'/trips', query:{page:1, size:50}}).then(p => p.total)`,
+)
+check(
+  '演示账号退出重登后数据仍在（没被重新播种）',
+  Number(demoAfter) === Number(demoBefore) + 1,
+  `${demoBefore} → ${demoAfter}`,
+)
+const keepTripVisible = await ev(
+  `__carbonDebug.call({url:'/trips', query:{page:1, size:50, keyword:'图书馆'}}).then(p => p.total)`,
+)
+check('重登后能查到退出前上报的那条行程', Number(keepTripVisible) >= 1, `total=${keepTripVisible}`)
+const keepFlow = await ev(
+  `__carbonDebug.call({url:'/points/flows', query:{page:1, size:50}}).then(p => p.items.filter(f => f.refId === '${keepTripId}').length)`,
+)
+check('重登后那条行程的加分流水也还在（恰好一条）', Number(keepFlow) === 1, `flows=${keepFlow}`)
+
+// ============================================================
+// 14. 业务号跨用户唯一（评审 P1：两个新账号同天下单不能撞号）
+// ============================================================
+console.log('\n=== 14. 业务号跨用户唯一（评审 P1）===')
+
+const phoneSeed = Date.now()
+const phoneA = '139' + String((phoneSeed + 137) % 100000000).padStart(8, '0')
+const phoneB = '138' + String((phoneSeed + 911) % 100000000).padStart(8, '0')
+
+/** 注册新账号并拿到它的 token（mock 的 token 就是身份凭证） */
+const registerToken = (phone) =>
+  ev(`__carbonDebug.call({url:'/auth/register', method:'POST', body:{phone:'${phone}', password:'abc123456'}})
+        .then(r => r.token).catch(e => 'ERR:' + e.message)`)
+
+/** 用某个 token 身份执行：切 token 后 mock 的 restoreSession 会跟着换用户 */
+const asUser = async (token, expression) => {
+  await ev(`__carbonDebug.setToken('${token}')`)
+  return ev(expression)
+}
+
+/** 攒积分：20km 公交 = 3.000000000kg → 30 分，8 次（240 分）够买最便宜的 200 分礼品（返回表达式字符串，由 asUser 执行） */
+const earnPointsExpr = (tag) => `(async () => {
+    const now = Date.now();
+    const errs = [];
+    for (let i = 0; i < 8; i++) {
+      const key = 'TR-P1-${tag}-' + now + '-' + i;
+      try {
+        await __carbonDebug.call({
+          url: '/trips', method: 'POST',
+          headers: { 'Idempotency-Key': key },
+          body: {
+            clientTripId: key, mode: 'BUS', distanceKm: 20,
+            startTime: new Date(now - 7200000 + i * 60000).toISOString(),
+            endTime: new Date(now - 3600000 + i * 60000).toISOString(),
+            startPlace: 'P1 起点 ${tag}', endPlace: 'P1 终点 ${tag}',
+          },
+        });
+      } catch (e) { errs.push(String(e && e.message || e)); }
+    }
+    const acc = await __carbonDebug.call({ url: '/points/account' });
+    return { balance: acc.balance, errs };
+  })().catch((e) => ({ balance: 0, errs: ['FATAL:' + String((e && e.message) || e)] }))`
+
+const tokenA = await registerToken(phoneA)
+check('新账号 A 注册成功并拿到 token', /^mock-token-/.test(String(tokenA)), String(tokenA).slice(0, 24))
+const tokenB = await registerToken(phoneB)
+check('新账号 B 注册成功并拿到 token', String(tokenB).startsWith('mock-token-') && tokenB !== tokenA, String(tokenB).slice(0, 24))
+
+const balA1 = await asUser(tokenA, `__carbonDebug.call({url:'/points/account'}).then(a => a.balance)`)
+const earnA = await asUser(tokenA, earnPointsExpr('A'))
+const balA2 = earnA && earnA.balance
+check('新账号 A 上报全部成功（没有接口报错）', !!earnA && earnA.errs.length === 0, JSON.stringify(earnA && earnA.errs))
+check('新账号 A 上报后积分归自己', Number(balA2) > Number(balA1), `${balA1} → ${balA2}`)
+
+// A 挑一件「积分够、有库存、最便宜」的礼品，B 买同一件
+const picked = await asUser(
+  tokenA,
+  `__carbonDebug.call({url:'/mall/products', query:{page:1, size:50}})
+     .then(p => p.items.filter(x => x.status === 'ON' && x.stock > 0 && x.points <= ${balA2})
+                         .sort((a, b) => a.points - b.points)[0])
+     .then(x => x ? { productId: x.productId, points: x.points } : null)`,
+)
+check('新账号 A 的积分够买一件礼品', !!picked, JSON.stringify(picked))
+
+const orderA = await asUser(
+  tokenA,
+  `__carbonDebug.call({url:'/mall/orders', method:'POST',
+      headers: {'Idempotency-Key': 'P1-A-' + Date.now()},
+      body: {productId: '${picked && picked.productId}', quantity: 1}})
+     .then(o => o.orderId).catch(e => 'ERR:' + e.message)`,
+)
+
+const earnB = await asUser(tokenB, earnPointsExpr('B'))
+const balB2 = earnB && earnB.balance
+check('新账号 B 上报全部成功（没有接口报错）', !!earnB && earnB.errs.length === 0, JSON.stringify(earnB && earnB.errs))
+const orderB = await asUser(
+  tokenB,
+  `__carbonDebug.call({url:'/mall/orders', method:'POST',
+      headers: {'Idempotency-Key': 'P1-B-' + Date.now()},
+      body: {productId: '${picked && picked.productId}', quantity: 1}})
+     .then(o => o.orderId).catch(e => 'ERR:' + e.message)`,
+)
+
+check('A 下单成功（订单号形如 O+日期+序号）', /^O\d{8}\d{4,}$/.test(String(orderA)), String(orderA))
+check('B 下单成功（订单号形如 O+日期+序号）', /^O\d{8}\d{4,}$/.test(String(orderB)), String(orderB))
+check('两个新账号的订单号不相同（跨用户唯一）', orderA !== orderB, `${orderA} vs ${orderB}`)
+
+const price = Number(picked && picked.points)
+const balAafterOrder = await asUser(tokenA, `__carbonDebug.call({url:'/points/account'}).then(a => a.balance)`)
+const balBafterOrder = await asUser(tokenB, `__carbonDebug.call({url:'/points/account'}).then(a => a.balance)`)
+check('A 余额 = 下单前 - 礼品价', Number(balAafterOrder) === Number(balA2) - price, `${balA2} - ${price} = ${balAafterOrder}`)
+check('B 余额 = 下单前 - 礼品价', Number(balBafterOrder) === Number(balB2) - price, `${balB2} - ${price} = ${balBafterOrder}`)
+
+// 管理员只取消 B 的单：必须退给 B，不能退错给 A
+await ev(`__carbonDebug.loginVia('admin', '123456').then(() => 'ok')`)
+const cancelB = await ev(
+  `__carbonDebug.call({url:'/admin/orders/${orderB}/cancel', method:'POST', body:{reason:'P1 回归：取消 B 的单'}})
+     .then(o => JSON.stringify({s: o.status, p: o.totalPoints})).catch(e => 'ERR:' + e.message)`,
+)
+check('管理员能按订单号取消 B 的单', /"s":"CANCELLED"/.test(String(cancelB)), String(cancelB))
+
+const balBafterCancel = await asUser(tokenB, `__carbonDebug.call({url:'/points/account'}).then(a => a.balance)`)
+check(
+  '取消 B 的单，原额退回到 B',
+  Number(balBafterCancel) === Number(balB2),
+  `${balBafterOrder} → ${balBafterCancel}（应回到下单前的 ${balB2}）`,
+)
+
+const balAafterCancel = await asUser(tokenA, `__carbonDebug.call({url:'/points/account'}).then(a => a.balance)`)
+check(
+  'A 的余额没被误退（退错账户的 P1 已修）',
+  Number(balAafterCancel) === Number(balAafterOrder),
+  `${balAafterOrder} → ${balAafterCancel}`,
+)
+
+const orderAState = await asUser(
+  tokenA,
+  `__carbonDebug.call({url:'/orders', query:{page:1, size:50}})
+     .then(p => (p.items.find(o => o.orderId === '${orderA}') || {}).status)`,
+)
+check('A 的单仍是「待发放」，没被 B 的取消波及', orderAState === 'CREATED', String(orderAState))
+
+// 履约 A 的单：只影响 A
+await ev(`__carbonDebug.loginVia('admin', '123456').then(() => 'ok')`)
+const fulfillA = await ev(
+  `__carbonDebug.call({url:'/admin/orders/${orderA}/fulfill', method:'POST'})
+     .then(o => o.status).catch(e => 'ERR:' + e.message)`,
+)
+check('管理员能按订单号履约 A 的单', fulfillA === 'FULFILLED', String(fulfillA))
+const orderBState = await asUser(
+  tokenB,
+  `__carbonDebug.call({url:'/orders', query:{page:1, size:50}})
+     .then(p => (p.items.find(o => o.orderId === '${orderB}') || {}).status)`,
+)
+check('B 的单仍是「已取消」，没被 A 的履约波及', orderBState === 'CANCELLED', String(orderBState))
+
+// 回到演示账号，避免影响收尾断言
+await login('13800138000', '123456', true)
 
 console.log('\n=== 运行时报错 ===')
 check('全程无未捕获异常', runtimeErrors.length === 0, runtimeErrors.slice(0, 3).join(' | '))
