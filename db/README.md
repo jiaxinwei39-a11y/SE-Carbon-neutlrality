@@ -3,6 +3,8 @@
 > 负责：郭浚文　结构版本：V4
 > 对应 PR #28 评审意见 3、4、5 的补充说明
 
+[V4 数据库 ER 图预览](../docs/02-design/uml/previews/DB-01.jpg) · [可编辑 StarUML 工程](../docs/02-design/uml/gts-database.mdj)
+
 ## 1. 目录与执行顺序
 
 ```

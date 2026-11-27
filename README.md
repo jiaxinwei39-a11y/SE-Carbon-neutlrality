@@ -7,7 +7,7 @@
 ## 实验文档
 
 - [产品工作台：页面、原型、任务与验收](docs/00-product/README.md)
-- [实验二设计草案与评审清单](docs/02-design/README.md)
+- [实验二设计与课件版图集](docs/02-design/README.md)
 
 - [实验一需求分析 v0.2](docs/01-requirements/README.md)
 - [小组成员与最新分工](docs/01-requirements/iteration-plan.md#2-小组分工)
@@ -16,7 +16,7 @@
 - [在线查看 UML 图片](docs/01-requirements/diagrams/README.md#图片预览)
 - [StarUML综合工程](docs/01-requirements/diagrams/lab1-all-models.mdj)
 
-当前包含分析文档、模型、产品线框、设计草案和可运行的前端 Mock 演示版；后端与数据库应用尚未实现。统一需求以main分支上述目录为准；其他分支的Sprint 0和消息队列方案为历史草案，不混用编号或技术选型。
+当前包含需求与设计模型、前端 Mock 演示版、Spring Boot 后端及 MySQL V4 数据库脚本。设计图中的联调节点和物理表以仓库现有配置为依据。
 
 ## 前端演示版
 

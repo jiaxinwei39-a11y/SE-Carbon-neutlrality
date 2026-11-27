@@ -1,7 +1,7 @@
 # 实验二设计工作区
 
-[关键设计草案](key-design.md)已从既有D盘设计文件同步，用于小组评审。
-
-[设计评审核对表](../00-product/design-review.md)列出指导书要求的正式UML、设计类、关键操作和数据库详细设计。Mermaid是讨论示意，不能替代完整正式模型。
-
-任务由DES-01和DB-01推进，产品、前端、UI/UX及测试共同核对。实际评审、建模、建库、编码及业务测试未完成时保持待办状态。
+- [课件版模型与预览](uml/README.md)
+- [关键设计方案与架构比较](key-design.md)
+- [API 契约](api-contract.md)
+- [数据库 V4 设计说明与数据字典](../../db/README.md)
+- [设计评审核对表](../00-product/design-review.md)

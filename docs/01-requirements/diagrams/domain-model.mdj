@@ -2853,7 +2853,8 @@
 							},
 							"headQualifiersCompartment": {
 								"$ref": "AAAAAAG9zL6OXLRwOtEJl+s="
-							}
+							},
+							"showName": true
 						},
 						{
 							"_type": "UMLAssociationView",
@@ -3113,7 +3114,8 @@
 							},
 							"headQualifiersCompartment": {
 								"$ref": "AAAAAAG151pnPRvo4fjl1Cd="
-							}
+							},
+							"showName": true
 						},
 						{
 							"_type": "UMLAssociationView",
@@ -3373,7 +3375,8 @@
 							},
 							"headQualifiersCompartment": {
 								"$ref": "AAAAAAGNSzvFfbcNkTdHxwJ="
-							}
+							},
+							"showName": true
 						},
 						{
 							"_type": "UMLAssociationView",
@@ -3633,7 +3636,8 @@
 							},
 							"headQualifiersCompartment": {
 								"$ref": "AAAAAAGZEjGutwmNGyuV4Ka="
-							}
+							},
+							"showName": true
 						},
 						{
 							"_type": "UMLAssociationView",
@@ -3893,7 +3897,8 @@
 							},
 							"headQualifiersCompartment": {
 								"$ref": "AAAAAAGa6shf5ZiiTXS9RdQ="
-							}
+							},
+							"showName": true
 						},
 						{
 							"_type": "UMLAssociationView",
@@ -4153,7 +4158,8 @@
 							},
 							"headQualifiersCompartment": {
 								"$ref": "AAAAAAGiQ7JPlbC+7+fNKle="
-							}
+							},
+							"showName": true
 						},
 						{
 							"_type": "UMLAssociationView",
@@ -4413,7 +4419,8 @@
 							},
 							"headQualifiersCompartment": {
 								"$ref": "AAAAAAGfDEDJL2h+FP7K9jk="
-							}
+							},
+							"showName": true
 						},
 						{
 							"_type": "UMLAssociationView",
@@ -4673,7 +4680,8 @@
 							},
 							"headQualifiersCompartment": {
 								"$ref": "AAAAAAG0AezJr+eAdAkQWJO="
-							}
+							},
+							"showName": true
 						},
 						{
 							"_type": "UMLAssociationView",
@@ -4933,7 +4941,8 @@
 							},
 							"headQualifiersCompartment": {
 								"$ref": "AAAAAAGE0/wdaYoDxfCheK9="
-							}
+							},
+							"showName": true
 						}
 					]
 				},
@@ -5039,7 +5048,8 @@
 								"navigable": "navigable",
 								"aggregation": "none",
 								"multiplicity": "0..*"
-							}
+							},
+							"name": "上报"
 						},
 						{
 							"_type": "UMLAssociation",
@@ -5072,7 +5082,8 @@
 								"navigable": "navigable",
 								"aggregation": "none",
 								"multiplicity": "1"
-							}
+							},
+							"name": "持有"
 						},
 						{
 							"_type": "UMLAssociation",
@@ -5105,7 +5116,8 @@
 								"navigable": "navigable",
 								"aggregation": "none",
 								"multiplicity": "0..*"
-							}
+							},
+							"name": "创建"
 						}
 					]
 				},
@@ -5181,7 +5193,8 @@
 								"navigable": "navigable",
 								"aggregation": "none",
 								"multiplicity": "0..*"
-							}
+							},
+							"name": "提供"
 						}
 					]
 				},
@@ -5403,7 +5416,7 @@
 								},
 								"navigable": "unspecified",
 								"aggregation": "none",
-								"multiplicity": "1"
+								"multiplicity": "0..1"
 							},
 							"end2": {
 								"_type": "UMLAssociationEnd",
@@ -5417,7 +5430,8 @@
 								"navigable": "navigable",
 								"aggregation": "none",
 								"multiplicity": "0..1"
-							}
+							},
+							"name": "产生发放流水"
 						}
 					]
 				},
@@ -5583,7 +5597,8 @@
 								"navigable": "navigable",
 								"aggregation": "none",
 								"multiplicity": "0..*"
-							}
+							},
+							"name": "用于核算"
 						}
 					]
 				},
@@ -5669,7 +5684,8 @@
 								"navigable": "navigable",
 								"aggregation": "none",
 								"multiplicity": "0..*"
-							}
+							},
+							"name": "记录"
 						}
 					]
 				},
@@ -5877,7 +5893,8 @@
 								"navigable": "navigable",
 								"aggregation": "none",
 								"multiplicity": "0..*"
-							}
+							},
+							"name": "被兑换"
 						}
 					]
 				},
@@ -6029,7 +6046,7 @@
 								},
 								"navigable": "unspecified",
 								"aggregation": "none",
-								"multiplicity": "1"
+								"multiplicity": "0..1"
 							},
 							"end2": {
 								"_type": "UMLAssociationEnd",
@@ -6043,7 +6060,8 @@
 								"navigable": "navigable",
 								"aggregation": "none",
 								"multiplicity": "0..*"
-							}
+							},
+							"name": "关联扣减或冲正"
 						}
 					]
 				}

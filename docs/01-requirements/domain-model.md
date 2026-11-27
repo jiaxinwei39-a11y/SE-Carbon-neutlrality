@@ -159,8 +159,10 @@ StarUML 工程文件：[domain-model.mdj](diagrams/domain-model.mdj)。全部实
 | Merchant | Product | 1 : 0..* | 一个商户提供多个商品 |
 | User | RedemptionOrder | 1 : 0..* | 一名用户可创建多个兑换订单 |
 | Product | RedemptionOrder | 1 : 0..* | 一个商品可出现在多个订单中 |
-| TripRecord | PointLedger | 1 : 0..1 | 行程可关联一笔发放流水 |
-| RedemptionOrder | PointLedger | 1 : 0..* | 每个兑换订单关联扣减流水，取消时还可追加冲正流水 |
+| TripRecord | PointLedger | 0..1 : 0..1 | 行程可关联一笔发放流水 |
+| RedemptionOrder | PointLedger | 0..1 : 0..* | 每个兑换订单关联扣减流水，取消时还可追加冲正流水 |
+
+每笔积分流水恰好引用一种业务来源，行程或兑换订单。两种关联在领域模型中各自可空，业务来源由流水的类型和引用编号共同确定。
 
 ## 5. 核心业务规则
 

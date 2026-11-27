@@ -2,8 +2,7 @@
 
 项目：碳中和主题的城市绿色出行积分系统（项目14）
 依据：实验指导书的设计规格说明书和仓库实验一业务基线 `2860754`；最新分工与产品补充见产品工作台
-状态：设计草案，待小组及指导教师确认；不是已实现或已测试的系统。
-范围：架构比较、模块与部署、核心用例交互、数据模型、接口和事务设计。本文中的 Mermaid 图用于直观讨论，逻辑结构图与部署示意图并非标准 UML 包图或部署图；鲁棒图以边界/控制/实体关系表达，正式报告所需的 UML 模型应据此在 StarUML 中完成并核对。
+状态：架构候选记录和代码现状见下。正式的包图、部署图、交互图、活动图和数据库 ER 图集中在[课件版模型](uml/README.md)，供小组评审。
 
 ## 1 总体设计与技术选型
 
@@ -15,55 +14,31 @@
 
 | 方案 | 优点 | 代价与局限 | 本项目判断 |
 | --- | --- | --- | --- |
-| A 单体分层，模块内直接同步调用 | 开发、部署和本地事务简单，容易调试 | 需要通过接口约束模块依赖；业务联动调用方了解下游 | 低成本可行，作为备选 |
-| B 模块化单体、同步进程内事件、本地事务 | 单体部署、模块边界清晰；事件可描述业务变化；关键账务同事务 | 监听逻辑仍运行在进程内；不能凭“发布事件”保证异步可靠或独立扩展；异常与顺序须明确 | **推荐方案**，满足课程范围与一致性要求 |
+| A 单体分层，模块内直接同步调用（当前实现）（当前实现） | 开发、部署和本地事务简单，容易调试 | 需要通过接口约束模块依赖；业务联动调用方了解下游 | 当前 Spring Boot 应用中采用同步服务与仓储调用 |
+| B 模块化单体、同步进程内事件、本地事务 | 单体部署、模块边界清晰；事件可描述业务变化；关键账务同事务 | 监听逻辑仍运行在进程内；不能凭“发布事件”保证异步可靠或独立扩展；异常与顺序须明确 | 历史建议，仍需验证监听调用链与事务传播 |
 | C 多服务加消息队列的异步事件驱动 | 可独立扩展和部署；事件消费较松耦合 | 增加网关、消息投递、幂等、重试、可观测性和跨服务一致性成本 | 课程原型暂不采用，可作为未来扩展方向 |
 
-B 是一个建议，不是教师批准结论。应用仍为单一部署单元，不把事件称为跨进程可靠消息。核心业务事件同步执行、异常上抛、随调用方事务提交或回滚；只在数据库提交成功后返回成功。不将 `@TransactionalEventListener` 默认的提交后阶段误写成事务内；实现时可用同步领域服务调用或明确同步监听器，但必须验证调用链、事务代理、异常传播。若引入异步，须重新设计投递、重试、重复消费与一致性，不能沿用本方案的原子性结论。
+当前代码对应 A。B 作为架构评审比较方案。应用仍为单一部署单元，不把事件称为跨进程可靠消息。核心业务事件同步执行、异常上抛、随调用方事务提交或回滚；只在数据库提交成功后返回成功。不将 `@TransactionalEventListener` 默认的提交后阶段误写成事务内；实现时可用同步领域服务调用或明确同步监听器，但必须验证调用链、事务代理、异常传播。若引入异步，须重新设计投递、重试、重复消费与一致性，不能沿用本方案的原子性结论。
 
 ### 1.3 建议技术栈
 
 | 层次 | 建议 | 状态 |
 | --- | --- | --- |
-| 前端 | Vue 3 + Vite + JavaScript；VS Code | 方案建议，版本由团队锁定 |
-| 后端 | Java + Spring Boot + Maven；IDEA | 方案建议，具体依赖版本在项目初始化时统一锁定 |
-| 数据库 | 已安装的 MySQL 8.0，InnoDB，utf8mb4 | 现有 MySQL 曾成功登录；项目库及连接尚未建立 |
+| 前端 | Vue 3 + Vite + JavaScript；VS Code | 版本以 package.json 和锁文件为准 |
+| 后端 | Java + Spring Boot + Maven；IDEA | 版本以 gts-backend/pom.xml 为准 |
+| 数据库 | 已安装的 MySQL 8.0，InnoDB，utf8mb4 | 本地数据库结构为 gts V4，连接由 Spring Boot 配置 |
 | Java 运行时 | 优先选可用的长期支持版 JDK，并按 Spring Boot 选定版本的官方兼容清单确认 | 当前 IDEA 截图为 JDK 25，不假定已经安装或切换其他版本 |
-| 架构与建模 | UML、StarUML；接口采用 HTTP/JSON | 图和接口为设计，尚未部署 |
+| 架构与建模 | UML、StarUML；接口采用 HTTP/JSON | 设计图见课件版模型，接口以 API 契约为准 |
 
-### 1.4 系统逻辑结构示意
+### 1.4 系统逻辑包图
 
-```mermaid
-flowchart LR
-  UI[Vue 用户和管理页面] --> API[HTTP API 与身份校验]
-  API --> ACC[账户模块]
-  API --> TRIP[行程模块]
-  API --> RULE[碳核算规则模块]
-  API --> POINT[积分账本模块]
-  API --> SHOP[商城和订单模块]
-  API --> OPS[运营与对账模块]
-  TRIP --> RULE
-  TRIP --> POINT
-  SHOP --> POINT
-  OPS --> POINT
-  OPS --> SHOP
-  ACC --> DB[(MySQL InnoDB)]
-  TRIP --> DB
-  RULE --> DB
-  POINT --> DB
-  SHOP --> DB
-  OPS --> DB
-```
+[系统逻辑包图](uml/previews/ARCH-01.jpg)
 
 模块仅通过服务接口交互，控制层不直接操纵其他模块的表。TripReported、EmissionCalculated、PointsGranted、RedemptionRequested、RedemptionOrderCreated、RedemptionCancelled 仅为候选同步领域事件；具体事件粒度在编码时确定。事件日志不替代账本，不能把监听器失败吞掉后继续提交。
 
-### 1.5 系统部署示意
+### 1.5 系统部署图
 
-```mermaid
-flowchart LR
- browser[用户浏览器 Vue 页面] -->|HTTP 本地演示| backend[单个 Spring Boot 应用]
- backend -->|JDBC 私有连接| db[(MySQL 8.0)]
-```
+[本机部署图](uml/previews/ARCH-02.jpg)
 
 课程演示可在一台电脑启动前端开发服务器、后端和本机数据库；正式部署时前端可由静态服务提供。端口、账号及环境变量以实际配置为准，不在仓库存储密码。跨网络部署时使用 HTTPS 和最小权限数据库账号；该图不表示已部署。
 
@@ -71,122 +46,46 @@ flowchart LR
 
 | 模块 | 主要责任 | 边界类示例 | 控制类示例 | 实体 |
 | --- | --- | --- | --- | --- |
-| 账户 | 注册、认证、角色和用户状态 | AuthController、UserController | AuthService、UserService | User、PointAccount |
-| 行程 | 数据校验、幂等、记录和结果 | TripController | TripApplicationService | TripRecord |
-| 碳核算 | 规则配置、按结束时间匹配、计算快照 | CarbonRuleController | RuleService、CarbonCalculator | CarbonRule |
-| 积分 | 余额、只追加流水、对账 | PointsController | PointService、ReconciliationService | PointAccount、PointLedger |
-| 商城 | 商品、库存、兑换、履约与取消 | ProductController、OrderController | ProductService、RedemptionService | Merchant、Product、RedemptionOrder |
-| 运营 | 汇总和审计查询 | AdminController | StatisticsService、AuditService | AuditLog、业务实体 |
+| 账户 | 注册、认证、角色和用户状态 | AuthController | AuthService | User、PointAccount |
+| 行程 | 数据校验、幂等、记录和结果 | TripController | TripService | TripRecord |
+| 碳核算 | 规则配置、按结束时间匹配、计算快照 | AdminController | RuleService | CarbonRule |
+| 积分 | 余额、只追加流水、对账 | PointsController | PointsService、ReconcileService | PointAccount、PointLedger |
+| 商城 | 商品、库存、兑换、履约与取消 | MallController、OrderController | MallService、OrderService | Merchant、Product、RedemptionOrder |
+| 运营 | 汇总和审计查询 | AdminController | AdminService、ReconcileService | AuditLog、业务实体 |
 
-边界/控制/实体为逻辑角色，并非承诺最终类名、代码或数据库实现。审计是支持数据，不更改实验一的八个核心领域实体。设计类、图和代码实现后须再次同步。
+[边界、控制、实体设计类图](uml/previews/CLASS-01.jpg)使用当前后端类名。实体部分表达业务数据角色。
 
 ### 2.1 鲁棒分析：行程上报
 
-```mermaid
-flowchart LR
-  U[参与者 用户] --> B[边界 TripController]
-  B --> C[控制 TripApplicationService]
-  C --> R[实体 CarbonRule]
-  C --> T[实体 TripRecord]
-  C --> P[控制 PointService]
-  P --> A[实体 PointAccount]
-  P --> L[实体 PointLedger]
-```
+[UC-04 行程上报鲁棒图](uml/previews/R-04.jpg)
 
-边界负责解析请求和认证；控制负责幂等、校验、核算和事务；实体提供业务状态。此图是鲁棒关系示意，提交报告前按边界、控制、实体规范绘制 StarUML 鲁棒图。
+边界负责解析请求和认证；控制负责幂等、校验、核算和事务；实体提供业务状态。其余用例按相同方式绘制，见[交互覆盖表](uml/README.md#一张用例表对应一对交互图)。
 
 ### 2.2 序列：模拟行程与积分发放
 
-```mermaid
-sequenceDiagram
- actor U as 用户
- participant UI as 前端
- participant T as TripController
- participant S as TripApplicationService
- participant R as RuleService
- participant P as PointService
- participant DB as MySQL
- U->>UI: 填行程并提交 clientTripId
- UI->>T: POST /api/trips
- T->>S: 验证身份并处理请求
- S->>DB: 查询用户与幂等键
- alt 同键且输入相同
-  DB-->>S: 已有行程和快照
-  S-->>T: 返回原结果
- else 同键但输入不同
-  S-->>T: 409 冲突
- else 新请求
-  S->>R: 按行程结束时间匹配规则
-  R-->>S: 规则快照
-  S->>DB: 同事务插入行程及快照
-  S->>P: 计算后发放积分（零积分跳过流水）
-  P->>DB: 加锁账户、追加流水并更新余额
-  S->>DB: 提交事务
-  S-->>T: 返回结果
- end
- T-->>UI: JSON 响应
-```
+[UC-04 行程上报序列图](uml/previews/S-04.jpg)
 
-并发同键首次提交时，唯一约束是最终防线。发生唯一冲突的事务整体回滚；在新的只读事务重新读取已提交行程，核对请求规范化内容再返回或冲突；若对方尚未提交或回滚，按受控重试处理，不能读取未提交的部分结果。失败不保留半成品行程。
+并发同键首次提交时，唯一约束是最终防线。发生唯一冲突的事务整体回滚；在新事务中用当前读重新读取已提交行程，核对请求规范化内容再返回或冲突；若对方尚未提交或回滚，按受控重试处理，不能读取未提交的部分结果。失败不保留半成品行程。
 
 ### 2.3 鲁棒分析：商品兑换
 
-```mermaid
-flowchart LR
- U[参与者 用户] --> B[边界 OrderController]
- B --> C[控制 RedemptionService]
- C --> P[实体 Product]
- C --> A[实体 PointAccount]
- C --> L[实体 PointLedger]
- C --> O[实体 RedemptionOrder]
-```
+[UC-10 商品兑换鲁棒图](uml/previews/R-10.jpg)
 
 ### 2.4 序列：积分兑换与取消
 
-```mermaid
-sequenceDiagram
- actor U as 用户或管理员
- participant C as OrderController
- participant S as RedemptionService
- participant DB as MySQL
- U->>C: 兑换商品或取消未履约订单
- C->>S: 校验角色与资源归属
- S->>DB: 开始事务并检查幂等 / 订单状态
- S->>DB: 按统一顺序加锁积分账户、商品、订单
- S->>DB: 重新读取并校验状态、余额、库存
- alt 兑换成功
-  S->>DB: 扣积分与库存；新增订单与扣减流水
- else 取消成功
-  S->>DB: 返还原积分与数量；更新状态；追加唯一冲正和审计
- else 任一条件不满足或异常
-  S->>DB: 回滚，不发生部分变更
- end
- S->>DB: 成功时提交
- S-->>C: 订单结果
-```
+[UC-10 积分兑换序列图](uml/previews/S-10.jpg) · [UC-13 订单处理序列图](uml/previews/S-13.jpg)
 
 锁顺序为账户 → 商品 → 已有订单；取消时先无锁读取订单以获得账户和商品标识，再依次加锁并重新读取订单及状态，标识和状态不符则拒绝或回滚。新增订单不存在时无需锁该订单；对同幂等键由唯一索引裁决。所有涉及同一批资源的写操作遵守同顺序；死锁或锁等待超时整体回滚后可有限重试，同幂等键不能更换。订单状态只能 CREATED→FULFILLED 或 CREATED→CANCELLED，终态不可交叉更改。
 
 ### 2.5 活动流程：发分与兑换
 
-```mermaid
-flowchart TD
- A[收到请求] --> B{身份和输入有效?}
- B -- 否 --> X[拒绝 无写入]
- B -- 是 --> C{幂等键已有结果?}
- C -- 相同输入 --> D[返回原结果]
- C -- 不同输入 --> X
- C -- 新请求 --> E{业务条件满足?}
- E -- 否 --> X
- E -- 是 --> F[同一事务写入业务记录 积分流水 余额及必要库存]
- F --> G{提交成功?}
- G -- 否 --> H[回滚并报告失败]
- G -- 是 --> I[返回成功]
-```
+[行程发分](uml/previews/ACT-04.jpg) · [商品兑换](uml/previews/ACT-10.jpg) · [取消冲正](uml/previews/ACT-13.jpg) · [规则切换](uml/previews/ACT-16.jpg) · [只读对账](uml/previews/ACT-17.jpg)
 
-活动图为核心共同分支的设计摘要，不替代实验一的 3 张具体活动图；程序级活动图与实际代码的关键操作还需在实现时细化。
+实验一需求活动图见[需求模型](../01-requirements/diagrams/README.md)。上面的程序活动图用于核对关键判断、事务回滚和结果。
 
 ## 3 数据库关键设计
+
+[数据库 ER 图](uml/previews/DB-01.jpg)使用实际 MySQL `gts` V4 表和物理外键，详见[建表脚本](../../db/schema.sql)和[数据字典](../../db/schema-dict.md)。下方 3.1–3.3 保留为初版逻辑设计记录，字段名称和精度以 V4 为准。
 
 ### 3.1 约定与边界
 
@@ -241,7 +140,7 @@ flowchart TD
 | 运营统计 | GET /api/admin/statistics | start,end | 指定区间统计；管理员，P1 |
 | 停启账户 | POST /api/admin/users/{id}/status | status,reason | 结果及审计；管理员，P1 |
 
-行程和兑换的幂等重放在身份和归属检查之后；同一键不同业务参数返回 409。成功/失败不应暴露密码、token或他人资料。以上接口字段为初稿，尚需前后端共同确认并编写 OpenAPI 规范。
+行程和兑换的幂等重放在身份和归属检查之后；同一键不同业务参数返回 409。成功/失败不应暴露密码、token或他人资料。以上接口字段为初稿，实际路径和字段以[当前 API 契约](api-contract.md)为准。
 
 ## 5 需求追踪和待办
 
@@ -252,7 +151,7 @@ flowchart TD
 | US-10、US-13 | 库存、订单、积分和审计同事务 | 不超卖、不透支、取消只冲正一次、失败回滚 |
 | 用户权限 | 用户角色、接口授权及数据归属 | 普通用户越权、停用用户和匿名接口 |
 
-待确认：① 确切依赖版本及 JDK/Spring Boot兼容性（教师无额外技术限制，Vue3/Spring Boot/MySQL为建议方案）；② 产品工作台拟议模拟因子、积分系数的评审结论；③ API 的会话方式及字段；④ 商户运营管理的范围和教师对 EDA 的意见；⑤ 在 StarUML 画正式包图、部署图、鲁棒图、序列图及关键操作活动图；⑥ 完善所有用例的设计类与完整数据库数据字典；⑦ 小组评审后创建迁移脚本、编码与测试。指导书要求的完整实验二成果不应仅靠本文件或 Mermaid 示意图宣称完成。
+待确认：① 确切依赖版本及 JDK/Spring Boot兼容性（教师无额外技术限制，Vue3/Spring Boot/MySQL为建议方案）；② 产品工作台拟议模拟因子、积分系数的评审结论；③ API 的会话方式及字段；④ 商户运营管理的范围和教师对 EDA 的意见；⑤ 小组核对正式图、实现代码和数据库字段的一致性，记录评审结论。
 
 ## 6 依据与参考
 
@@ -266,4 +165,4 @@ flowchart TD
 
 2026-11-10用户确认截止尚未通知、教师无额外技术限制，允许拟课程演示模拟参数但须标待评审。最新分工：产品经理魏嘉鑫，UI/UX张生阳，前端高泽，后端郭浚文，全栈/测试兼运维李金平；组长高泽保留。
 
-[产品工作台](../00-product/README.md)提供页面、模拟参数、任务、验收和评审清单。正式UML、完整数据字典、迁移与业务实现仍待相应任务完成；本次同步草案不等于完成实验二。
+[产品工作台](../00-product/README.md)提供页面、模拟参数、任务、验收和评审清单。正式图见[课件版模型](uml/README.md)，小组按评审清单核对并记录结论。
